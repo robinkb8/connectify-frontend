@@ -90,6 +90,8 @@ const DJANGO_API_UTILS = {
   // ✅ REAL API CALL: Check username availability
   checkUsernameAvailability: async (username) => {
     try {
+      console.log('Checking username availability with Django:', username);
+      
       const response = await fetch(`${DJANGO_API_CONFIG.baseURL}${DJANGO_API_CONFIG.endpoints.checkUsername}`, {
         method: 'POST',
         ...DJANGO_API_CONFIG.requestConfig,
@@ -97,10 +99,31 @@ const DJANGO_API_UTILS = {
       });
       
       const data = await response.json();
-      return data;
+      console.log('Django username check response:', data);
+      
+      if (response.ok) {
+        // Django returns: { available: true/false, message: "..." }
+        return {
+          isValid: data.available,  // Convert Django 'available' to 'isValid'
+          message: data.available 
+            ? 'Username is available!' 
+            : 'Username is already taken',
+          isChecking: false
+        };
+      } else {
+        return {
+          isValid: false,
+          message: data.message || 'Could not check username availability',
+          isChecking: false
+        };
+      }
     } catch (error) {
-      console.error('Username check error:', error);
-      return { available: false, message: 'Could not check username availability' };
+      console.error('Username check network error:', error);
+      return {
+        isValid: false,
+        message: 'Could not check username availability',
+        isChecking: false
+      };
     }
   },
   
