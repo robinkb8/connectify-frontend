@@ -1,5 +1,6 @@
 // src/components/forms/LoginForm/LoginForm.jsx
 import React, { useState, useCallback, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useFormValidation } from '../../../hooks/useFormValidation';
 import { FORM_STATES } from '../../../utils/constants/validation';
 import Input from '../../ui/Input/Input';
@@ -176,6 +177,7 @@ const LoginForm = ({ isOpen, onClose, onSwitchToSignUp }) => {
   // ✅ State management
   const [formState, setFormState] = useState(FORM_STATES.IDLE);
   const [googleAuthState, setGoogleAuthState] = useState(FORM_STATES.IDLE);
+  const navigate = useNavigate();
   
   // ✅ Form validation
   const { values, validation, touched, isValid, handleChange, handleBlur, reset } = 
@@ -194,6 +196,8 @@ const LoginForm = ({ isOpen, onClose, onSwitchToSignUp }) => {
       if (result.success) {
         setFormState(FORM_STATES.SUCCESS);
         console.log('User logged in successfully!', result.user);
+
+          navigate('/home');
         
         LOGIN_FORM_UTILS.handleLoginSuccess(
           onClose, 
