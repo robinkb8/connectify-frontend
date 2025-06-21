@@ -449,7 +449,7 @@ const SignUpModal = ({ isOpen, onClose, onSwitchToLogin }) => {
                 </button>
               )}
             </div>
-// ✅ FIXED OTP Input Section - Replace in your SignUpForm.jsx
+    {/* FIXED OTP Input Section - Replace in your SignUpForm.jsx*/}
 
 {/* OTP Input Section - FIXED VERSION */}
 {(otpState === SIGNUP_FORM_CONFIG.otpStates.SENT || 
