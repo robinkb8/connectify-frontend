@@ -9,7 +9,7 @@ import PasswordStrength from './PasswordStrength';
 const DJANGO_API_CONFIG = {
   // Django server URL
   baseURL: 'http://127.0.0.1:8000',
-  
+
   // API endpoints (matching your Django urls.py)
   endpoints: {
     register: '/api/auth/register/',
@@ -18,7 +18,7 @@ const DJANGO_API_CONFIG = {
     sendOTP: '/api/auth/send-otp/',
     verifyOTP: '/api/auth/verify-otp/'
   },
-  
+
   // Request configuration
   requestConfig: {
     headers: {
@@ -40,7 +40,7 @@ const SIGNUP_FORM_CONFIG = {
     password: '',
     confirmPassword: ''
   },
-  
+
   // OTP states configuration
   otpStates: {
     NOT_SENT: 'not_sent',
@@ -50,7 +50,7 @@ const SIGNUP_FORM_CONFIG = {
     VERIFIED: 'verified',
     EXPIRED: 'expired'
   },
-  
+
   // Timing configuration for various operations
   timing: {
     otpSendDelay: 2000,
@@ -58,7 +58,7 @@ const SIGNUP_FORM_CONFIG = {
     successDisplayTime: 2000,
     timerDuration: 60
   },
-  
+
   // User interface messages
   messages: {
     otpSent: 'OTP sent to',
@@ -82,31 +82,31 @@ const DJANGO_API_UTILS = {
   formatPhoneNumber: (value) => {
     const cleaned = value.replace(/\D/g, '');
     const truncated = cleaned.slice(0, 10);
-    return truncated.length >= 6 
-      ? `${truncated.slice(0, 5)} ${truncated.slice(5)}` 
+    return truncated.length >= 6
+      ? `${truncated.slice(0, 5)} ${truncated.slice(5)}`
       : truncated;
   },
-  
+
   // ✅ REAL API CALL: Check username availability
   checkUsernameAvailability: async (username) => {
     try {
       console.log('Checking username availability with Django:', username);
-      
+
       const response = await fetch(`${DJANGO_API_CONFIG.baseURL}${DJANGO_API_CONFIG.endpoints.checkUsername}`, {
         method: 'POST',
         ...DJANGO_API_CONFIG.requestConfig,
         body: JSON.stringify({ username })
       });
-      
+
       const data = await response.json();
       console.log('Django username check response:', data);
-      
+
       if (response.ok) {
         // Django returns: { available: true/false, message: "..." }
         return {
           isValid: data.available,  // Convert Django 'available' to 'isValid'
-          message: data.available 
-            ? 'Username is available!' 
+          message: data.available
+            ? 'Username is available!'
             : 'Username is already taken',
           isChecking: false
         };
@@ -126,7 +126,7 @@ const DJANGO_API_UTILS = {
       };
     }
   },
-  
+
   // ✅ REAL API CALL: Check email availability
   checkEmailAvailability: async (email) => {
     try {
@@ -135,7 +135,7 @@ const DJANGO_API_UTILS = {
         ...DJANGO_API_CONFIG.requestConfig,
         body: JSON.stringify({ email })
       });
-      
+
       const data = await response.json();
       return data;
     } catch (error) {
@@ -143,12 +143,12 @@ const DJANGO_API_UTILS = {
       return { available: false, message: 'Could not check email availability' };
     }
   },
-  
+
   // ✅ REAL API CALL: Register user with Django
   registerUser: async (formData) => {
     try {
       console.log('Sending registration data to Django:', formData);
-      
+
       const response = await fetch(`${DJANGO_API_CONFIG.baseURL}${DJANGO_API_CONFIG.endpoints.register}`, {
         method: 'POST',
         ...DJANGO_API_CONFIG.requestConfig,
@@ -161,9 +161,9 @@ const DJANGO_API_UTILS = {
           confirm_password: formData.confirmPassword
         })
       });
-      
+
       const data = await response.json();
-      
+
       if (response.ok) {
         console.log('Django registration successful:', data);
         return { success: true, data };
@@ -173,9 +173,9 @@ const DJANGO_API_UTILS = {
       }
     } catch (error) {
       console.error('Registration network error:', error);
-      return { 
-        success: false, 
-        error: SIGNUP_FORM_CONFIG.messages.networkError 
+      return {
+        success: false,
+        error: SIGNUP_FORM_CONFIG.messages.networkError
       };
     }
   }
@@ -187,9 +187,9 @@ const SignUpModal = ({ isOpen, onClose, onSwitchToLogin }) => {
   const [otpState, setOtpState] = useState(SIGNUP_FORM_CONFIG.otpStates.NOT_SENT);
   const [otp, setOtp] = useState('');
   const [otpTimer, setOtpTimer] = useState(0);
-  
+
   // ✅ Form validation using static configuration
-  const { values, validation, touched, isValid, handleChange, handleBlur, reset } = 
+  const { values, validation, touched, isValid, handleChange, handleBlur, reset } =
     useFormValidation(SIGNUP_FORM_CONFIG.initialValues);
 
   // ✅ Phone formatting (unchanged)
@@ -198,43 +198,78 @@ const SignUpModal = ({ isOpen, onClose, onSwitchToLogin }) => {
     handleChange('phone', formatted);
   }, [handleChange]);
 
-  // ✅ MOCK OTP FUNCTIONS (temporarily keeping for demo)
+  // ✅ REAL DJANGO OTP INTEGRATION - Replace mock functions in SignUpForm.jsx
+
+  // ✅ REAL API CALL: Send OTP via Django
   const handleSendOTP = useCallback(async () => {
     if (!validation.email?.isValid) return;
 
     setOtpState(SIGNUP_FORM_CONFIG.otpStates.SENDING);
-    
+
     try {
-      // Mock OTP for demo - in real app, call Django OTP endpoint
-      await new Promise(resolve => setTimeout(resolve, SIGNUP_FORM_CONFIG.timing.otpSendDelay));
-      setOtpState(SIGNUP_FORM_CONFIG.otpStates.SENT);
-      setOtpTimer(SIGNUP_FORM_CONFIG.timing.timerDuration);
-      console.log(`${SIGNUP_FORM_CONFIG.messages.otpSent} ${values.email}: 123456`);
+      // ✅ REAL DJANGO API CALL
+      const response = await fetch('http://127.0.0.1:8000/api/auth/send-otp/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ email: values.email })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setOtpState(SIGNUP_FORM_CONFIG.otpStates.SENT);
+        setOtpTimer(SIGNUP_FORM_CONFIG.timing.timerDuration);
+        console.log(`OTP sent to ${values.email} via Django!`);
+      } else {
+        setOtpState(SIGNUP_FORM_CONFIG.otpStates.NOT_SENT);
+        alert(`Failed to send OTP: ${data.message}`);
+      }
     } catch (error) {
+      console.error('OTP sending error:', error);
       setOtpState(SIGNUP_FORM_CONFIG.otpStates.NOT_SENT);
+      alert('Network error. Please try again.');
     }
   }, [validation.email, values.email]);
 
+  // ✅ REAL API CALL: Verify OTP via Django
   const handleVerifyOTP = useCallback(async () => {
     if (otp.length !== 6) return;
 
     setOtpState(SIGNUP_FORM_CONFIG.otpStates.VERIFYING);
 
     try {
-      // Mock OTP verification - in real app, call Django verify endpoint
-      await new Promise(resolve => setTimeout(resolve, SIGNUP_FORM_CONFIG.timing.verificationDelay));
-      
-      if (otp === '123456') { // Mock validation
+      // ✅ REAL DJANGO API CALL
+      const response = await fetch('http://127.0.0.1:8000/api/auth/verify-otp/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          email: values.email,
+          otp_code: otp
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
         setOtpState(SIGNUP_FORM_CONFIG.otpStates.VERIFIED);
-        console.log(SIGNUP_FORM_CONFIG.messages.otpVerified);
+        console.log('OTP verified successfully via Django!');
       } else {
-        alert(SIGNUP_FORM_CONFIG.messages.invalidOtp);
+        alert(`OTP verification failed: ${data.message}`);
         setOtpState(SIGNUP_FORM_CONFIG.otpStates.SENT);
+        setOtp(''); // Clear wrong OTP
       }
     } catch (error) {
+      console.error('OTP verification error:', error);
       setOtpState(SIGNUP_FORM_CONFIG.otpStates.SENT);
+      alert('Network error. Please try again.');
     }
-  }, [otp]);
+  }, [otp, values.email]);
 
   // ✅ REAL DJANGO API CALL: Submit registration
   const handleSubmit = useCallback(async () => {
@@ -245,11 +280,11 @@ const SignUpModal = ({ isOpen, onClose, onSwitchToLogin }) => {
     try {
       // ✅ CALL REAL DJANGO API
       const result = await DJANGO_API_UTILS.registerUser(values);
-      
+
       if (result.success) {
         setFormState(FORM_STATES.SUCCESS);
         console.log('User registered successfully in Django!', result.data);
-        
+
         setTimeout(() => {
           onClose();
           setFormState(FORM_STATES.IDLE);
@@ -261,7 +296,7 @@ const SignUpModal = ({ isOpen, onClose, onSwitchToLogin }) => {
       } else {
         setFormState(FORM_STATES.ERROR);
         alert(`Registration failed: ${result.error}`);
-        
+
         setTimeout(() => {
           setFormState(FORM_STATES.IDLE);
         }, 3000);
@@ -270,7 +305,7 @@ const SignUpModal = ({ isOpen, onClose, onSwitchToLogin }) => {
       setFormState(FORM_STATES.ERROR);
       console.error('Registration error:', error);
       alert(SIGNUP_FORM_CONFIG.messages.serverError);
-      
+
       setTimeout(() => {
         setFormState(FORM_STATES.IDLE);
       }, 3000);
@@ -312,11 +347,11 @@ const SignUpModal = ({ isOpen, onClose, onSwitchToLogin }) => {
   if (!isOpen) return null;
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm"
       onClick={handleClose}
     >
-      <div 
+      <div
         className="relative w-full max-w-md bg-white bg-opacity-10 backdrop-blur-md border border-white border-opacity-20 rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
@@ -337,7 +372,7 @@ const SignUpModal = ({ isOpen, onClose, onSwitchToLogin }) => {
             </button>
           </div>
           <p className="text-white text-opacity-80 mt-2">
-            {otpState === SIGNUP_FORM_CONFIG.otpStates.VERIFIED 
+            {otpState === SIGNUP_FORM_CONFIG.otpStates.VERIFIED
               ? "Complete your registration"
               : "Create your account to start connecting"
             }
@@ -403,7 +438,7 @@ const SignUpModal = ({ isOpen, onClose, onSwitchToLogin }) => {
                   disabled={formState === FORM_STATES.SUBMITTING || otpState === SIGNUP_FORM_CONFIG.otpStates.VERIFIED}
                 />
               </div>
-              
+
               {/* Send OTP Button */}
               {otpState === SIGNUP_FORM_CONFIG.otpStates.NOT_SENT && validation.email?.isValid && (
                 <button
@@ -414,71 +449,74 @@ const SignUpModal = ({ isOpen, onClose, onSwitchToLogin }) => {
                 </button>
               )}
             </div>
+// ✅ FIXED OTP Input Section - Replace in your SignUpForm.jsx
 
-            {/* OTP Input Section */}
-            {(otpState === SIGNUP_FORM_CONFIG.otpStates.SENT || 
-              otpState === SIGNUP_FORM_CONFIG.otpStates.EXPIRED || 
-              otpState === SIGNUP_FORM_CONFIG.otpStates.VERIFIED) && (
-              <div className="mt-4 p-4 bg-white bg-opacity-5 rounded-lg border border-white border-opacity-20">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-white text-sm font-medium">
-                    {SIGNUP_FORM_CONFIG.messages.enterVerificationCode}
-                  </span>
-                  {otpState === SIGNUP_FORM_CONFIG.otpStates.SENT && (
-                    <span className="text-blue-400 text-sm">
-                      {otpTimer > 0 ? `${otpTimer}s` : SIGNUP_FORM_CONFIG.messages.otpExpired}
-                    </span>
-                  )}
-                </div>
-                
-                <div className="flex space-x-2">
-                  <input
-                    type="text"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    placeholder="123456"
-                    maxLength={6}
-                    className="flex-1 px-3 py-2 bg-white bg-opacity-10 border border-white border-opacity-30 rounded text-white placeholder-white placeholder-opacity-60 focus:outline-none focus:ring-2 focus:ring-blue-400 text-center tracking-widest"
-                    disabled={otpState === SIGNUP_FORM_CONFIG.otpStates.VERIFIED || otpState === SIGNUP_FORM_CONFIG.otpStates.VERIFYING}
-                  />
-                  
-                  {otpState === SIGNUP_FORM_CONFIG.otpStates.SENT && otp.length === 6 && (
-                    <button
-                      onClick={handleVerifyOTP}
-                      disabled={otpState === SIGNUP_FORM_CONFIG.otpStates.VERIFYING}
-                      className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-400 text-sm disabled:opacity-50"
-                    >
-                      {otpState === SIGNUP_FORM_CONFIG.otpStates.VERIFYING ? SIGNUP_FORM_CONFIG.messages.verifying : 'Verify'}
-                    </button>
-                  )}
-                </div>
+{/* OTP Input Section - FIXED VERSION */}
+{(otpState === SIGNUP_FORM_CONFIG.otpStates.SENT || 
+  otpState === SIGNUP_FORM_CONFIG.otpStates.EXPIRED || 
+  otpState === SIGNUP_FORM_CONFIG.otpStates.VERIFIED ||
+  otpState === SIGNUP_FORM_CONFIG.otpStates.VERIFYING) && (
+  <div className="mt-4 p-4 bg-white bg-opacity-5 rounded-lg border border-white border-opacity-20">
+    <div className="flex items-center justify-between mb-2">
+      <span className="text-white text-sm font-medium">
+        Enter verification code
+      </span>
+      {otpState === SIGNUP_FORM_CONFIG.otpStates.SENT && (
+        <span className="text-blue-400 text-sm">
+          {otpTimer > 0 ? `${otpTimer}s` : 'OTP expired'}
+        </span>
+      )}
+    </div>
+    
+    <div className="flex space-x-2">
+      <input
+        type="text"
+        value={otp}
+        onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+        placeholder="123456"
+        maxLength={6}
+        className="flex-1 px-3 py-2 bg-white bg-opacity-10 border border-white border-opacity-30 rounded text-white placeholder-white placeholder-opacity-60 focus:outline-none focus:ring-2 focus:ring-blue-400 text-center tracking-widest"
+        disabled={otpState === SIGNUP_FORM_CONFIG.otpStates.VERIFIED || otpState === SIGNUP_FORM_CONFIG.otpStates.VERIFYING}
+      />
+      
+      {/* ✅ FIXED: Verify Button - Always show when OTP is 6 digits and state is SENT */}
+      {otpState === SIGNUP_FORM_CONFIG.otpStates.SENT && otp.length === 6 && (
+        <button
+          onClick={handleVerifyOTP}
+          disabled={otpState === SIGNUP_FORM_CONFIG.otpStates.VERIFYING}
+          className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-400 text-sm disabled:opacity-50"
+        >
+          {otpState === SIGNUP_FORM_CONFIG.otpStates.VERIFYING ? 'Verifying...' : 'Verify'}
+        </button>
+      )}
+    </div>
 
-                {/* Resend OTP */}
-                {(otpState === SIGNUP_FORM_CONFIG.otpStates.EXPIRED || 
-                  (otpState === SIGNUP_FORM_CONFIG.otpStates.SENT && otpTimer === 0)) && (
-                  <button
-                    onClick={handleSendOTP}
-                    disabled={otpState === SIGNUP_FORM_CONFIG.otpStates.SENDING}
-                    className="mt-2 text-purple-300 hover:text-purple-200 text-sm font-medium focus:outline-none focus:underline disabled:opacity-50"
-                  >
-                    {otpState === SIGNUP_FORM_CONFIG.otpStates.SENDING ? SIGNUP_FORM_CONFIG.messages.sending : SIGNUP_FORM_CONFIG.messages.resendOtp}
-                  </button>
-                )}
+    {/* Resend OTP */}
+    {(otpState === SIGNUP_FORM_CONFIG.otpStates.EXPIRED || 
+      (otpState === SIGNUP_FORM_CONFIG.otpStates.SENT && otpTimer === 0)) && (
+      <button
+        onClick={handleSendOTP}
+        disabled={otpState === SIGNUP_FORM_CONFIG.otpStates.SENDING}
+        className="mt-2 text-purple-300 hover:text-purple-200 text-sm font-medium focus:outline-none focus:underline disabled:opacity-50"
+      >
+        {otpState === SIGNUP_FORM_CONFIG.otpStates.SENDING ? 'Sending...' : 'Resend OTP'}
+      </button>
+    )}
 
-                {/* OTP Status Messages */}
-                {otpState === SIGNUP_FORM_CONFIG.otpStates.SENT && (
-                  <p className="mt-2 text-blue-400 text-sm">
-                    📧 {SIGNUP_FORM_CONFIG.messages.otpSent} {values.email}. {SIGNUP_FORM_CONFIG.messages.checkInbox}
-                  </p>
-                )}
-                
-                {otpState === SIGNUP_FORM_CONFIG.otpStates.VERIFIED && (
-                  <p className="mt-2 text-green-400 text-sm">
-                    ✅ {SIGNUP_FORM_CONFIG.messages.otpVerified}
-                  </p>
-                )}
-              </div>
-            )}
+    {/* OTP Status Messages */}
+    {otpState === SIGNUP_FORM_CONFIG.otpStates.SENT && (
+      <p className="mt-2 text-blue-400 text-sm">
+        📧 OTP sent to {values.email}. Check your inbox!
+      </p>
+    )}
+    
+    {otpState === SIGNUP_FORM_CONFIG.otpStates.VERIFIED && (
+      <p className="mt-2 text-green-400 text-sm">
+        ✅ OTP verified successfully!
+      </p>
+    )}
+  </div>
+)}
           </div>
 
           <div>
@@ -517,13 +555,12 @@ const SignUpModal = ({ isOpen, onClose, onSwitchToLogin }) => {
             <button
               onClick={handleSubmit}
               disabled={!isValid || otpState !== SIGNUP_FORM_CONFIG.otpStates.VERIFIED || formState === FORM_STATES.SUBMITTING}
-              className={`w-full py-3 px-4 rounded-lg font-semibold text-white transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-opacity-50 ${
-                formState === FORM_STATES.SUBMITTING
+              className={`w-full py-3 px-4 rounded-lg font-semibold text-white transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-opacity-50 ${formState === FORM_STATES.SUBMITTING
                   ? 'bg-purple-500 bg-opacity-50 cursor-not-allowed'
                   : isValid && otpState === SIGNUP_FORM_CONFIG.otpStates.VERIFIED
-                  ? 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 focus:ring-purple-400 transform hover:scale-105'
-                  : 'bg-gray-500 bg-opacity-50 cursor-not-allowed'
-              }`}
+                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 focus:ring-purple-400 transform hover:scale-105'
+                    : 'bg-gray-500 bg-opacity-50 cursor-not-allowed'
+                }`}
             >
               {formState === FORM_STATES.SUBMITTING ? (
                 <div className="flex items-center justify-center">
