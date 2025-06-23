@@ -1,26 +1,6 @@
-// src/components/pages/HomeFeed/components/PostCard/PostCard.jsx
 import React, { useState, useCallback } from 'react';
 
-// ✅ UPDATED: Static dummy post data with LIKE system (Instagram-style)
-const DUMMY_POST = {
-  id: '1',
-  user: {
-    username: 'alex_photographer',
-    avatar: '/api/placeholder/32/32',
-    verified: false
-  },
-  content: 'Just captured this amazing sunset over the mountains! Sometimes nature provides the most incredible backdrops for photography. What do you think?',
-  image: '/api/placeholder/400/300',
-  timestamp: '2h ago',
-  likes: {
-    count: 1247,
-    isLiked: false  // Whether current user has liked this post
-  },
-  comments: 89,
-  shares: 34
-};
-
-// ✅ HEART ICONS: Filled and Outline (Instagram-style)
+// ✅ HEART ICONS (keep existing)
 const HeartIcon = ({ filled = false, className = "w-6 h-6" }) => {
   if (filled) {
     return (
@@ -37,86 +17,73 @@ const HeartIcon = ({ filled = false, className = "w-6 h-6" }) => {
   );
 };
 
-// ✅ COMMENT ICON: Proper SVG
 const CommentIcon = ({ className = "w-6 h-6" }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
   </svg>
 );
 
-// ✅ SHARE ICON: Proper SVG
 const ShareIcon = ({ className = "w-6 h-6" }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
   </svg>
 );
 
-const PostCard = () => {
-  // ✅ LIKE STATE MANAGEMENT: Track likes and user's like status
-  const [likeState, setLikeState] = useState({
-    count: DUMMY_POST.likes.count,
-    isLiked: DUMMY_POST.likes.isLiked
-  });
-
-  // ✅ HEART ANIMATION STATE
+// ✅ UPDATED POSTCARD - Now receives post as prop instead of using DUMMY_POST
+const PostCard = ({ post, onLike }) => {
   const [isAnimating, setIsAnimating] = useState(false);
 
-  // ✅ LIKE/UNLIKE HANDLER: Toggle like with animation
+  // ✅ LIKE HANDLER (Phase 2 will connect to API)
   const handleLike = useCallback(() => {
     setIsAnimating(true);
     
-    setLikeState(currentState => {
-      if (currentState.isLiked) {
-        // Unlike: Remove like
-        return {
-          count: currentState.count - 1,
-          isLiked: false
-        };
-      } else {
-        // Like: Add like
-        return {
-          count: currentState.count + 1,
-          isLiked: true
-        };
-      }
-    });
-
-    // Reset animation after short delay
+    // TODO: Phase 2 - Call onLike prop to update Django backend
+    console.log(`❤️ Like button clicked for post ${post.id}`);
+    if (onLike) {
+      onLike(post.id);
+    }
+    
     setTimeout(() => setIsAnimating(false), 300);
-  }, []);
+  }, [post.id, onLike]);
 
-  // ✅ DOUBLE TAP TO LIKE (Instagram-style)
+  // ✅ DOUBLE TAP TO LIKE  
   const handleImageDoubleClick = useCallback(() => {
-    if (!likeState.isLiked) {
+    if (!post.likes.isLiked) {
       handleLike();
     }
-  }, [likeState.isLiked, handleLike]);
+  }, [post.likes.isLiked, handleLike]);
 
-  // ✅ COMMENT HANDLER: Same as before
   const handleComment = useCallback(() => {
-    console.log('Comments clicked');
-  }, []);
+    console.log(`💬 Comment clicked for post ${post.id}`);
+  }, [post.id]);
 
-  // ✅ SHARE HANDLER: Same as before
   const handleShare = useCallback(() => {
-    console.log('Share clicked');
-  }, []);
+    console.log(`📤 Share clicked for post ${post.id}`);
+  }, [post.id]);
+
+  // ✅ HANDLE MISSING DATA GRACEFULLY
+  if (!post) {
+    return null;
+  }
 
   return (
     <article className="bg-white border border-gray-200 rounded-xl shadow-sm mb-4 overflow-hidden">
-      {/* User Header */}
+      {/* ✅ USER HEADER - Using real Django data */}
       <div className="flex items-center space-x-3 p-4 pb-3">
         <img 
-          src={DUMMY_POST.user.avatar} 
-          alt={DUMMY_POST.user.username}
+          src={post.user.avatar} 
+          alt={post.user.username}
           className="w-8 h-8 rounded-full object-cover"
+          onError={(e) => {
+            // Fallback if image fails to load
+            e.target.src = '/api/placeholder/32/32';
+          }}
         />
         <div className="flex-1">
-          <h3 className="font-semibold text-gray-900">{DUMMY_POST.user.username}</h3>
-          <p className="text-xs text-gray-500">{DUMMY_POST.timestamp}</p>
+          <h3 className="font-semibold text-gray-900">{post.user.username}</h3>
+          <p className="text-xs text-gray-500">{post.timestamp}</p>
         </div>
         
-        {/* Optional: Three dots menu */}
         <button className="text-gray-400 hover:text-gray-600 transition-colors">
           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
             <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
@@ -124,121 +91,118 @@ const PostCard = () => {
         </button>
       </div>
 
-      {/* Post Content */}
+      {/* ✅ POST CONTENT - Using real Django data */}
       <div className="px-4 pb-3">
-        <p className="text-gray-800 leading-relaxed">{DUMMY_POST.content}</p>
+        <p className="text-gray-800 leading-relaxed">{post.content}</p>
       </div>
 
-      {/* Post Image with Double-tap Like */}
-      <div className="relative bg-gray-100">
-        <img 
-          src={DUMMY_POST.image} 
-          alt="Post content"
-          className="w-full object-cover cursor-pointer select-none"
-          style={{ aspectRatio: '16/9' }}
-          onDoubleClick={handleImageDoubleClick}
-        />
-        
-        {/* Double-tap Heart Animation */}
-        {isAnimating && likeState.isLiked && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="animate-ping">
-              <HeartIcon 
-                filled={true} 
-                className="w-16 h-16 text-red-500 opacity-80" 
-              />
+      {/* ✅ POST IMAGE - Only show if image exists */}
+      {post.image && (
+        <div className="relative bg-gray-100">
+          <img 
+            src={post.image} 
+            alt="Post content"
+            className="w-full object-cover cursor-pointer select-none"
+            style={{ aspectRatio: '16/9' }}
+            onDoubleClick={handleImageDoubleClick}
+            onError={(e) => {
+              // Hide image if it fails to load
+              e.target.style.display = 'none';
+            }}
+          />
+          
+          {/* Double-tap Heart Animation */}
+          {isAnimating && post.likes.isLiked && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="animate-ping">
+                <HeartIcon 
+                  filled={true} 
+                  className="w-16 h-16 text-red-500 opacity-80" 
+                />
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
-      {/* Interaction Bar with Instagram-style Like */}
+      {/* ✅ INTERACTION BAR - Using real Django data */}
       <div className="p-4 pt-3">
-        {/* Action Buttons */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            {/* Like Button with Heart */}
+            {/* Like Button */}
             <button 
               onClick={handleLike}
               className={`transition-all duration-200 transform ${
                 isAnimating ? 'scale-110' : 'scale-100'
               } ${
-                likeState.isLiked 
+                post.likes.isLiked 
                   ? 'text-red-500' 
                   : 'text-gray-600 hover:text-red-400'
               }`}
-              aria-label={likeState.isLiked ? 'Unlike post' : 'Like post'}
+              aria-label={post.likes.isLiked ? 'Unlike post' : 'Like post'}
             >
               <HeartIcon 
-                filled={likeState.isLiked} 
+                filled={post.likes.isLiked} 
                 className="w-6 h-6 transition-all duration-200" 
               />
             </button>
             
-            {/* Comment Button */}
             <button 
               onClick={handleComment}
               className="text-gray-600 hover:text-blue-600 transition-colors duration-200"
-              aria-label="Comment on post"
             >
               <CommentIcon className="w-6 h-6" />
             </button>
             
-            {/* Share Button */}
             <button 
               onClick={handleShare}
               className="text-gray-600 hover:text-purple-600 transition-colors duration-200"
-              aria-label="Share post"
             >
               <ShareIcon className="w-6 h-6" />
             </button>
           </div>
           
-          {/* Bookmark Button (Instagram-style) */}
-          <button 
-            className="text-gray-600 hover:text-gray-800 transition-colors duration-200"
-            aria-label="Save post"
-          >
+          <button className="text-gray-600 hover:text-gray-800 transition-colors duration-200">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
             </svg>
           </button>
         </div>
 
-        {/* Like Count */}
+        {/* ✅ LIKE COUNT - Using real Django data */}
         <div className="mt-3">
           <p className="font-semibold text-gray-900 text-sm">
-            {likeState.count.toLocaleString()} {likeState.count === 1 ? 'like' : 'likes'}
+            {post.likes.count.toLocaleString()} {post.likes.count === 1 ? 'like' : 'likes'}
           </p>
         </div>
 
-        {/* Post Content with Username */}
+        {/* ✅ POST CONTENT WITH USERNAME */}
         <div className="mt-1">
           <p className="text-gray-900 text-sm">
-            <span className="font-semibold">{DUMMY_POST.user.username}</span>{' '}
-            <span className="text-gray-800">{DUMMY_POST.content}</span>
+            <span className="font-semibold">{post.user.username}</span>{' '}
+            <span className="text-gray-800">{post.content}</span>
           </p>
         </div>
 
-        {/* Comments Preview */}
+        {/* ✅ COMMENTS PREVIEW */}
         <div className="mt-1">
           <button 
             onClick={handleComment}
             className="text-gray-500 text-sm hover:text-gray-700 transition-colors"
           >
-            View all {DUMMY_POST.comments} comments
+            View all {post.comments} comments
           </button>
         </div>
 
-        {/* Post Timestamp */}
+        {/* ✅ TIMESTAMP */}
         <div className="mt-1">
           <p className="text-gray-400 text-xs uppercase tracking-wide">
-            {DUMMY_POST.timestamp}
+            {post.timestamp}
           </p>
         </div>
       </div>
 
-      {/* Add Comment Section (Instagram-style) */}
+      {/* ✅ ADD COMMENT SECTION */}
       <div className="border-t border-gray-100 p-4 pt-3">
         <div className="flex items-center space-x-3">
           <img 
