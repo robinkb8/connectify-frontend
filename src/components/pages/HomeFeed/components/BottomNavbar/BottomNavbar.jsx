@@ -1,6 +1,5 @@
+// frontend/src/components/pages/HomeFeed/components/BottomNavbar/BottomNavbar.jsx - UPDATED
 import React, { useState, useCallback } from 'react';
-
-
 
 // ✅ OPTIMIZED: Static icons outside component (no recreation per render)
 const ICONS = {
@@ -30,17 +29,28 @@ const ICONS = {
     </svg>
   )
 };
-const BottomNavbar = () => {
+
+// ✅ UPDATED: Added onCreateClick prop
+const BottomNavbar = ({ onCreateClick }) => {
   const [activeTab, setActiveTab] = useState('home');
 
+  // ✅ UPDATED: Handle create button click
   const handleTabClick = useCallback((tab) => {
     setActiveTab(tab);
-    console.log('Navigate to:', tab);
-  }, []);
+    
+    if (tab === 'create') {
+      console.log('✅ Create button clicked - opening modal');
+      onCreateClick(); // Call the function passed from HomeFeed
+    } else {
+      console.log('Navigate to:', tab);
+      // TODO: Handle other navigation (search, chat, profile)
+    }
+  }, [onCreateClick]);
 
-    return (
+  return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-2 z-50">
       <div className="flex items-center justify-around">
+        
         {/* Home Tab */}
         <button
           onClick={() => handleTabClick('home')}
@@ -63,10 +73,10 @@ const BottomNavbar = () => {
           <span className="text-xs">Search</span>
         </button>
 
-        {/* Create Button (Special) */}
+        {/* ✅ CREATE BUTTON - Now opens modal */}
         <button
           onClick={() => handleTabClick('create')}
-          className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+          className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 active:scale-95"
         >
           {ICONS.plus}
         </button>
