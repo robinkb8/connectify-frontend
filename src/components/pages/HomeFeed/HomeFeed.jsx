@@ -1,15 +1,16 @@
-// frontend/src/components/pages/HomeFeed/HomeFeed.jsx - UPDATED WITH CREATE POST MODAL
+// src/components/pages/HomeFeed/HomeFeed.jsx - UPDATED WITH REAL STORIES
 import React, { useState, useEffect, useCallback } from 'react';
 import TopNavbar from './components/TopNavbar';
 import StoriesSection from './components/StoriesSection';
 import PostCard from './components/PostCard';
 import BottomNavbar from './components/BottomNavbar';
-import CreatePostModal from '../../forms/CreatePostModal'; // ✅ NEW IMPORT
+import CreatePostModal from '../../forms/CreatePostModal';
+import CreateStoryModal from '../../forms/CreateStoryModal'; // ✅ NEW IMPORT
 
 // ✅ API Configuration
 const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
-// ✅ DATA TRANSFORMATION FUNCTION
+// ✅ DATA TRANSFORMATION FUNCTION - Enhanced for better handling
 const transformApiPost = (apiPost) => {
   console.log('🔄 Transforming API post:', apiPost);
   
@@ -36,7 +37,7 @@ const transformApiPost = (apiPost) => {
   return transformed;
 };
 
-// ✅ FETCH POSTS FROM DJANGO
+// ✅ FETCH POSTS FROM DJANGO - Enhanced error handling
 const fetchPosts = async (page = 1) => {
   const url = `${API_BASE_URL}/posts/?page=${page}`;
   
@@ -65,328 +66,559 @@ const fetchPosts = async (page = 1) => {
     const hasNext = data.next ? true : false;
     const hasPrevious = data.previous ? true : false;
     
-    console.log('🔍 Posts found:', posts.length);
+    console.log(`✅ Fetched ${posts.length} posts`);
     
     return {
-      posts,
+      posts: posts.map(transformApiPost),
       hasNext,
-      hasPrevious
+      hasPrevious,
+      count: data.count || posts.length
     };
     
-  } catch (err) {
-    console.error('❌ Failed to fetch posts:', err);
-    throw err;
+  } catch (error) {
+    console.error('❌ Error fetching posts:', error);
+    throw error;
   }
 };
 
-// ✅ LOADING SKELETON COMPONENT
-const PostSkeleton = () => (
-  <div className="bg-white border border-gray-200 rounded-xl shadow-sm mb-4 overflow-hidden animate-pulse">
-    <div className="flex items-center space-x-3 p-4">
-      <div className="w-8 h-8 bg-gray-300 rounded-full"></div>
-      <div className="flex-1">
-        <div className="h-4 bg-gray-300 rounded w-1/3 mb-2"></div>
-        <div className="h-3 bg-gray-200 rounded w-1/4"></div>
-      </div>
-    </div>
-    <div className="px-4 pb-3">
-      <div className="h-4 bg-gray-300 rounded w-full mb-2"></div>
-      <div className="h-4 bg-gray-300 rounded w-3/4"></div>
-    </div>
-    <div className="bg-gray-300 h-64"></div>
-    <div className="p-4">
-      <div className="h-4 bg-gray-300 rounded w-1/4"></div>
-    </div>
-  </div>
-);
-
 const HomeFeed = () => {
-  // ✅ EXISTING STATE
+  // ✅ STATE MANAGEMENT
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCreateStoryModal, setShowCreateStoryModal] = useState(false); // ✅ NEW STATE
+  const [refreshing, setRefreshing] = useState(false);
+  const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
-  // ✅ NEW STATE FOR CREATE POST MODAL
-  const [showCreateModal, setShowCreateModal] = useState(false);
-
-  // ✅ Debug logging for state changes
-  useEffect(() => {
-    console.log('🔍 HomeFeed State:', {
-      postsCount: posts.length,
-      loading,
-      error,
-      hasMore,
-      currentPage,
-      showCreateModal
-    });
-  }, [posts, loading, error, hasMore, currentPage, showCreateModal]);
-
-  // ✅ LOAD POSTS FUNCTION
-  const loadPosts = useCallback(async (page = 1, reset = false) => {
-    console.log('🔍 loadPosts called:', { page, reset, currentPosts: posts.length });
-    
-    setLoading(true);
-    setError(null);
-    
+  // ✅ LOAD POSTS FROM API
+  const loadPosts = useCallback(async (pageNum = 1, append = false) => {
     try {
-      const result = await fetchPosts(page);
+      if (!append) setLoading(true);
+      setError(null);
       
-      console.log('🔍 fetchPosts result:', result);
+      const response = await fetchPosts(pageNum);
       
-      // Transform API data to PostCard format
-      const transformedPosts = result.posts.map(transformApiPost);
-      console.log('🔍 Transformed posts:', transformedPosts);
-      
-      if (reset) {
-        console.log('🔍 Resetting posts with:', transformedPosts.length, 'items');
-        setPosts(transformedPosts);
+      if (append) {
+        setPosts(prev => [...prev, ...response.posts]);
       } else {
-        console.log('🔍 Adding posts to existing');
-        setPosts(prevPosts => [...prevPosts, ...transformedPosts]);
+        setPosts(response.posts);
       }
-
-      setCurrentPage(page);
-      setHasMore(result.hasNext);
       
-      console.log('✅ Posts loaded successfully:', transformedPosts.length);
+      setHasMore(response.hasNext);
+      setPage(pageNum);
       
     } catch (err) {
       console.error('❌ Failed to load posts:', err);
-      setError(err.message);
+      setError('Failed to load posts. Please try again.');
+      
+      // If no posts loaded yet, show empty state
+      if (!append) {
+        setPosts([]);
+      }
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
-  // ✅ LOAD POSTS ON COMPONENT MOUNT
+  // ✅ INITIAL LOAD
   useEffect(() => {
-    console.log('🔍 HomeFeed mounted - loading initial posts');
-    loadPosts(1, true);
+    loadPosts();
   }, [loadPosts]);
 
-  // ✅ CREATE POST MODAL HANDLERS
-  const openCreateModal = useCallback(() => {
-    console.log('🔍 Opening create post modal');
+  // ✅ REFRESH POSTS
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadPosts(1, false);
+  }, [loadPosts]);
+
+  // ✅ LOAD MORE POSTS (Pagination)
+  const handleLoadMore = useCallback(async () => {
+    if (hasMore && !loading) {
+      await loadPosts(page + 1, true);
+    }
+  }, [hasMore, loading, page, loadPosts]);
+
+  // ✅ HANDLE LIKE ACTION - Update local state optimistically
+  const handlePostLike = useCallback((postId, isLiked, totalLikes) => {
+    setPosts(prevPosts => 
+      prevPosts.map(post => 
+        post.id === postId 
+          ? {
+              ...post,
+              likes: {
+                count: totalLikes,
+                isLiked: isLiked
+              }
+            }
+          : post
+      )
+    );
+    console.log(`✅ Updated post ${postId} like status: ${isLiked} (${totalLikes} total)`);
+  }, []);
+
+  // ✅ HANDLE COMMENT ACTION - Update local state
+  const handlePostComment = useCallback((postId, newComment) => {
+    setPosts(prevPosts => 
+      prevPosts.map(post => 
+        post.id === postId 
+          ? {
+              ...post,
+              comments: post.comments + 1
+            }
+          : post
+      )
+    );
+    console.log(`✅ Added comment to post ${postId}:`, newComment);
+  }, []);
+
+  // ✅ HANDLE CREATE POST
+  const handleCreatePost = useCallback(() => {
     setShowCreateModal(true);
   }, []);
 
-  const closeCreateModal = useCallback(() => {
-    console.log('🔍 Closing create post modal');
+  const handleCloseCreateModal = useCallback(() => {
     setShowCreateModal(false);
   }, []);
 
-  const handlePostCreated = useCallback((newPost) => {
-    console.log('🔍 New post created:', newPost);
+  const handlePostCreated = useCallback(async (newPost) => {
+    console.log('✅ New post created:', newPost);
+    setShowCreateModal(false);
     
-    // Transform the new post and add it to the beginning of the list
-    const transformedPost = transformApiPost(newPost);
-    setPosts(prevPosts => [transformedPost, ...prevPosts]);
-    
-    console.log('✅ Post added to feed');
+    // Refresh the feed to show the new post
+    await handleRefresh();
+  }, [handleRefresh]);
+
+  // ✅ NEW: HANDLE CREATE STORY
+  const handleCreateStory = useCallback(() => {
+    console.log('🔍 Create story button clicked');
+    setShowCreateStoryModal(true);
   }, []);
 
-  // ✅ REFRESH POSTS FUNCTION
-  const refreshPosts = useCallback(() => {
-    console.log('🔍 Refreshing posts');
-    loadPosts(1, true);
-  }, [loadPosts]);
+  const handleCloseCreateStoryModal = useCallback(() => {
+    setShowCreateStoryModal(false);
+  }, []);
 
-  // ✅ LOAD MORE POSTS FUNCTION
-  const loadMorePosts = useCallback(() => {
-    if (!loading && hasMore) {
-      console.log('🔍 Loading more posts, page:', currentPage + 1);
-      loadPosts(currentPage + 1, false);
-    }
-  }, [loading, hasMore, currentPage, loadPosts]);
+  const handleStoryCreated = useCallback(async (newStory) => {
+    console.log('✅ New story created:', newStory);
+    setShowCreateStoryModal(false);
+    
+    // Stories section will automatically refresh when it detects new content
+    // No need to manually refresh here
+  }, []);
+
+  // ✅ NEW: HANDLE STORY VIEWING
+  const handleViewStory = useCallback((story) => {
+    console.log('✅ Viewing story:', story);
+    // TODO: Implement story viewer modal
+    // For now, just log the action
+  }, []);
 
   // ✅ LOADING STATE
   if (loading && posts.length === 0) {
-    console.log('🔍 Rendering: Loading state');
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="app-container">
         <TopNavbar />
-        <StoriesSection />
-        <div className="px-4 py-4 pb-20">
-          <div className="text-center text-blue-600 text-sm mb-4 font-medium">
-            🔄 Loading posts from Django backend...
+        <div className="loading-container">
+          <div className="loading-content">
+            <div className="loading-spinner"></div>
+            <p className="loading-text">Loading your feed...</p>
           </div>
-          {[1, 2, 3].map(i => (
-            <PostSkeleton key={i} />
-          ))}
         </div>
-        <BottomNavbar onCreateClick={openCreateModal} />
+        <BottomNavbar onCreateClick={handleCreatePost} />
         
-        {/* ✅ CREATE POST MODAL */}
-        <CreatePostModal
-          isOpen={showCreateModal}
-          onClose={closeCreateModal}
-          onPostCreated={handlePostCreated}
-        />
+        <style jsx>{`
+          .app-container {
+            min-height: 100vh;
+            background-color: #fafafa;
+          }
+
+          .loading-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 60vh;
+            padding: 16px;
+          }
+
+          .loading-content {
+            text-align: center;
+          }
+
+          .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid #e5e7eb;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+          }
+
+          .loading-text {
+            color: #6b7280;
+            font-size: 16px;
+            margin: 0;
+          }
+
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
       </div>
     );
   }
 
   // ✅ ERROR STATE
   if (error && posts.length === 0) {
-    console.log('🔍 Rendering: Error state');
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="app-container">
         <TopNavbar />
-        <StoriesSection />
-        <div className="px-4 py-4 pb-20">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-            <div className="text-6xl mb-4">⚠️</div>
-            <h3 className="text-red-800 font-semibold text-lg mb-2">
-              Failed to load posts
-            </h3>
-            <p className="text-red-600 text-sm mb-4">
-              {error}
-            </p>
-            <div className="space-y-2">
-              <p className="text-red-500 text-xs">
-                Make sure Django server is running on http://127.0.0.1:8000
-              </p>
-              <button 
-                onClick={refreshPosts}
-                className="bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600 transition-colors"
-              >
-                Try Again
-              </button>
-            </div>
+        <div className="error-container">
+          <div className="error-content">
+            <div className="error-icon">😕</div>
+            <h2 className="error-title">Oops! Something went wrong</h2>
+            <p className="error-message">{error}</p>
+            <button 
+              onClick={handleRefresh}
+              className="error-button"
+            >
+              Try Again
+            </button>
           </div>
         </div>
-        <BottomNavbar onCreateClick={openCreateModal} />
+        <BottomNavbar onCreateClick={handleCreatePost} />
         
-        {/* ✅ CREATE POST MODAL */}
-        <CreatePostModal
-          isOpen={showCreateModal}
-          onClose={closeCreateModal}
-          onPostCreated={handlePostCreated}
-        />
+        <style jsx>{`
+          .app-container {
+            min-height: 100vh;
+            background-color: #fafafa;
+          }
+
+          .error-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 60vh;
+            padding: 16px;
+          }
+
+          .error-content {
+            text-align: center;
+            max-width: 400px;
+          }
+
+          .error-icon {
+            font-size: 4rem;
+            margin-bottom: 16px;
+          }
+
+          .error-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #111827;
+            margin: 0 0 8px;
+          }
+
+          .error-message {
+            color: #6b7280;
+            margin: 0 0 24px;
+            line-height: 1.5;
+          }
+
+          .error-button {
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+          }
+
+          .error-button:hover {
+            background-color: #2563eb;
+          }
+        `}</style>
       </div>
     );
   }
 
-  // ✅ EMPTY STATE
-  if (!loading && posts.length === 0) {
-    console.log('🔍 Rendering: Empty state');
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <TopNavbar />
-        <StoriesSection />
-        <div className="px-4 py-4 pb-20">
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4">📱</div>
-            <h3 className="text-gray-800 font-semibold text-lg mb-2">
-              No posts yet
-            </h3>
-            <p className="text-gray-600 text-sm mb-6">
-              Be the first to share something awesome!
-            </p>
-            <div className="space-y-3">
+  return (
+    <div className="app-container">
+      {/* Top Navigation */}
+      <TopNavbar />
+      
+      {/* Main Content */}
+      <main className="main-content">
+        {/* ✅ REAL STORIES SECTION */}
+        <div className="stories-container">
+          <StoriesSection 
+            onCreateStory={handleCreateStory}
+            onViewStory={handleViewStory}
+          />
+        </div>
+        
+        {/* Refresh Button */}
+        <div className="refresh-container">
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="refresh-button"
+          >
+            {refreshing ? '🔄 Refreshing...' : '🔄 Pull to refresh'}
+          </button>
+        </div>
+        
+        {/* Posts Feed */}
+        <div className="posts-container">
+          {posts.length > 0 ? (
+            <>
+              {posts.map((post) => (
+                <PostCard 
+                  key={post.id} 
+                  post={post}
+                  onLike={handlePostLike}
+                  onComment={handlePostComment}
+                />
+              ))}
+              
+              {/* Load More Button */}
+              {hasMore && (
+                <div className="load-more-container">
+                  <button
+                    onClick={handleLoadMore}
+                    disabled={loading}
+                    className="load-more-button"
+                  >
+                    {loading ? 'Loading...' : 'Load More Posts'}
+                  </button>
+                </div>
+              )}
+              
+              {/* End of feed message */}
+              {!hasMore && posts.length > 0 && (
+                <div className="end-of-feed">
+                  <p className="end-title">🎉 You're all caught up!</p>
+                  <p className="end-subtitle">Check back later for new posts</p>
+                </div>
+              )}
+            </>
+          ) : (
+            // Empty state
+            <div className="empty-state">
+              <div className="empty-icon">📱</div>
+              <h2 className="empty-title">No posts yet</h2>
+              <p className="empty-message">Be the first to share something amazing!</p>
               <button 
-                onClick={openCreateModal}
-                className="bg-purple-500 text-white px-6 py-3 rounded-lg hover:bg-purple-600 transition-colors font-medium"
+                onClick={handleCreatePost}
+                className="empty-button"
               >
                 Create Your First Post
               </button>
-              <br />
-              <button 
-                onClick={refreshPosts}
-                className="text-purple-500 text-sm hover:text-purple-600 transition-colors"
-              >
-                Refresh Feed
-              </button>
             </div>
-          </div>
+          )}
         </div>
-        <BottomNavbar onCreateClick={openCreateModal} />
-        
-        {/* ✅ CREATE POST MODAL */}
-        <CreatePostModal
-          isOpen={showCreateModal}
-          onClose={closeCreateModal}
-          onPostCreated={handlePostCreated}
-        />
-      </div>
-    );
-  }
+      </main>
 
-  // ✅ SUCCESS STATE - RENDER POSTS
-  console.log('🔍 Rendering: Success state with', posts.length, 'posts');
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <TopNavbar />
-      <StoriesSection />
+      {/* Bottom Navigation */}
+      <BottomNavbar onCreateClick={handleCreatePost} />
       
-      {/* ✅ POSTS FEED */}
-      <div className="px-4 py-4 pb-20">
-        {/* Success indicator */}
-        <div className="text-center text-green-600 text-sm mb-4 font-medium">
-          ✅ {posts.length} post{posts.length !== 1 ? 's' : ''} loaded from Django
-        </div>
-        
-        {/* ✅ RENDER EACH POST */}
-        {posts.map((post, index) => {
-          console.log(`🔍 Rendering post ${index + 1}:`, {
-            id: post.id,
-            content: post.content?.substring(0, 30) + '...',
-            hasImage: !!post.image,
-            author: post.user?.username,
-            likesStructure: post.likes
-          });
-          
-          return (
-            <PostCard 
-              key={`post-${post.id}-${index}`} 
-              post={post}
-              onLike={() => {
-                // TODO: Implement like functionality
-                console.log('Like clicked for post:', post.id);
-              }}
-            />
-          );
-        })}
-        
-        {/* ✅ LOAD MORE BUTTON */}
-        {hasMore && (
-          <div className="text-center py-6">
-            <button 
-              onClick={loadMorePosts}
-              disabled={loading}
-              className="bg-blue-500 text-white px-8 py-3 rounded-lg hover:bg-blue-600 disabled:bg-gray-400 transition-colors"
-            >
-              {loading ? 'Loading...' : 'Load More Posts'}
-            </button>
-          </div>
-        )}
-        
-        {/* ✅ END OF POSTS INDICATOR */}
-        {!hasMore && posts.length > 0 && (
-          <div className="text-center py-6">
-            <div className="text-gray-500 text-sm mb-3">
-              🎉 You've seen all posts!
-            </div>
-            <button 
-              onClick={refreshPosts}
-              className="text-blue-500 text-sm hover:text-blue-600 transition-colors"
-            >
-              Refresh for new posts
-            </button>
-          </div>
-        )}
-      </div>
-      
-      <BottomNavbar onCreateClick={openCreateModal} />
-      
-      {/* ✅ CREATE POST MODAL */}
-      <CreatePostModal
+      {/* ✅ MODALS */}
+      <CreatePostModal 
         isOpen={showCreateModal}
-        onClose={closeCreateModal}
+        onClose={handleCloseCreateModal}
         onPostCreated={handlePostCreated}
       />
+      
+      {/* ✅ NEW: CREATE STORY MODAL */}
+      <CreateStoryModal 
+        isOpen={showCreateStoryModal}
+        onClose={handleCloseCreateStoryModal}
+        onStoryCreated={handleStoryCreated}
+      />
+
+      <style jsx>{`
+        /* ✅ RESPONSIVE FEED CONTAINER */
+        .app-container {
+          min-height: 100vh;
+          background-color: #fafafa;
+        }
+
+        .main-content {
+          padding-top: 64px; /* Space for fixed navbar */
+          padding-bottom: 80px; /* Space for bottom navbar */
+          min-height: 100vh;
+        }
+
+        /* Stories Section */
+        .stories-container {
+          /* Mobile: Full width with padding */
+          padding: 0;
+          margin-bottom: 20px;
+        }
+
+        /* Refresh Button */
+        .refresh-container {
+          /* Mobile: Full width with padding */
+          padding: 0 16px;
+          margin-bottom: 16px;
+          text-align: center;
+        }
+
+        .refresh-button {
+          background: none;
+          border: none;
+          color: #6b7280;
+          font-size: 14px;
+          cursor: pointer;
+          padding: 8px 16px;
+          border-radius: 8px;
+          transition: all 0.2s ease;
+        }
+
+        .refresh-button:hover {
+          color: #374151;
+          background-color: #f3f4f6;
+        }
+
+        .refresh-button:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        /* Posts Container */
+        .posts-container {
+          /* Mobile: Full width with padding for posts */
+          padding: 0 16px;
+        }
+
+        /* Load More Section */
+        .load-more-container {
+          text-align: center;
+          padding: 32px 0;
+        }
+
+        .load-more-button {
+          background-color: #3b82f6;
+          color: white;
+          border: none;
+          padding: 12px 24px;
+          border-radius: 8px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: background-color 0.2s ease;
+        }
+
+        .load-more-button:hover:not(:disabled) {
+          background-color: #2563eb;
+        }
+
+        .load-more-button:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        /* End of Feed */
+        .end-of-feed {
+          text-align: center;
+          padding: 40px 16px;
+        }
+
+        .end-title {
+          color: #374151;
+          font-size: 16px;
+          margin: 0 0 4px;
+        }
+
+        .end-subtitle {
+          color: #9ca3af;
+          font-size: 14px;
+          margin: 0;
+        }
+
+        /* Empty State */
+        .empty-state {
+          text-align: center;
+          padding: 60px 16px;
+        }
+
+        .empty-icon {
+          font-size: 4rem;
+          margin-bottom: 24px;
+        }
+
+        .empty-title {
+          font-size: 1.25rem;
+          font-weight: 600;
+          color: #111827;
+          margin: 0 0 8px;
+        }
+
+        .empty-message {
+          color: #6b7280;
+          margin: 0 0 32px;
+          line-height: 1.5;
+        }
+
+        .empty-button {
+          background-color: #3b82f6;
+          color: white;
+          border: none;
+          padding: 12px 24px;
+          border-radius: 8px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: background-color 0.2s ease;
+        }
+
+        .empty-button:hover {
+          background-color: #2563eb;
+        }
+
+        /* ✅ RESPONSIVE BREAKPOINTS */
+        
+        /* Tablet and up */
+        @media (min-width: 640px) {
+          .refresh-container,
+          .posts-container {
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            padding-left: 0;
+            padding-right: 0;
+          }
+
+          .refresh-container {
+            margin-bottom: 20px;
+          }
+        }
+
+        /* Desktop and up */
+        @media (min-width: 1024px) {
+          .refresh-container,
+          .posts-container {
+            max-width: 600px;
+          }
+
+          .refresh-container {
+            margin-bottom: 24px;
+          }
+        }
+
+        /* Extra wide screens */
+        @media (min-width: 1280px) {
+          .main-content {
+            max-width: 1200px;
+            margin: 0 auto;
+          }
+        }
+      `}</style>
     </div>
   );
 };
