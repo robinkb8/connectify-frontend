@@ -1,41 +1,42 @@
-// src/components/pages/HomeFeed/HomeFeed.jsx - UPDATED WITH REAL STORIES
+// ===== REPLACE src/components/pages/HomeFeed/HomeFeed.jsx =====
 import React, { useState, useEffect, useCallback } from 'react';
+import { Search } from "lucide-react";
+import { Input } from '../../ui/Input/Input';
 import TopNavbar from './components/TopNavbar';
-import PostCard from './components/PostCard';
 import BottomNavbar from './components/BottomNavbar';
-import CreatePostModal from '../../forms/CreatePostModal';
+import PostCard from './components/PostCard';
+import SimpleCreatePost from './components/SimpleCreatePost';
+import UserProfile from '../Profile/UserProfile';
+import MessagesPage from '../Messages/MessagesPage';
 
-// ✅ API Configuration
+// ✅ DJANGO API CONFIGURATION - Your existing API
 const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
-// ✅ DATA TRANSFORMATION FUNCTION - Enhanced for better handling
+// ✅ DATA TRANSFORMATION - Your existing function, keeping it the same
 const transformApiPost = (apiPost) => {
   console.log('🔄 Transforming API post:', apiPost);
   
   const transformed = {
     id: apiPost.id,
-    user: {
+    author: {
       username: apiPost.author?.username || 'Unknown User',
-      avatar: apiPost.author?.avatar || '/api/placeholder/32/32',
-      verified: false
+      avatar: apiPost.author?.avatar || null
     },
     content: apiPost.content || '',
-    image: apiPost.image_url || null,
-    timestamp: apiPost.time_since_posted || 'Unknown time',
-    likes: {
-      count: apiPost.total_likes || 0,
-      isLiked: apiPost.is_liked || false
-    },
-    comments: apiPost.total_comments || 0,
-    shares: apiPost.total_shares || 0,
-    isActive: apiPost.is_active !== false
+    image_url: apiPost.image_url || null,
+    total_likes: apiPost.total_likes || 0,
+    total_comments: apiPost.total_comments || 0,
+    total_shares: apiPost.total_shares || 0,
+    time_since_posted: apiPost.time_since_posted || 'Unknown time',
+    is_liked: apiPost.is_liked || false,
+    is_active: apiPost.is_active !== false
   };
   
   console.log('✅ Transformed post:', transformed);
   return transformed;
 };
 
-// ✅ FETCH POSTS FROM DJANGO - Enhanced error handling
+// ✅ FETCH POSTS - Your existing API call
 const fetchPosts = async (page = 1) => {
   const url = `${API_BASE_URL}/posts/?page=${page}`;
   
@@ -64,8 +65,6 @@ const fetchPosts = async (page = 1) => {
     const hasNext = data.next ? true : false;
     const hasPrevious = data.previous ? true : false;
     
-    console.log(`✅ Fetched ${posts.length} posts`);
-    
     return {
       posts: posts.map(transformApiPost),
       hasNext,
@@ -75,510 +74,193 @@ const fetchPosts = async (page = 1) => {
     
   } catch (error) {
     console.error('❌ Error fetching posts:', error);
-    throw error;
+    return {
+      posts: [],
+      hasNext: false,
+      hasPrevious: false,
+      count: 0
+    };
   }
 };
 
-const HomeFeed = () => {
-  // ✅ STATE MANAGEMENT
+// ✅ MAIN HOMEFEED COMPONENT WITH NEW DESIGN
+function HomeFeed() {
+  // ✅ State Management
+  const [activeTab, setActiveTab] = useState("home");
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
+  const [hasMore, setHasMore] = useState(false);
 
-  // ✅ LOAD POSTS FROM API
-  const loadPosts = useCallback(async (pageNum = 1, append = false) => {
+  // ✅ Load Posts on Component Mount
+  useEffect(() => {
+    loadPosts();
+  }, []);
+
+  const loadPosts = useCallback(async (pageNum = 1) => {
     try {
-      if (!append) setLoading(true);
+      setLoading(true);
       setError(null);
       
-      const response = await fetchPosts(pageNum);
+      const result = await fetchPosts(pageNum);
       
-      if (append) {
-        setPosts(prev => [...prev, ...response.posts]);
+      if (pageNum === 1) {
+        setPosts(result.posts);
       } else {
-        setPosts(response.posts);
+        setPosts(prev => [...prev, ...result.posts]);
       }
       
-      setHasMore(response.hasNext);
+      setHasMore(result.hasNext);
       setPage(pageNum);
       
     } catch (err) {
-      console.error('❌ Failed to load posts:', err);
+      console.error('Error loading posts:', err);
       setError('Failed to load posts. Please try again.');
-      
-      // If no posts loaded yet, show empty state
-      if (!append) {
-        setPosts([]);
-      }
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }, []);
 
-  // ✅ INITIAL LOAD
-  useEffect(() => {
-    loadPosts();
-  }, [loadPosts]);
-
-  // ✅ REFRESH POSTS
-  const handleRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await loadPosts(1, false);
-  }, [loadPosts]);
-
-  // ✅ LOAD MORE POSTS (Pagination)
-  const handleLoadMore = useCallback(async () => {
+  // ✅ Load More Posts
+  const loadMorePosts = useCallback(() => {
     if (hasMore && !loading) {
-      await loadPosts(page + 1, true);
+      loadPosts(page + 1);
     }
   }, [hasMore, loading, page, loadPosts]);
 
-  // ✅ HANDLE LIKE ACTION - Update local state optimistically
-  const handlePostLike = useCallback((postId, isLiked, totalLikes) => {
-    setPosts(prevPosts => 
-      prevPosts.map(post => 
-        post.id === postId 
-          ? {
-              ...post,
-              likes: {
-                count: totalLikes,
-                isLiked: isLiked
-              }
-            }
-          : post
-      )
-    );
-    console.log(`✅ Updated post ${postId} like status: ${isLiked} (${totalLikes} total)`);
-  }, []);
+  // ✅ Search Functionality
+  const filteredPosts = posts.filter(post =>
+    post.content?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    post.author?.username?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-  // ✅ HANDLE COMMENT ACTION - Update local state
-  const handlePostComment = useCallback((postId, newComment) => {
-    setPosts(prevPosts => 
-      prevPosts.map(post => 
-        post.id === postId 
-          ? {
-              ...post,
-              comments: post.comments + 1
-            }
-          : post
-      )
-    );
-    console.log(`✅ Added comment to post ${postId}:`, newComment);
-  }, []);
+  // ✅ RENDER CONTENT BASED ON ACTIVE TAB
+  const renderContent = () => {
+    switch (activeTab) {
+      case "home":
+        return (
+          <main className="pt-16 pb-20 px-4 max-w-2xl mx-auto">
+            <div className="space-y-6">
+              {/* ✅ Create Post Component */}
+              <div className="pt-4">
+                <SimpleCreatePost onPostCreated={() => loadPosts(1)} />
+              </div>
 
-  // ✅ HANDLE CREATE POST
-  const handleCreatePost = useCallback(() => {
-    setShowCreateModal(true);
-  }, []);
+              {/* ✅ Posts Feed */}
+              <div className="space-y-6">
+                {loading && posts.length === 0 ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto"></div>
+                    <p className="text-muted-foreground mt-2">Loading posts...</p>
+                  </div>
+                ) : error ? (
+                  <div className="text-center py-8">
+                    <p className="text-red-500">{error}</p>
+                    <button 
+                      onClick={() => loadPosts(1)}
+                      className="mt-2 text-purple-500 hover:text-purple-600 font-medium"
+                    >
+                      Try again
+                    </button>
+                  </div>
+                ) : posts.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">No posts yet. Be the first to share something!</p>
+                  </div>
+                ) : (
+                  <>
+                    {posts.map((post) => (
+                      <PostCard key={post.id} post={post} />
+                    ))}
+                    
+                    {/* ✅ Load More Button */}
+                    {hasMore && (
+                      <div className="text-center py-8">
+                        <button 
+                          onClick={loadMorePosts}
+                          disabled={loading}
+                          className="text-purple-500 hover:text-purple-600 font-medium disabled:opacity-50"
+                        >
+                          {loading ? 'Loading...' : 'Load more posts...'}
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          </main>
+        );
 
-  const handleCloseCreateModal = useCallback(() => {
-    setShowCreateModal(false);
-  }, []);
+      case "search":
+        return (
+          <main className="pt-16 pb-20 px-4 max-w-2xl mx-auto">
+            <div className="space-y-6">
+              <div className="pt-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
+                  <Input
+                    placeholder="Search posts, people, and topics..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-12 py-3 text-lg rounded-full"
+                  />
+                </div>
+              </div>
 
-  const handlePostCreated = useCallback(async (newPost) => {
-    console.log('✅ New post created:', newPost);
-    setShowCreateModal(false);
-    
-    // Refresh the feed to show the new post
-    await handleRefresh();
-  }, [handleRefresh]);
+              {searchQuery ? (
+                <div className="space-y-6">
+                  <h2 className="text-lg font-semibold">Search results for "{searchQuery}"</h2>
+                  {filteredPosts.length > 0 ? (
+                    filteredPosts.map((post) => (
+                      <PostCard key={post.id} post={post} />
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p>No posts found matching "{searchQuery}"</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Search className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>Search for posts, people, and topics</p>
+                </div>
+              )}
+            </div>
+          </main>
+        );
 
-  // ✅ LOADING STATE
-  if (loading && posts.length === 0) {
-    return (
-      <div className="app-container">
-        <TopNavbar />
-        <div className="loading-container">
-          <div className="loading-content">
-            <div className="loading-spinner"></div>
-            <p className="loading-text">Loading your feed...</p>
-          </div>
-        </div>
-        <BottomNavbar onCreateClick={handleCreatePost} />
-        
-        <style jsx>{`
-          .app-container {
-            min-height: 100vh;
-            background-color: #fafafa;
-          }
+      case "messages":
+        return <MessagesPage />;
 
-          .loading-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 60vh;
-            padding: 16px;
-          }
+      case "profile":
+        return (
+          <main className="pt-16 pb-20 px-4">
+            <UserProfile isOwnProfile={true} />
+          </main>
+        );
 
-          .loading-content {
-            text-align: center;
-          }
-
-          .loading-spinner {
-            width: 48px;
-            height: 48px;
-            border: 3px solid #e5e7eb;
-            border-top: 3px solid #3b82f6;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 16px;
-          }
-
-          .loading-text {
-            color: #6b7280;
-            font-size: 16px;
-            margin: 0;
-          }
-
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}</style>
-      </div>
-    );
-  }
-
-  // ✅ ERROR STATE
-  if (error && posts.length === 0) {
-    return (
-      <div className="app-container">
-        <TopNavbar />
-        <div className="error-container">
-          <div className="error-content">
-            <div className="error-icon">😕</div>
-            <h2 className="error-title">Oops! Something went wrong</h2>
-            <p className="error-message">{error}</p>
-            <button 
-              onClick={handleRefresh}
-              className="error-button"
-            >
-              Try Again
-            </button>
-          </div>
-        </div>
-        <BottomNavbar onCreateClick={handleCreatePost} />
-        
-        <style jsx>{`
-          .app-container {
-            min-height: 100vh;
-            background-color: #fafafa;
-          }
-
-          .error-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 60vh;
-            padding: 16px;
-          }
-
-          .error-content {
-            text-align: center;
-            max-width: 400px;
-          }
-
-          .error-icon {
-            font-size: 4rem;
-            margin-bottom: 16px;
-          }
-
-          .error-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: #111827;
-            margin: 0 0 8px;
-          }
-
-          .error-message {
-            color: #6b7280;
-            margin: 0 0 24px;
-            line-height: 1.5;
-          }
-
-          .error-button {
-            background-color: #3b82f6;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background-color 0.2s ease;
-          }
-
-          .error-button:hover {
-            background-color: #2563eb;
-          }
-        `}</style>
-      </div>
-    );
-  }
+      default:
+        return (
+          <main className="pt-16 pb-20 px-4 max-w-2xl mx-auto">
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">Page not found</p>
+            </div>
+          </main>
+        );
+    }
+  };
 
   return (
-    <div className="app-container">
-      {/* Top Navigation */}
+    <div className="min-h-screen bg-background">
       <TopNavbar />
-      
-      {/* Main Content */}
-      <main className="main-content">
-       
-        {/* Refresh Button */}
-        <div className="refresh-container">
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="refresh-button"
-          >
-            {refreshing ? '🔄 Refreshing...' : '🔄 Pull to refresh'}
-          </button>
-        </div>
-        
-        {/* Posts Feed */}
-        <div className="posts-container">
-          {posts.length > 0 ? (
-            <>
-              {posts.map((post) => (
-                <PostCard 
-                  key={post.id} 
-                  post={post}
-                  onLike={handlePostLike}
-                  onComment={handlePostComment}
-                />
-              ))}
-              
-              {/* Load More Button */}
-              {hasMore && (
-                <div className="load-more-container">
-                  <button
-                    onClick={handleLoadMore}
-                    disabled={loading}
-                    className="load-more-button"
-                  >
-                    {loading ? 'Loading...' : 'Load More Posts'}
-                  </button>
-                </div>
-              )}
-              
-              {/* End of feed message */}
-              {!hasMore && posts.length > 0 && (
-                <div className="end-of-feed">
-                  <p className="end-title">🎉 You're all caught up!</p>
-                  <p className="end-subtitle">Check back later for new posts</p>
-                </div>
-              )}
-            </>
-          ) : (
-            // Empty state
-            <div className="empty-state">
-              <div className="empty-icon">📱</div>
-              <h2 className="empty-title">No posts yet</h2>
-              <p className="empty-message">Be the first to share something amazing!</p>
-              <button 
-                onClick={handleCreatePost}
-                className="empty-button"
-              >
-                Create Your First Post
-              </button>
-            </div>
-          )}
-        </div>
-      </main>
-
-      {/* Bottom Navigation */}
-      <BottomNavbar onCreateClick={handleCreatePost} />
-      
-      {/* ✅ MODALS */}
-      <CreatePostModal 
-        isOpen={showCreateModal}
-        onClose={handleCloseCreateModal}
-        onPostCreated={handlePostCreated}
-      />
-      
-      <style jsx>{`
-        /* ✅ RESPONSIVE FEED CONTAINER */
-        .app-container {
-          min-height: 100vh;
-          background-color: #fafafa;
-        }
-
-        .main-content {
-          padding-top: 64px; /* Space for fixed navbar */
-          padding-bottom: 80px; /* Space for bottom navbar */
-          min-height: 100vh;
-        }
-
-        /* Stories Section */
-        .stories-container {
-          /* Mobile: Full width with padding */
-          padding: 0;
-          margin-bottom: 20px;
-        }
-
-        /* Refresh Button */
-        .refresh-container {
-          /* Mobile: Full width with padding */
-          padding: 0 16px;
-          margin-bottom: 16px;
-          text-align: center;
-        }
-
-        .refresh-button {
-          background: none;
-          border: none;
-          color: #6b7280;
-          font-size: 14px;
-          cursor: pointer;
-          padding: 8px 16px;
-          border-radius: 8px;
-          transition: all 0.2s ease;
-        }
-
-        .refresh-button:hover {
-          color: #374151;
-          background-color: #f3f4f6;
-        }
-
-        .refresh-button:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        /* Posts Container */
-        .posts-container {
-          /* Mobile: Full width with padding for posts */
-          padding: 0 16px;
-        }
-
-        /* Load More Section */
-        .load-more-container {
-          text-align: center;
-          padding: 32px 0;
-        }
-
-        .load-more-button {
-          background-color: #3b82f6;
-          color: white;
-          border: none;
-          padding: 12px 24px;
-          border-radius: 8px;
-          font-size: 14px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: background-color 0.2s ease;
-        }
-
-        .load-more-button:hover:not(:disabled) {
-          background-color: #2563eb;
-        }
-
-        .load-more-button:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        /* End of Feed */
-        .end-of-feed {
-          text-align: center;
-          padding: 40px 16px;
-        }
-
-        .end-title {
-          color: #374151;
-          font-size: 16px;
-          margin: 0 0 4px;
-        }
-
-        .end-subtitle {
-          color: #9ca3af;
-          font-size: 14px;
-          margin: 0;
-        }
-
-        /* Empty State */
-        .empty-state {
-          text-align: center;
-          padding: 60px 16px;
-        }
-
-        .empty-icon {
-          font-size: 4rem;
-          margin-bottom: 24px;
-        }
-
-        .empty-title {
-          font-size: 1.25rem;
-          font-weight: 600;
-          color: #111827;
-          margin: 0 0 8px;
-        }
-
-        .empty-message {
-          color: #6b7280;
-          margin: 0 0 32px;
-          line-height: 1.5;
-        }
-
-        .empty-button {
-          background-color: #3b82f6;
-          color: white;
-          border: none;
-          padding: 12px 24px;
-          border-radius: 8px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: background-color 0.2s ease;
-        }
-
-        .empty-button:hover {
-          background-color: #2563eb;
-        }
-
-        /* ✅ RESPONSIVE BREAKPOINTS */
-        
-        /* Tablet and up */
-        @media (min-width: 640px) {
-          .refresh-container,
-          .posts-container {
-            max-width: 500px;
-            margin-left: auto;
-            margin-right: auto;
-            padding-left: 0;
-            padding-right: 0;
-          }
-
-          .refresh-container {
-            margin-bottom: 20px;
-          }
-        }
-
-        /* Desktop and up */
-        @media (min-width: 1024px) {
-          .refresh-container,
-          .posts-container {
-            max-width: 600px;
-          }
-
-          .refresh-container {
-            margin-bottom: 24px;
-          }
-        }
-
-        /* Extra wide screens */
-        @media (min-width: 1280px) {
-          .main-content {
-            max-width: 1200px;
-            margin: 0 auto;
-          }
-        }
-      `}</style>
+      {renderContent()}
+      <BottomNavbar activeTab={activeTab} onTabChange={setActiveTab} />
     </div>
   );
-};
+}
 
 export default HomeFeed;

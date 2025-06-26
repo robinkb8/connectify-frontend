@@ -1,543 +1,267 @@
-// src/components/pages/HomeFeed/components/PostCard/PostCard.jsx - DEBUG VERSION WITH VISIBLE BUTTONS
-import React, { useState, useCallback } from 'react';
+// ===== REPLACE src/components/pages/HomeFeed/components/PostCard.jsx =====
+import React, { useState } from 'react';
+import { 
+  Heart, 
+  MessageCircle, 
+  Share2, 
+  MoreHorizontal, 
+  Bookmark
+} from "lucide-react";
+import { Button } from '../../../ui/Button/Button';
+import CommentsModal from '../../../modals/CommentsModal';
+import ShareModal from '../../../modals/ShareModal';
+import PostOptionsMenu from '../../../modals/PostOptionsMenu';
 
-// ✅ API Configuration
-const API_BASE_URL = 'http://127.0.0.1:8000/api';
-
-// ✅ SAFE DATA ACCESS HELPERS
-const safeGet = (obj, path, defaultValue = '') => {
-  return path.split('.').reduce((current, key) => {
-    return current && current[key] !== undefined ? current[key] : defaultValue;
-  }, obj);
-};
-
-const getAvatarUrl = (avatarPath) => {
-  if (!avatarPath || avatarPath === 'null' || avatarPath === null) {
-    return '/api/placeholder/40/40';
-  }
-  return avatarPath;
-};
-
-const PostCard = ({ post, onLike, onComment }) => {
-  // ✅ SAFE DATA EXTRACTION with fallbacks
-  const postData = {
-    id: post?.id || 0,
-    content: post?.content || '',
-    image: post?.image || null,
-    timestamp: post?.timestamp || 'Unknown time',
-    user: {
-      username: safeGet(post, 'user.username', 'Unknown User'),
-      avatar: getAvatarUrl(safeGet(post, 'user.avatar')),
-      verified: safeGet(post, 'user.verified', false)
-    },
-    likes: {
-      count: safeGet(post, 'likes.count', 0),
-      isLiked: safeGet(post, 'likes.isLiked', false)
-    },
-    comments: post?.comments || 0,
-    shares: post?.shares || 0
+// ✅ DJANGO API INTEGRATION - PostCard that works with your existing API
+function PostCard({ post }) {
+  // ✅ Map your Django API data to the new design
+  const user = {
+    name: post.author?.username || 'Unknown User',
+    username: post.author?.username || 'unknown',
+    avatar: post.author?.avatar || null
   };
 
-  console.log('🔍 PostCard received post:', post);
-  console.log('🔍 PostCard processed data:', postData);
+  const content = {
+    text: post.content || '',
+    images: post.image_url ? [post.image_url] : [] // Your API returns single image_url
+  };
 
-  const [isLikeAnimating, setIsLikeAnimating] = useState(false);
+  const stats = {
+    likes: post.total_likes || 0,
+    comments: post.total_comments || 0,
+    shares: post.total_shares || 0
+  };
+
+  const timestamp = post.time_since_posted || 'Unknown time';
+
+  // ✅ Component State
+  const [isLiked, setIsLiked] = useState(post.is_liked || false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [likesCount, setLikesCount] = useState(stats.likes);
   const [showComments, setShowComments] = useState(false);
-  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
-  const [newComment, setNewComment] = useState('');
-  const [comments, setComments] = useState([]);
-  const [localLikes, setLocalLikes] = useState(postData.likes);
+  const [showShare, setShowShare] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
 
-  // ✅ LIKE HANDLER - Connect to Django API
-  const handleLike = useCallback(async () => {
-    console.log('🔍 Like button clicked!', { postId: postData.id, isLiked: localLikes.isLiked });
-    setIsLikeAnimating(true);
-    
+  // ✅ DJANGO API INTEGRATION - Like/Unlike functionality
+  const handleLike = async () => {
     try {
-      const method = localLikes.isLiked ? 'DELETE' : 'POST';
-      const response = await fetch(`${API_BASE_URL}/posts/${postData.id}/like/`, {
+      const method = isLiked ? 'DELETE' : 'POST';
+      const response = await fetch(`http://127.0.0.1:8000/api/posts/${post.id}/like/`, {
         method: method,
         headers: {
           'Content-Type': 'application/json',
         }
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (response.ok) {
+        setIsLiked(!isLiked);
+        setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
       }
-
-      const data = await response.json();
-      console.log('🔍 Like API response:', data);
-      
-      // Update local state immediately for smooth UX
-      setLocalLikes({
-        count: data.total_likes || 0,
-        isLiked: data.is_liked || false
-      });
-
-      console.log(`✅ Like ${data.is_liked ? 'added' : 'removed'} successfully`);
-      
-      // Call parent component callback if provided
-      if (onLike) {
-        onLike(postData.id, data.is_liked, data.total_likes);
-      }
-      
     } catch (error) {
-      console.error('❌ Error toggling like:', error);
-      // Revert optimistic update on error
-      setLocalLikes(postData.likes);
-    } finally {
-      setTimeout(() => setIsLikeAnimating(false), 300);
+      console.error('Error toggling like:', error);
     }
-  }, [postData.id, localLikes.isLiked, onLike, postData.likes]);
+  };
 
-  // ✅ DOUBLE TAP TO LIKE  
-  const handleImageDoubleClick = useCallback(() => {
-    console.log('🔍 Image double clicked!');
-    if (!localLikes.isLiked) {
-      handleLike();
-    }
-  }, [localLikes.isLiked, handleLike]);
+  // ✅ Enhanced Image Rendering with Multiple Layout Support
+  const renderImages = () => {
+    if (!content.images || content.images.length === 0) return null;
 
-  // ✅ LOAD COMMENTS
-  const loadComments = useCallback(async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/posts/${postData.id}/comments/`);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+    const imageCount = content.images.length;
 
-      const data = await response.json();
-      const commentsData = Array.isArray(data) ? data : (data.results || []);
-      setComments(commentsData);
-      console.log(`✅ Loaded ${commentsData.length} comments`);
-      
-    } catch (error) {
-      console.error('❌ Error loading comments:', error);
-      setComments([]); // Set empty array on error
-    }
-  }, [postData.id]);
-
-  // ✅ TOGGLE COMMENTS SECTION
-  const handleToggleComments = useCallback(async () => {
-    console.log('🔍 Comment button clicked!');
-    if (!showComments) {
-      await loadComments();
-    }
-    setShowComments(!showComments);
-  }, [showComments, loadComments]);
-
-  // ✅ ADD NEW COMMENT
-  const handleAddComment = useCallback(async (e) => {
-    e.preventDefault();
-    
-    if (!newComment.trim() || isSubmittingComment) return;
-    
-    setIsSubmittingComment(true);
-    
-    try {
-      const response = await fetch(`${API_BASE_URL}/posts/${postData.id}/comments/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          content: newComment.trim()
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const newCommentData = await response.json();
-      
-      // Add new comment to local state
-      setComments(prev => [...prev, newCommentData]);
-      
-      // Clear input
-      setNewComment('');
-      
-      console.log('✅ Comment added successfully');
-      
-      // Call parent callback if provided
-      if (onComment) {
-        onComment(postData.id, newCommentData);
-      }
-      
-    } catch (error) {
-      console.error('❌ Error adding comment:', error);
-    } finally {
-      setIsSubmittingComment(false);
-    }
-  }, [newComment, isSubmittingComment, postData.id, onComment]);
-
-  const handleShare = useCallback(() => {
-    console.log(`📤 Share clicked for post ${postData.id}`);
-    // TODO: Implement share functionality
-  }, [postData.id]);
-
-  // ✅ HANDLE MISSING DATA GRACEFULLY
-  if (!post || !postData.id) {
-    console.log('🔍 PostCard: No post data, returning null');
-    return null;
-  }
-
-  return (
-    <div style={{
-      width: '100%',
-      maxWidth: '600px',
-      margin: '0 auto 20px',
-      backgroundColor: 'white',
-      borderRadius: '12px',
-      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-      overflow: 'hidden'
-    }}>
-      {/* DEBUG INFO */}
-      <div style={{
-        padding: '10px',
-        backgroundColor: '#f0f0f0',
-        fontSize: '12px',
-        color: '#666',
-        borderBottom: '1px solid #eee'
-      }}>
-        DEBUG: Post ID: {postData.id} | Likes: {localLikes.count} | Liked: {localLikes.isLiked ? 'Yes' : 'No'}
-      </div>
-
-      {/* ✅ HEADER */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '16px 20px'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <img 
-            src={postData.user.avatar} 
-            alt={`${postData.user.username}'s avatar`}
-            style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '50%',
-              objectFit: 'cover',
-              border: '2px solid #f3f4f6'
-            }}
-            onError={(e) => {
-              e.target.src = '/api/placeholder/40/40';
-            }}
-          />
-          <div>
-            <h3 style={{
-              fontSize: '14px',
-              fontWeight: '600',
-              color: '#111827',
-              margin: '0'
-            }}>
-              {postData.user.username}
-            </h3>
-            <time style={{
-              fontSize: '12px',
-              color: '#6b7280',
-              marginTop: '2px',
-              display: 'block'
-            }}>
-              {postData.timestamp}
-            </time>
-          </div>
-        </div>
-        <button style={{
-          background: 'none',
-          border: 'none',
-          color: '#6b7280',
-          cursor: 'pointer',
-          padding: '8px',
-          borderRadius: '50%'
-        }}>
-          ⋯
-        </button>
-      </div>
-
-      {/* ✅ CONTENT */}
-      {postData.content && (
-        <div style={{ padding: '0 20px 16px' }}>
-          <p style={{
-            margin: '0',
-            fontSize: '14px',
-            lineHeight: '1.5',
-            color: '#374151'
-          }}>
-            {postData.content}
-          </p>
-        </div>
-      )}
-
-      {/* ✅ IMAGE with double-tap to like */}
-      {postData.image && (
-        <div style={{ position: 'relative', cursor: 'pointer' }} onDoubleClick={handleImageDoubleClick}>
-          <img 
-            src={postData.image} 
+    if (imageCount === 1) {
+      return (
+        <div className="rounded-xl overflow-hidden">
+          <img
+            src={content.images[0]}
             alt="Post content"
-            style={{
-              width: '100%',
-              height: 'auto',
-              display: 'block',
-              objectFit: 'cover',
-              maxHeight: '600px'
-            }}
+            className="w-full h-auto max-h-96 object-cover cursor-pointer hover:opacity-95 transition-opacity"
             onError={(e) => {
               e.target.src = '/api/placeholder/600/400';
             }}
           />
-          
-          {/* Double-tap heart animation */}
-          {isLikeAnimating && localLikes.isLiked && (
-            <div style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              pointerEvents: 'none',
-              zIndex: 10,
-              fontSize: '80px',
-              animation: 'heartPop 0.6s ease-out'
-            }}>
-              ❤️
-            </div>
-          )}
         </div>
-      )}
+      );
+    }
 
-      {/* ✅ ACTIONS - SIMPLIFIED AND VERY VISIBLE */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '16px 20px',
-        borderTop: '1px solid #f0f0f0',
-        backgroundColor: '#fafafa'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          {/* LIKE BUTTON - VERY VISIBLE */}
-          <button 
-            onClick={handleLike}
-            disabled={isLikeAnimating}
-            style={{
-              background: localLikes.isLiked ? '#ef4444' : '#374151',
-              color: 'white',
-              border: 'none',
-              padding: '10px 16px',
-              borderRadius: '20px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '600',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            {localLikes.isLiked ? '❤️' : '🤍'} {localLikes.count} Likes
-          </button>
-          
-          {/* COMMENT BUTTON - VERY VISIBLE */}
-          <button 
-            onClick={handleToggleComments}
-            style={{
-              background: '#3b82f6',
-              color: 'white',
-              border: 'none',
-              padding: '10px 16px',
-              borderRadius: '20px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '600',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}
-          >
-            💬 {postData.comments} Comments
-          </button>
-          
-          {/* SHARE BUTTON - VERY VISIBLE */}
-          <button 
-            onClick={handleShare}
-            style={{
-              background: '#10b981',
-              color: 'white',
-              border: 'none',
-              padding: '10px 16px',
-              borderRadius: '20px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '600',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}
-          >
-            📤 Share
-          </button>
+    if (imageCount === 2) {
+      return (
+        <div className="grid grid-cols-2 gap-2 rounded-xl overflow-hidden">
+          {content.images.map((image, index) => (
+            <img
+              key={index}
+              src={image}
+              alt={`Post content ${index + 1}`}
+              className="w-full h-48 object-cover cursor-pointer hover:opacity-95 transition-opacity"
+              onError={(e) => {
+                e.target.src = '/api/placeholder/300/200';
+              }}
+            />
+          ))}
         </div>
-      </div>
+      );
+    }
 
-      {/* ✅ ENGAGEMENT STATS */}
-      <div style={{ padding: '0 20px 16px' }}>
-        {localLikes.count > 0 && (
-          <p style={{
-            margin: '0 0 4px',
-            fontSize: '14px',
-            fontWeight: '600',
-            color: '#111827'
-          }}>
-            {localLikes.count.toLocaleString()} {localLikes.count === 1 ? 'like' : 'likes'}
-          </p>
-        )}
+    if (imageCount === 3) {
+      return (
+        <div className="grid grid-cols-2 gap-2 rounded-xl overflow-hidden">
+          <img
+            src={content.images[0]}
+            alt="Post content 1"
+            className="w-full h-96 object-cover cursor-pointer hover:opacity-95 transition-opacity"
+          />
+          <div className="grid grid-rows-2 gap-2">
+            <img
+              src={content.images[1]}
+              alt="Post content 2"
+              className="w-full h-47 object-cover cursor-pointer hover:opacity-95 transition-opacity"
+            />
+            <img
+              src={content.images[2]}
+              alt="Post content 3"
+              className="w-full h-47 object-cover cursor-pointer hover:opacity-95 transition-opacity"
+            />
+          </div>
+        </div>
+      );
+    }
+
+    if (imageCount >= 4) {
+      return (
+        <div className="grid grid-cols-2 gap-2 rounded-xl overflow-hidden">
+          {content.images.slice(0, 3).map((image, index) => (
+            <img
+              key={index}
+              src={image}
+              alt={`Post content ${index + 1}`}
+              className={`w-full object-cover cursor-pointer hover:opacity-95 transition-opacity ${
+                index === 0 ? "h-96 row-span-2" : "h-47"
+              }`}
+            />
+          ))}
+          <div className="relative">
+            <img
+              src={content.images[3]}
+              alt="Post content 4"
+              className="w-full h-47 object-cover cursor-pointer"
+            />
+            {imageCount > 4 && (
+              <div className="absolute inset-0 bg-black/60 flex items-center justify-center cursor-pointer hover:bg-black/70 transition-colors">
+                <span className="text-white text-xl font-bold">+{imageCount - 4}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  return (
+    <>
+      {/* ✅ NEW DESIGN - Glassmorphism Card */}
+      <div className="bg-card/50 backdrop-blur-sm border border-border rounded-2xl p-6 space-y-4">
         
-        {postData.comments > 0 && (
-          <button 
-            onClick={handleToggleComments}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#6b7280',
-              cursor: 'pointer',
-              fontSize: '14px',
-              padding: '0'
-            }}
-          >
-            View all {postData.comments} comments
-          </button>
-        )}
-      </div>
-
-      {/* ✅ COMMENTS SECTION */}
-      {showComments && (
-        <div style={{
-          borderTop: '1px solid #f3f4f6',
-          padding: '16px 20px',
-          backgroundColor: '#f9fafb'
-        }}>
-          {/* Comments List */}
-          <div style={{
-            maxHeight: '300px',
-            overflowY: 'auto',
-            marginBottom: '16px'
-          }}>
-            {comments.map(comment => {
-              // Safe comment data extraction
-              const commentData = {
-                id: comment?.id || Math.random(),
-                content: comment?.content || '',
-                author: {
-                  username: safeGet(comment, 'author.username', 'Unknown User'),
-                  avatar: getAvatarUrl(safeGet(comment, 'author.avatar'))
-                },
-                time: comment?.time_since_posted || 'Unknown time'
-              };
-
-              return (
-                <div key={commentData.id} style={{
-                  display: 'flex',
-                  gap: '12px',
-                  marginBottom: '12px',
-                  padding: '8px',
-                  backgroundColor: 'white',
-                  borderRadius: '8px'
-                }}>
-                  <img 
-                    src={commentData.author.avatar} 
-                    alt={commentData.author.username}
-                    style={{
-                      width: '24px',
-                      height: '24px',
-                      borderRadius: '50%',
-                      objectFit: 'cover'
-                    }}
-                    onError={(e) => {
-                      e.target.src = '/api/placeholder/24/24';
-                    }}
-                  />
-                  <div style={{ flex: 1 }}>
-                    <p style={{ margin: '0', fontSize: '14px' }}>
-                      <strong>{commentData.author.username}</strong> {commentData.content}
-                    </p>
-                    <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#6b7280' }}>
-                      {commentData.time}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
+        {/* ✅ Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
+              <span className="text-white font-bold text-lg">
+                {user.name.charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <div>
+              <h3 className="font-semibold">{user.name}</h3>
+              <p className="text-sm text-muted-foreground">
+                @{user.username} • {timestamp}
+              </p>
+            </div>
           </div>
 
-          {/* Add Comment Form */}
-          <form onSubmit={handleAddComment} style={{
-            display: 'flex',
-            gap: '12px',
-            alignItems: 'center',
-            padding: '12px',
-            backgroundColor: 'white',
-            borderRadius: '8px'
-          }}>
-            <img 
-              src="/api/placeholder/24/24" 
-              alt="Your avatar"
-              style={{
-                width: '24px',
-                height: '24px',
-                borderRadius: '50%',
-                objectFit: 'cover'
-              }}
+          <div className="relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowOptions(!showOptions)}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <MoreHorizontal className="h-5 w-5" />
+            </Button>
+            <PostOptionsMenu
+              isOpen={showOptions}
+              onClose={() => setShowOptions(false)}
+              isOwnPost={user.username === "you"} // Update this based on your auth system
             />
-            <input
-              type="text"
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Add a comment..."
-              disabled={isSubmittingComment}
-              style={{
-                flex: 1,
-                border: '1px solid #e5e7eb',
-                padding: '8px 12px',
-                borderRadius: '20px',
-                fontSize: '14px',
-                outline: 'none'
-              }}
-              maxLength={500}
-            />
-            {newComment.trim() && (
-              <button
-                type="submit"
-                disabled={isSubmittingComment}
-                style={{
-                  background: '#3b82f6',
-                  color: 'white',
-                  border: 'none',
-                  padding: '8px 16px',
-                  borderRadius: '20px',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  cursor: 'pointer'
-                }}
-              >
-                {isSubmittingComment ? 'Posting...' : 'Post'}
-              </button>
-            )}
-          </form>
+          </div>
         </div>
-      )}
 
-      <style>{`
-        @keyframes heartPop {
-          0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
-          50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
-          100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
-        }
-      `}</style>
-    </div>
+        {/* ✅ Content */}
+        {content.text && <p className="leading-relaxed">{content.text}</p>}
+
+        {/* ✅ Images */}
+        {renderImages()}
+
+        {/* ✅ Actions */}
+        <div className="flex items-center justify-between pt-4 border-t border-border">
+          <div className="flex items-center space-x-6">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLike}
+              className={`flex items-center space-x-2 ${
+                isLiked ? "text-red-500 hover:text-red-400" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Heart className={`h-5 w-5 ${isLiked ? "fill-current" : ""}`} />
+              <span>{likesCount}</span>
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowComments(true)}
+              className="flex items-center space-x-2 text-muted-foreground hover:text-foreground"
+            >
+              <MessageCircle className="h-5 w-5" />
+              <span>{stats.comments}</span>
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowShare(true)}
+              className="flex items-center space-x-2 text-muted-foreground hover:text-foreground"
+            >
+              <Share2 className="h-5 w-5" />
+              <span>{stats.shares}</span>
+            </Button>
+          </div>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsSaved(!isSaved)}
+            className={`${isSaved ? "text-purple-500 hover:text-purple-400" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            <Bookmark className={`h-5 w-5 ${isSaved ? "fill-current" : ""}`} />
+          </Button>
+        </div>
+      </div>
+
+      {/* ✅ Modals */}
+      <CommentsModal 
+        isOpen={showComments} 
+        onClose={() => setShowComments(false)} 
+        postId={post.id}
+      />
+
+      <ShareModal
+        isOpen={showShare}
+        onClose={() => setShowShare(false)}
+        postContent={content.text || "Check out this post on Connectify!"}
+      />
+    </>
   );
-};
+}
 
 export default PostCard;

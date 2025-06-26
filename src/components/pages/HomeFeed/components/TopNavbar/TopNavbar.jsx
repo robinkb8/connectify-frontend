@@ -1,61 +1,51 @@
-import React, { useState, useCallback } from 'react';
+// ===== src/components/pages/HomeFeed/components/TopNavbar.jsx =====
+import React, { useState } from 'react';
+import { Menu, Bell } from "lucide-react";
+import { Button } from '../../../ui/Button/Button';
+import Sidebar from './Sidebar';
 
+function TopNavbar() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-// ✅ OPTIMIZED: Static icons outside component (no recreation per render)
-const ICONS = {
-  menu: (
-    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-    </svg>
-  ),
-  chat: (
-    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-    </svg>
-  )
-};
+  return (
+    <>
+      <nav className="fixed top-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-b border-border z-30">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center space-x-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSidebarOpen(true)}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <Menu className="h-6 w-6" />
+            </Button>
 
-const TopNavbar = () => {
-  // Simple click handlers for now (we'll explain why useCallback later when you see it work)
-  const handleMenuClick = useCallback(() => {
-    console.log('Menu button clicked!');
-  }, []);
+            <h1 className="text-xl font-bold">
+              <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                Connectify
+              </span>
+            </h1>
+          </div>
 
-  const handleChatClick = useCallback(() => {
-    console.log('Chat button clicked!');
-  }, []);
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground hover:text-foreground relative"
+            >
+              <Bell className="h-5 w-5" />
+              <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                3
+              </span>
+            </Button>
+          </div>
+        </div>
+      </nav>
 
-   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-gray-200 px-4 py-3">
-      <div className="flex items-center justify-between">
-        {/* Left: Menu Button */}
-        <button 
-          onClick={handleMenuClick}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-          aria-label="Menu"
-        >
-          {ICONS.menu}
-        </button>
-        
-        {/* Center: Connectify Logo */}
-        <h1 className="text-xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
-          Connectify
-        </h1>
-        
-        {/* Right: Chat Button with Notification Badge */}
-        <button 
-          onClick={handleChatClick}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 relative"
-          aria-label="Messages"
-        >
-          {ICONS.chat}
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-            3
-          </span>
-        </button>
-      </div>
-    </header>
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+    </>
   );
-};
+}
 
 export default TopNavbar;
