@@ -1,8 +1,8 @@
 // ===== src/components/pages/HomeFeed/components/TopNavbar.jsx =====
 import React, { useState } from 'react';
 import { Menu, Bell } from "lucide-react";
-import { Button } from '../../../ui/Button/Button';
-import Sidebar from './Sidebar';
+import { Button } from '../../../../ui/Button/Button';
+import Sidebar from '../Sidebar';
 
 function TopNavbar() {
   const [sidebarOpen, setSidebarOpen] = useState(false);

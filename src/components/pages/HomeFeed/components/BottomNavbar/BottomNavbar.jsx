@@ -2,8 +2,8 @@
 // ===== src/components/pages/HomeFeed/components/BottomNavbar.jsx =====
 import React, { useState } from 'react';
 import { Home, Search, Plus, MessageCircle, User } from "lucide-react";
-import { Button } from '../../../ui/Button/Button';
-import PostCreationModal from '../../../modals/PostCreationModal';
+import { Button } from '../../../../ui/Button/Button';
+import PostCreationModal from '../../../../modals/PostCreationModal';
 
 function BottomNavbar({ activeTab, onTabChange }) {
   const [showCreateModal, setShowCreateModal] = useState(false);

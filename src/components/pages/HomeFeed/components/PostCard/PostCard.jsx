@@ -7,10 +7,10 @@ import {
   MoreHorizontal, 
   Bookmark
 } from "lucide-react";
-import { Button } from '../../../ui/Button/Button';
-import CommentsModal from '../../../modals/CommentsModal';
-import ShareModal from '../../../modals/ShareModal';
-import PostOptionsMenu from '../../../modals/PostOptionsMenu';
+import { Button } from '../../../../ui/Button/Button';
+import CommentsModal from '../../../../modals/CommentsModal';
+import ShareModal from '../../../../modals/ShareModal';
+import PostOptionsMenu from '../../../../modals/PostOptionsMenu';
 
 // ✅ DJANGO API INTEGRATION - PostCard that works with your existing API
 function PostCard({ post }) {
