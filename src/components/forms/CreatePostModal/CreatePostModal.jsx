@@ -1,6 +1,6 @@
- 
-// frontend/src/components/forms/CreatePostModal/CreatePostModal.jsx
+// ===== src/components/forms/CreatePostModal/CreatePostModal.jsx =====
 import React, { useState, useCallback } from 'react';
+import { X, Image, Smile, MapPin } from 'lucide-react';
 
 const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
   // ✅ STATE FOR FORM DATA
@@ -76,7 +76,9 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
       
       // Close modal and refresh feed
       onClose();
-      onPostCreated(newPost);
+      if (onPostCreated) {
+        onPostCreated(newPost);
+      }
 
     } catch (err) {
       console.error('❌ Failed to create post:', err);
@@ -103,110 +105,137 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl w-full max-w-lg max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-700 animate-in zoom-in-95 duration-200">
         
         {/* ✅ MODAL HEADER */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
           <button
             onClick={handleClose}
             disabled={isSubmitting}
-            className="text-gray-500 hover:text-gray-700 disabled:opacity-50"
+            className="flex items-center space-x-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 disabled:opacity-50 transition-colors duration-200 font-medium"
           >
-            Cancel
+            <X className="w-5 h-5" />
+            <span>Cancel</span>
           </button>
           
-          <h2 className="text-lg font-semibold text-gray-900">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
             Create Post
           </h2>
           
           <button
             onClick={handleSubmit}
             disabled={isSubmitting || (!content.trim() && !image)}
-            className="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-2 rounded-full font-semibold disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-200 shadow-lg"
           >
-            {isSubmitting ? 'Posting...' : 'Post'}
+            {isSubmitting ? (
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <span>Posting...</span>
+              </div>
+            ) : (
+              'Post'
+            )}
           </button>
         </div>
 
         {/* ✅ MODAL CONTENT */}
-        <div className="p-4 max-h-[calc(90vh-120px)] overflow-y-auto">
+        <div className="p-6 max-h-[calc(90vh-120px)] overflow-y-auto bg-white dark:bg-gray-900">
           
           {/* Error Message */}
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-              <p className="text-red-600 text-sm">{error}</p>
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-6">
+              <div className="flex items-center space-x-2">
+                <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                  <X className="w-3 h-3 text-white" />
+                </div>
+                <p className="text-red-700 dark:text-red-300 text-sm font-medium">{error}</p>
+              </div>
             </div>
           )}
 
           {/* ✅ TEXT CONTENT INPUT */}
-          <div className="mb-4">
+          <div className="mb-6">
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="What's on your mind?"
-              className="w-full p-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              rows={4}
-              maxLength={2200}
+              className="w-full min-h-[120px] p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-200"
               disabled={isSubmitting}
+              maxLength={2200}
             />
-            <div className="text-right text-xs text-gray-500 mt-1">
-              {content.length}/2200
+            
+            {/* Character Count */}
+            <div className="flex justify-between items-center mt-2">
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                {content.length > 2000 && (
+                  <span className={content.length > 2200 ? 'text-red-500' : 'text-yellow-500'}>
+                    {content.length}/2200
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* ✅ IMAGE UPLOAD SECTION */}
-          <div className="mb-4">
-            {/* Image Preview */}
-            {imagePreview && (
-              <div className="relative mb-4">
-                <img 
-                  src={imagePreview} 
-                  alt="Preview" 
-                  className="w-full rounded-lg max-h-64 object-cover"
-                />
-                <button
-                  onClick={removeImage}
-                  disabled={isSubmitting}
-                  className="absolute top-2 right-2 bg-black bg-opacity-50 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-opacity-70 disabled:opacity-50"
-                >
-                  ✕
-                </button>
-              </div>
-            )}
+          {/* ✅ IMAGE SELECTION */}
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImageChange}
+            className="hidden"
+            id="image-upload"
+            disabled={isSubmitting}
+          />
 
-            {/* File Input */}
-            {!imagePreview && (
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-purple-400 transition-colors">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  disabled={isSubmitting}
-                  className="hidden"
-                  id="image-upload"
-                />
-                <label 
-                  htmlFor="image-upload" 
-                  className="cursor-pointer block"
-                >
-                  <div className="text-gray-400 mb-2">
-                    <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                  </div>
-                  <p className="text-gray-600 font-medium">Click to add photo</p>
-                  <p className="text-gray-400 text-sm">PNG, JPG up to 10MB</p>
-                </label>
-              </div>
-            )}
-          </div>
+          {/* Image Preview */}
+          {imagePreview && (
+            <div className="relative mb-6">
+              <img
+                src={imagePreview}
+                alt="Preview"
+                className="w-full max-h-80 object-cover rounded-xl border border-gray-200 dark:border-gray-600"
+              />
+              <button
+                onClick={removeImage}
+                disabled={isSubmitting}
+                className="absolute top-3 right-3 bg-black/70 hover:bg-black/80 text-white p-2 rounded-full transition-colors duration-200 disabled:opacity-50"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
 
-          {/* ✅ POST OPTIONS (Future features) */}
-          <div className="border-t border-gray-200 pt-4">
-            <p className="text-gray-500 text-sm text-center">
-              📱 More options coming soon: Location, Tags, etc.
-            </p>
+          {/* ✅ ACTIONS BAR */}
+          <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex items-center space-x-2">
+              <label
+                htmlFor="image-upload"
+                className="flex items-center space-x-2 px-4 py-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 cursor-pointer text-gray-700 dark:text-gray-300"
+              >
+                <Image className="h-5 w-5 text-purple-600" />
+                <span className="font-medium">Photo</span>
+              </label>
+              
+              <button
+                disabled={isSubmitting}
+                className="flex items-center space-x-2 px-4 py-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 text-gray-700 dark:text-gray-300"
+              >
+                <Smile className="h-5 w-5 text-yellow-500" />
+                <span className="font-medium">Feeling</span>
+              </button>
+              
+              <button
+                disabled={isSubmitting}
+                className="flex items-center space-x-2 px-4 py-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 text-gray-700 dark:text-gray-300"
+              >
+                <MapPin className="h-5 w-5 text-green-500" />
+                <span className="font-medium">Location</span>
+              </button>
+            </div>
+
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              {(!content.trim() && !image) ? "Add content to post" : "Ready to share!"}
+            </div>
           </div>
         </div>
       </div>

@@ -1,170 +1,109 @@
-// src/components/forms/LoginForm/LoginForm.jsx
+// ===== src/components/forms/LoginForm/LoginForm.jsx - SYNTAX FIXED =====
 import React, { useState, useCallback, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useFormValidation } from '../../../hooks/useFormValidation';
 import { FORM_STATES } from '../../../utils/constants/validation';
 import Input from '../../ui/Input/Input';
+import { Button } from '../../ui/Button/Button';
+import { X, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { useNavigate } from 'react-router-dom';
 
-// ✅ DJANGO API CONFIGURATION
 const DJANGO_API_CONFIG = {
   baseURL: 'http://127.0.0.1:8000',
   endpoints: {
     login: '/api/auth/login/',
-    checkEmail: '/api/auth/check-email/',
-    googleAuth: '/api/auth/google/'
+    checkEmail: '/api/auth/check-email/'
   },
   requestConfig: {
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json'
-    }
+    },
+    credentials: 'include'
   }
 };
 
-// ✅ OPTIMIZED: Complete login form configuration (static data)
 const LOGIN_FORM_CONFIG = {
-  // Initial form values
   initialValues: {
     email: '',
     password: ''
   },
-  
-  // Mock data for demo purposes (keeping Google auth mock for now)
-  mockData: {
-    googleUser: {
-      email: 'user@gmail.com',
-      name: 'John Doe',
-      picture: 'https://example.com/photo.jpg',
-      googleId: '1234567890'
-    }
-  },
-  
-  // Timing configuration for various operations
   timing: {
-    successDisplayTime: 1500,
-    googleAuthDelay: 2000,
-    databaseCheckDelay: 1000,
-    errorDisplayTime: 3000
+    errorDisplayTime: 3000,
+    successDisplayTime: 2000
   },
-  
-  // User interface messages
   messages: {
-    // Success messages
-    emailLoginSuccess: 'Login successful!',
-    googleLoginSuccess: 'Google login successful! User was registered.',
-    welcomeBack: 'Welcome back!',
-    loginSuccessful: 'Login successful!',
-    
-    // Error messages
-    accountNotFound: 'Account not found. Please register first using the Sign Up form.',
-    invalidCredentials: 'Invalid email or password. Please try again.',
-    loginFailed: 'Login failed. Please try again.',
+    loginSuccess: 'Login successful! Redirecting...',
+    loginFailed: 'Invalid email or password. Please try again.',
+    accountNotFound: 'No account found with this email. Please sign up first.',
+    googleAuthStart: 'Starting Google authentication...',
+    googleAuthSuccess: 'Google authentication successful!',
+    googleLoginSuccess: 'Logged in with Google successfully!',
     networkError: 'Network error. Please check your connection.',
-    serverError: 'Server error. Please try again later.',
-    
-    // Google Auth messages
-    googleAuthStart: 'Initiating Google Sign-In...',
-    googleAuthSuccess: 'Google OAuth successful:',
-    databaseCheck: 'Checking user registration...',
-    
-    // Loading messages
-    signingIn: 'Signing you in...',
-    checkingAccount: 'Checking Account...',
-    processing: 'Processing...',
-    
-    // UI messages
-    forgotPassword: 'Forgot your password?',
-    noAccount: "Don't have an account?",
-    signUp: 'Sign Up',
-    continueWithGoogle: 'Continue with Google',
-    orDivider: 'or'
+    serverError: 'Server error. Please try again later.'
   }
 };
 
-// ✅ REAL DJANGO API UTILITY FUNCTIONS
 const LOGIN_FORM_UTILS = {
-  // ✅ REAL DJANGO API CALL: Email/Password Login
-  loginUser: async (credentials) => {
-    try {
-      console.log('Sending login data to Django:', credentials);
-      
-      const response = await fetch(`${DJANGO_API_CONFIG.baseURL}${DJANGO_API_CONFIG.endpoints.login}`, {
-        method: 'POST',
-        ...DJANGO_API_CONFIG.requestConfig,
-        body: JSON.stringify({
-          email: credentials.email,
-          password: credentials.password
-        })
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        console.log('Django login successful:', data);
-        return { 
-          success: true, 
-          data,
-          message: data.message || LOGIN_FORM_CONFIG.messages.emailLoginSuccess,
-          user: data.user
-        };
-      } else {
-        console.error('Django login failed:', data);
-        return { 
-          success: false, 
-          error: data.message || LOGIN_FORM_CONFIG.messages.invalidCredentials 
-        };
-      }
-    } catch (error) {
-      console.error('Login network error:', error);
-      return { 
-        success: false, 
-        error: LOGIN_FORM_CONFIG.messages.networkError 
-      };
-    }
+  makeApiCall: async (endpoint, data = null) => {
+    const url = `${DJANGO_API_CONFIG.baseURL}${endpoint}`;
+    const config = {
+      method: data ? 'POST' : 'GET',
+      ...DJANGO_API_CONFIG.requestConfig,
+      ...(data && { body: JSON.stringify(data) })
+    };
+
+    const response = await fetch(url, config);
+    const result = await response.json();
+    
+    return {
+      success: response.ok,
+      data: result,
+      error: response.ok ? null : result.message || `HTTP ${response.status}`
+    };
   },
-  
-  // Mock Google OAuth (keeping for demo - would be replaced with real OAuth)
-  simulateGoogleAuth: () => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(LOGIN_FORM_CONFIG.mockData.googleUser);
-      }, LOGIN_FORM_CONFIG.timing.googleAuthDelay);
-    });
+
+  simulateGoogleAuth: async () => {
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    return {
+      email: 'user@example.com',
+      name: 'John Doe',
+      avatar: 'https://example.com/avatar.jpg'
+    };
   },
-  
-  // ✅ REAL DJANGO API CALL: Check if email exists in database
+
   checkEmailExists: async (email) => {
     try {
-      const response = await fetch(`${DJANGO_API_CONFIG.baseURL}${DJANGO_API_CONFIG.endpoints.checkEmail}`, {
-        method: 'POST',
-        ...DJANGO_API_CONFIG.requestConfig,
-        body: JSON.stringify({ email })
-      });
-      
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('Email check error:', error);
-      return { available: true, message: 'Could not check email' };
+      const result = await LOGIN_FORM_UTILS.makeApiCall(
+        DJANGO_API_CONFIG.endpoints.checkEmail,
+        { email }
+      );
+      return { available: result.success ? result.data.available : true };
+    } catch {
+      return { available: true };
     }
   },
-  
-  // Handle successful login completion
+
   handleLoginSuccess: (onClose, reset, setFormState, setGoogleAuthState, message) => {
+    console.log('✅ Login successful');
+    
+    if (setFormState) setFormState(FORM_STATES.SUCCESS);
+    if (setGoogleAuthState) setGoogleAuthState(FORM_STATES.SUCCESS);
+    
     setTimeout(() => {
       onClose();
-      setFormState(FORM_STATES.IDLE);
+      if (reset) reset();
+      if (setFormState) setFormState(FORM_STATES.IDLE);
       if (setGoogleAuthState) setGoogleAuthState(FORM_STATES.IDLE);
-      reset();
-      console.log(message);
+      alert(message);
     }, LOGIN_FORM_CONFIG.timing.successDisplayTime);
   },
-  
-  // Handle login error
+
   handleLoginError: (setFormState, setGoogleAuthState, message) => {
-    console.error(message);
     if (setFormState) setFormState(FORM_STATES.ERROR);
     if (setGoogleAuthState) setGoogleAuthState(FORM_STATES.ERROR);
+    
+    console.error('❌ Login failed:', message);
+    alert(message);
     
     setTimeout(() => {
       if (setFormState) setFormState(FORM_STATES.IDLE);
@@ -173,38 +112,57 @@ const LOGIN_FORM_UTILS = {
   }
 };
 
-const LoginForm = ({ isOpen, onClose, onSwitchToSignUp }) => {
-  // ✅ State management
+function LoginForm({ isOpen, onClose, onSwitchToSignUp }) {
   const [formState, setFormState] = useState(FORM_STATES.IDLE);
   const [googleAuthState, setGoogleAuthState] = useState(FORM_STATES.IDLE);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
-  
-  // ✅ Form validation
-  const { values, validation, touched, isValid, handleChange, handleBlur, reset } = 
-    useFormValidation(LOGIN_FORM_CONFIG.initialValues);
 
-  // ✅ REAL DJANGO LOGIN: Email/password login
-  const handleSubmit = useCallback(async () => {
-    if (!isValid) return;
+  const { values, errors, touched, isValid, handleChange, handleBlur, reset } = useFormValidation(
+    LOGIN_FORM_CONFIG.initialValues
+  );
+
+  const handleInputChange = useCallback((fieldName) => (e) => {
+    const value = e.target.value;
+    handleChange(fieldName, value);
+  }, [handleChange]);
+
+  const handleInputBlur = useCallback((fieldName) => () => {
+    handleBlur(fieldName);
+  }, [handleBlur]);
+
+  const handleSubmit = useCallback(async (e) => {
+    e.preventDefault();
+    
+    if (!isValid) {
+      alert('Please fill in all fields correctly.');
+      return;
+    }
 
     setFormState(FORM_STATES.SUBMITTING);
 
     try {
-      // ✅ CALL REAL DJANGO API
-      const result = await LOGIN_FORM_UTILS.loginUser(values);
+      console.log('🔄 Attempting login with Django API...');
       
-      if (result.success) {
-        setFormState(FORM_STATES.SUCCESS);
-        console.log('User logged in successfully!', result.user);
+      const result = await LOGIN_FORM_UTILS.makeApiCall(
+        DJANGO_API_CONFIG.endpoints.login,
+        {
+          email: values.email,
+          password: values.password
+        }
+      );
 
-          navigate('/home');
+      if (result.success) {
+        console.log('✅ Login successful:', result.data);
+        
+        navigate('/home');
         
         LOGIN_FORM_UTILS.handleLoginSuccess(
           onClose, 
           reset, 
           setFormState, 
           null, 
-          result.message
+          result.data.message || LOGIN_FORM_CONFIG.messages.loginSuccess
         );
       } else {
         setFormState(FORM_STATES.ERROR);
@@ -223,24 +181,23 @@ const LoginForm = ({ isOpen, onClose, onSwitchToSignUp }) => {
         setFormState(FORM_STATES.IDLE);
       }, 3000);
     }
-  }, [isValid, values, onClose, reset]);
+  }, [isValid, values, onClose, reset, navigate]);
 
-  // ✅ Google Sign-In (keeping mock for demo - would integrate real OAuth)
   const handleGoogleSignIn = useCallback(async () => {
     setGoogleAuthState(FORM_STATES.SUBMITTING);
     console.log(LOGIN_FORM_CONFIG.messages.googleAuthStart);
 
     try {
-      // Step 1: Get Google OAuth user data (mock)
       const googleUser = await LOGIN_FORM_UTILS.simulateGoogleAuth();
       console.log(LOGIN_FORM_CONFIG.messages.googleAuthSuccess, googleUser);
 
-      // Step 2: Check if user exists in Django database
       const emailCheck = await LOGIN_FORM_UTILS.checkEmailExists(googleUser.email);
 
       if (!emailCheck.available) {
-        // User exists in Django - allow login
         setGoogleAuthState(FORM_STATES.SUCCESS);
+        
+        navigate('/home');
+        
         LOGIN_FORM_UTILS.handleLoginSuccess(
           onClose, 
           reset, 
@@ -249,7 +206,6 @@ const LoginForm = ({ isOpen, onClose, onSwitchToSignUp }) => {
           LOGIN_FORM_CONFIG.messages.googleLoginSuccess
         );
       } else {
-        // User not found in Django - show error and suggest signup
         setGoogleAuthState(FORM_STATES.ERROR);
         alert(LOGIN_FORM_CONFIG.messages.accountNotFound);
         
@@ -264,14 +220,12 @@ const LoginForm = ({ isOpen, onClose, onSwitchToSignUp }) => {
         LOGIN_FORM_CONFIG.messages.loginFailed
       );
     }
-  }, [onClose, reset]);
+  }, [onClose, reset, navigate]);
 
-  // Handle modal close
   const handleClose = useCallback((e) => {
     if (e.target === e.currentTarget) onClose();
   }, [onClose]);
 
-  // Handle escape key
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === 'Escape') onClose();
@@ -291,202 +245,155 @@ const LoginForm = ({ isOpen, onClose, onSwitchToSignUp }) => {
   if (!isOpen) return null;
 
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm"
-      onClick={handleClose}
-    >
-      <div 
-        className="relative w-full max-w-md bg-white bg-opacity-10 backdrop-blur-md border border-white border-opacity-20 rounded-2xl shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="p-6 border-b border-white border-opacity-20">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-white" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-              {LOGIN_FORM_CONFIG.messages.welcomeBack}
-            </h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} />
+
+      <div className="relative w-full max-w-md">
+        <div className="relative bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 rounded-3xl border border-purple-500/20 shadow-2xl backdrop-blur-xl">
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-pink-500/10 rounded-3xl" />
+
+          <div className="relative p-8">
             <button
               onClick={onClose}
-              className="text-white hover:text-gray-300 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 rounded-lg p-1"
-              aria-label="Close modal"
+              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-slate-800/50 hover:bg-slate-700/50 text-gray-400 hover:text-white transition-all duration-200"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <X className="w-4 h-4" />
             </button>
-          </div>
-          <p className="text-white text-opacity-80 mt-2">Sign in to your Connectify account</p>
-        </div>
 
-        {/* Form */}
-        <div className="p-6 space-y-4">
-          {/* Google Sign-In Button */}
-          <button
-            onClick={handleGoogleSignIn}
-            disabled={formState === FORM_STATES.SUBMITTING || googleAuthState === FORM_STATES.SUBMITTING}
-            className={`w-full font-semibold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 flex items-center justify-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed ${
-              googleAuthState === FORM_STATES.ERROR 
-                ? 'bg-red-100 hover:bg-red-50 text-red-700 border border-red-300'
-                : googleAuthState === FORM_STATES.SUCCESS
-                ? 'bg-green-100 hover:bg-green-50 text-green-700 border border-green-300'
-                : 'bg-white hover:bg-gray-50 text-gray-700'
-            }`}
-          >
-            {googleAuthState === FORM_STATES.SUBMITTING ? (
-              <>
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                <span>{LOGIN_FORM_CONFIG.messages.checkingAccount}</span>
-              </>
-            ) : googleAuthState === FORM_STATES.SUCCESS ? (
-              <>
-                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span>{LOGIN_FORM_CONFIG.messages.loginSuccessful}</span>
-              </>
-            ) : googleAuthState === FORM_STATES.ERROR ? (
-              <>
-                <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                <span>Account Not Found</span>
-              </>
-            ) : (
-              <>
-                {/* Google Icon */}
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                </svg>
-                <span>{LOGIN_FORM_CONFIG.messages.continueWithGoogle}</span>
-              </>
-            )}
-          </button>
-
-          {/* Registration Reminder for Google Auth Error */}
-          {googleAuthState === FORM_STATES.ERROR && (
-            <div className="bg-yellow-100 bg-opacity-10 border border-yellow-400 border-opacity-30 rounded-lg p-3">
-              <div className="flex items-start space-x-2">
-                <svg className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-                <div>
-                  <p className="text-yellow-400 text-sm font-medium">Account Not Found</p>
-                  <p className="text-yellow-300 text-xs mt-1">
-                    This Google account is not registered. Please{' '}
-                    <button 
-                      onClick={onSwitchToSignUp}
-                      className="font-medium underline hover:text-yellow-200"
-                    >
-                      sign up first
-                    </button>{' '}
-                    to create an account.
-                  </p>
-                </div>
-              </div>
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold mb-2">
+                <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                  Welcome Back
+                </span>
+              </h2>
+              <p className="text-gray-400">
+                Sign in to your account
+              </p>
             </div>
-          )}
 
-          {/* Divider */}
-          <div className="flex items-center my-6">
-            <div className="flex-grow border-t border-white border-opacity-30"></div>
-            <span className="flex-shrink-0 px-4 text-white text-opacity-60 text-sm">
-              {LOGIN_FORM_CONFIG.messages.orDivider}
-            </span>
-            <div className="flex-grow border-t border-white border-opacity-30"></div>
-          </div>
-
-          {/* Email/Password Form */}
-          <Input
-            id="email"
-            label="Email Address"
-            type="email"
-            value={values.email}
-            onChange={(e) => handleChange('email', e.target.value)}
-            onBlur={() => handleBlur('email')}
-            placeholder="your.email@example.com"
-            error={touched.email && !validation.email?.isValid ? validation.email?.message : null}
-            success={touched.email && validation.email?.isValid ? validation.email?.message : null}
-            disabled={formState === FORM_STATES.SUBMITTING}
-          />
-
-          <Input
-            id="password"
-            label="Password"
-            type="password"
-            value={values.password}
-            onChange={(e) => handleChange('password', e.target.value)}
-            onBlur={() => handleBlur('password')}
-            placeholder="Enter your password"
-            showPasswordToggle
-            error={touched.password && !validation.password?.isValid ? validation.password?.message : null}
-            success={touched.password && validation.password?.isValid ? validation.password?.message : null}
-            disabled={formState === FORM_STATES.SUBMITTING}
-          />
-
-          {/* Forgot Password Link */}
-          <div className="text-right">
-            <button
-              type="button"
-              onClick={() => console.log('Forgot password clicked')}
-              className="text-purple-300 hover:text-purple-200 text-sm font-medium focus:outline-none focus:underline"
-              disabled={formState === FORM_STATES.SUBMITTING}
+            <Button
+              onClick={handleGoogleSignIn}
+              disabled={googleAuthState === FORM_STATES.SUBMITTING}
+              variant="outline"
+              className="w-full mb-6 bg-white/10 border-gray-600 hover:bg-white/20 text-white backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {LOGIN_FORM_CONFIG.messages.forgotPassword}
-            </button>
-          </div>
-
-          {/* Submit Button */}
-          <div className="pt-2">
-            <button
-              onClick={handleSubmit}
-              disabled={!isValid || formState === FORM_STATES.SUBMITTING}
-              className={`w-full py-3 px-4 rounded-lg font-semibold text-white transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-opacity-50 ${
-                formState === FORM_STATES.SUBMITTING
-                  ? 'bg-purple-500 bg-opacity-50 cursor-not-allowed'
-                  : isValid
-                  ? 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 focus:ring-purple-400 transform hover:scale-105'
-                  : 'bg-gray-500 bg-opacity-50 cursor-not-allowed'
-              }`}
-            >
-              {formState === FORM_STATES.SUBMITTING ? (
-                <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                  {LOGIN_FORM_CONFIG.messages.signingIn}
-                </div>
-              ) : formState === FORM_STATES.SUCCESS ? (
-                <div className="flex items-center justify-center">
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  {LOGIN_FORM_CONFIG.messages.welcomeBack}
+              {googleAuthState === FORM_STATES.SUBMITTING ? (
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span>Signing in with Google...</span>
                 </div>
               ) : (
-                'Sign In'
+                <>
+                  <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                    <path
+                      fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                    />
+                  </svg>
+                  Continue with Google
+                </>
               )}
-            </button>
-          </div>
+            </Button>
 
-          {/* Sign Up Link */}
-          <div className="text-center pt-4 border-t border-white border-opacity-20">
-            <p className="text-white text-opacity-80 text-sm">
-              {LOGIN_FORM_CONFIG.messages.noAccount}{' '}
-              <button
-                type="button"
-                onClick={onSwitchToSignUp}
-                className="text-purple-300 hover:text-purple-200 font-medium focus:outline-none focus:underline"
-                disabled={formState === FORM_STATES.SUBMITTING}
+            <div className="relative mb-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-600" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-slate-900 text-gray-400">or</span>
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 z-10" />
+                <Input
+                  type="email"
+                  placeholder="your.email@example.com"
+                  value={values.email}
+                  onChange={handleInputChange('email')}
+                  onBlur={handleInputBlur('email')}
+                  className="h-12 pl-10 bg-slate-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-purple-500/20"
+                />
+                {touched.email && errors.email && (
+                  <p className="text-red-400 text-sm mt-1">{errors.email}</p>
+                )}
+              </div>
+
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 z-10" />
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter your password"
+                  value={values.password}
+                  onChange={handleInputChange('password')}
+                  onBlur={handleInputBlur('password')}
+                  className="h-12 pl-10 pr-10 bg-slate-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-purple-500/20"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors duration-200 z-10"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+                {touched.password && errors.password && (
+                  <p className="text-red-400 text-sm mt-1">{errors.password}</p>
+                )}
+              </div>
+
+              <div className="text-right">
+                <button 
+                  type="button" 
+                  className="text-sm text-purple-400 hover:text-purple-300 transition-colors duration-200"
+                  onClick={() => alert('Forgot password functionality will be implemented soon!')}
+                >
+                  Forgot your password?
+                </button>
+              </div>
+
+              <Button
+                type="submit"
+                disabled={formState === FORM_STATES.SUBMITTING || !isValid}
+                className="w-full h-12 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold shadow-lg hover:shadow-purple-500/25 transition-all duration-300 disabled:cursor-not-allowed"
               >
-                {LOGIN_FORM_CONFIG.messages.signUp}
+                {formState === FORM_STATES.SUBMITTING ? (
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <span>Signing In...</span>
+                  </div>
+                ) : (
+                  'Sign In'
+                )}
+              </Button>
+            </form>
+
+            <div className="text-center mt-6">
+              <span className="text-gray-400">Don't have an account? </span>
+              <button
+                onClick={onSwitchToSignUp}
+                className="text-purple-400 hover:text-purple-300 transition-colors font-medium"
+              >
+                Sign Up
               </button>
-            </p>
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
-};
+}
 
 export default LoginForm;

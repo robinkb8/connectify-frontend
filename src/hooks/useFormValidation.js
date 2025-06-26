@@ -1,10 +1,10 @@
-// src/hooks/useFormValidation.js - FIXED VERSION
+// ===== src/hooks/useFormValidation.js - COMPLETE FIXED VERSION =====
 import { useReducer, useCallback, useMemo } from 'react';
 import { VALIDATION_CONFIG, FORM_STATES } from '../utils/constants/validation';
 
-// ✅ OPTIMIZED: Static validation functions (created once, reused forever)
+// ✅ COMPLETE validation functions for all form fields
 const FORM_VALIDATORS = {
-  // ✅ FIXED: Full name validation (matches SignUpForm field)
+  // ✅ Full name validation (matches SignUpForm field)
   full_name: (value) => {
     const config = VALIDATION_CONFIG.FULL_NAME;
     const trimmed = value.trim();
@@ -28,7 +28,7 @@ const FORM_VALIDATORS = {
     return { isValid: true, message: config.MESSAGES.SUCCESS };
   },
 
-  // Name validation (keeping for backward compatibility)
+  // ✅ Name validation (keeping for backward compatibility)
   name: (value) => {
     const config = VALIDATION_CONFIG.NAME;
     const trimmed = value.trim();
@@ -52,7 +52,7 @@ const FORM_VALIDATORS = {
     return { isValid: true, message: config.MESSAGES.SUCCESS };
   },
 
-  // Username validation
+  // ✅ Username validation
   username: (value) => {
     const config = VALIDATION_CONFIG.USERNAME;
     const trimmed = value.trim().toLowerCase();
@@ -76,10 +76,10 @@ const FORM_VALIDATORS = {
     return { isValid: true, message: config.MESSAGES.SUCCESS };
   },
 
-  // Phone validation
+  // ✅ Phone validation
   phone: (value) => {
     const config = VALIDATION_CONFIG.PHONE;
-    const cleaned = value.replace(config.FORMAT_PATTERN, '');
+    const cleaned = value.replace(/\D/g, ''); // Remove all non-digits
     
     if (!cleaned) {
       return { isValid: false, message: config.MESSAGES.REQUIRED };
@@ -96,7 +96,7 @@ const FORM_VALIDATORS = {
     return { isValid: true, message: config.MESSAGES.SUCCESS };
   },
 
-  // Email validation
+  // ✅ Email validation
   email: (value) => {
     const config = VALIDATION_CONFIG.EMAIL;
     const trimmed = value.trim().toLowerCase();
@@ -116,7 +116,7 @@ const FORM_VALIDATORS = {
     return { isValid: true, message: config.MESSAGES.SUCCESS };
   },
 
-  // Password validation with strength calculation
+  // ✅ Password validation with strength calculation
   password: (value) => {
     const config = VALIDATION_CONFIG.PASSWORD;
     let strength = 0;
@@ -164,7 +164,7 @@ const FORM_VALIDATORS = {
     return { isValid, message, strength };
   },
 
-  // Confirm password validation
+  // ✅ Confirm password validation
   confirmPassword: (value, originalPassword) => {
     const config = VALIDATION_CONFIG.CONFIRM_PASSWORD;
     
@@ -180,7 +180,49 @@ const FORM_VALIDATORS = {
   }
 };
 
-// ✅ OPTIMIZED: Form reducer for efficient state management
+// ✅ Django API check for username availability
+const checkUsernameAvailability = async (username) => {
+  try {
+    console.log('Checking username availability with Django:', username);
+
+    const response = await fetch('http://127.0.0.1:8000/api/auth/check-username/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({ username })
+    });
+
+    const data = await response.json();
+    console.log('Django username check response:', data);
+
+    if (response.ok) {
+      return {
+        isValid: data.available,
+        message: data.available
+          ? 'Username is available!'
+          : 'Username is already taken',
+        isChecking: false
+      };
+    } else {
+      return {
+        isValid: false,
+        message: data.message || 'Could not check username availability',
+        isChecking: false
+      };
+    }
+  } catch (error) {
+    console.error('Username check network error:', error);
+    return {
+      isValid: false,
+      message: 'Could not check username availability',
+      isChecking: false
+    };
+  }
+};
+
+// ✅ Form reducer for efficient state management
 const formReducer = (state, action) => {
   switch (action.type) {
     case 'SET_FIELD':
@@ -226,7 +268,7 @@ const formReducer = (state, action) => {
   }
 };
 
-// ✅ OPTIMIZED: Main hook with static functions and configuration
+// ✅ Main useFormValidation hook
 export const useFormValidation = (initialValues = {}) => {
   const [state, dispatch] = useReducer(formReducer, {
     values: initialValues,
@@ -234,7 +276,7 @@ export const useFormValidation = (initialValues = {}) => {
     touched: {}
   });
 
-  // ✅ OPTIMIZED: Validate field using static validators
+  // ✅ Validate field using static validators
   const validateField = useCallback(async (field, value) => {
     // Handle special case for confirmPassword
     if (field === 'confirmPassword') {
@@ -243,7 +285,7 @@ export const useFormValidation = (initialValues = {}) => {
       return;
     }
 
-    // ✅ FIXED: Handle username async validation with REAL Django API
+    // ✅ Handle username async validation with REAL Django API
     if (field === 'username') {
       dispatch({ type: 'SET_CHECKING', field, isChecking: true });
       
@@ -251,77 +293,25 @@ export const useFormValidation = (initialValues = {}) => {
       const basicValidation = FORM_VALIDATORS.username(value);
       
       if (!basicValidation.isValid) {
-        // If basic validation fails, don't check availability
+        // If basic validation fails, set the result and stop
         dispatch({ type: 'SET_VALIDATION', field, result: basicValidation });
-        dispatch({ type: 'SET_CHECKING', field, isChecking: false });
         return;
       }
       
       // If basic validation passes, check availability with Django
-      try {
-        // This will call Django API to check if username exists in database
-        const availabilityCheck = await checkUsernameWithDjango(value);
-        dispatch({ type: 'SET_VALIDATION', field, result: availabilityCheck });
-        dispatch({ type: 'SET_CHECKING', field, isChecking: false });
-      } catch (error) {
-        dispatch({ type: 'SET_VALIDATION', field, result: {
-          isValid: false,
-          message: 'Could not check username availability'
-        }});
-        dispatch({ type: 'SET_CHECKING', field, isChecking: false });
-      }
+      const availabilityCheck = await checkUsernameAvailability(value);
+      dispatch({ type: 'SET_VALIDATION', field, result: availabilityCheck });
       return;
     }
 
-    // Regular validation for other fields
-    const validator = FORM_VALIDATORS[field];
-    if (validator) {
-      const result = validator(value);
+    // ✅ Handle regular field validation
+    if (FORM_VALIDATORS[field]) {
+      const result = FORM_VALIDATORS[field](value);
       dispatch({ type: 'SET_VALIDATION', field, result });
-    } else {
-      // ✅ FIXED: Log missing validator for debugging
-      console.warn(`No validator found for field: ${field}. Available validators:`, Object.keys(FORM_VALIDATORS));
     }
   }, [state.values.password]);
 
-// ✅ HELPER FUNCTION: Call Django API for username checking
-const checkUsernameWithDjango = async (username) => {
-  try {
-    const response = await fetch('http://127.0.0.1:8000/api/auth/check-username/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({ username })
-    });
-    
-    const data = await response.json();
-    console.log('Django username check response:', data);
-    
-    if (response.ok) {
-      return {
-        isValid: data.available,  // Django returns { available: true/false }
-        message: data.available 
-          ? 'Username is available!' 
-          : 'Username is already taken'
-      };
-    } else {
-      return {
-        isValid: false,
-        message: data.message || 'Could not check username availability'
-      };
-    }
-  } catch (error) {
-    console.error('Username check error:', error);
-    return {
-      isValid: false,
-      message: 'Could not check username availability'
-    };
-  }
-};
-
-  // ✅ OPTIMIZED: Handle field changes with validation
+  // ✅ Handle field changes with validation
   const handleChange = useCallback((field, value) => {
     dispatch({ type: 'SET_FIELD', field, value });
     
@@ -336,13 +326,13 @@ const checkUsernameWithDjango = async (username) => {
     }
   }, [state.touched, state.values.confirmPassword, validateField]);
 
-  // ✅ OPTIMIZED: Handle field blur events
+  // ✅ Handle field blur events
   const handleBlur = useCallback((field) => {
     dispatch({ type: 'SET_TOUCHED', field });
     validateField(field, state.values[field]);
   }, [state.values, validateField]);
 
-  // ✅ OPTIMIZED: Check if entire form is valid
+  // ✅ Check if entire form is valid
   const isValid = useMemo(() => {
     const fieldNames = Object.keys(initialValues);
     
@@ -353,7 +343,7 @@ const checkUsernameWithDjango = async (username) => {
       return validation && validation.isValid && !validation.isChecking;
     });
     
-    // ✅ DEBUGGING: Log validation state for debugging
+    // ✅ Debug logging for development
     if (process.env.NODE_ENV === 'development') {
       console.log('Form Validation Debug:', {
         fieldNames,
@@ -368,12 +358,12 @@ const checkUsernameWithDjango = async (username) => {
     return allTouched && allValid && fieldNames.length > 0;
   }, [state.validation, state.touched, initialValues]);
 
-  // ✅ OPTIMIZED: Reset form to initial state
+  // ✅ Reset form to initial state
   const reset = useCallback(() => {
     dispatch({ type: 'RESET', initialValues });
   }, [initialValues]);
 
-  // ✅ OPTIMIZED: Get field validation status
+  // ✅ Get field validation status
   const getFieldStatus = useCallback((field) => {
     const validation = state.validation[field];
     const isTouched = state.touched[field];
@@ -388,7 +378,7 @@ const checkUsernameWithDjango = async (username) => {
     };
   }, [state.validation, state.touched]);
 
-  // ✅ OPTIMIZED: Validate all fields at once
+  // ✅ Validate all fields at once
   const validateAll = useCallback(() => {
     const fieldNames = Object.keys(initialValues);
     
@@ -398,12 +388,22 @@ const checkUsernameWithDjango = async (username) => {
     });
   }, [initialValues, state.values, validateField]);
 
+  // ✅ Return the complete API with legacy support
   return {
     // Form state
     values: state.values,
     validation: state.validation,
     touched: state.touched,
     isValid,
+    
+    // Legacy support - map validation to errors for compatibility
+    errors: Object.keys(state.validation).reduce((acc, field) => {
+      const fieldValidation = state.validation[field];
+      if (fieldValidation && !fieldValidation.isValid) {
+        acc[field] = fieldValidation.message;
+      }
+      return acc;
+    }, {}),
     
     // Actions
     handleChange,
@@ -413,3 +413,5 @@ const checkUsernameWithDjango = async (username) => {
     getFieldStatus
   };
 };
+
+export default useFormValidation;

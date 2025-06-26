@@ -1,4 +1,4 @@
-// src/components/pages/HomeFeed/components/TopNavbar/Sidebar.jsx
+// ===== src/components/pages/HomeFeed/components/Sidebar.jsx =====
 import React from 'react';
 import { Home, Search, User, Settings, LogOut, X } from 'lucide-react';
 import { Button } from '../../../ui/Button/Button';
@@ -14,29 +14,40 @@ function Sidebar({ isOpen, onClose }) {
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
-      <div className="fixed left-0 top-0 h-full w-80 bg-white border-r z-50 transform transition-transform duration-300 ease-in-out">
-        <div className="flex items-center justify-between p-6 border-b">
+      {/* ✅ FIXED: Backdrop with proper z-index */}
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-45" onClick={onClose} />
+      
+      {/* ✅ FIXED: Sidebar with higher z-index than navbar */}
+      <div className="fixed left-0 top-0 h-full w-80 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 z-50 transform transition-transform duration-300 ease-in-out shadow-2xl">
+        
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
           <h2 className="text-xl font-bold">
-            <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
               Connectify
             </span>
           </h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={onClose}
+            className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
+          >
             <X className="h-5 w-5" />
           </Button>
         </div>
 
-        <nav className="p-4 space-y-2">
+        {/* Navigation Menu */}
+        <nav className="p-4 space-y-2 bg-white dark:bg-gray-900">
           {menuItems.map((item) => {
             const Icon = item.icon;
             return (
               <button
                 key={item.label}
-                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                   item.active 
-                    ? 'bg-purple-100 text-purple-600' 
-                    : 'hover:bg-gray-100'
+                    ? 'bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800' 
+                    : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
                 }`}
               >
                 <Icon className="h-6 w-6" />
@@ -46,12 +57,13 @@ function Sidebar({ isOpen, onClose }) {
           })}
         </nav>
 
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t space-y-2">
-          <button className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-100">
+        {/* Bottom Actions */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 dark:border-gray-700 space-y-2 bg-white dark:bg-gray-900">
+          <button className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors duration-200">
             <Settings className="h-6 w-6" />
             <span className="font-medium">Settings</span>
           </button>
-          <button className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-100 text-red-500">
+          <button className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-colors duration-200">
             <LogOut className="h-6 w-6" />
             <span className="font-medium">Log out</span>
           </button>

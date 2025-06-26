@@ -1,5 +1,4 @@
-// src/utils/constants/validation.js - FIXED VERSION
-// ✅ COMPLETE validation constants file - supports all optimized components
+// ===== src/utils/constants/validation.js - COMPLETE FIXED VERSION =====
 
 // Form states for consistent state management across all components
 export const FORM_STATES = {
@@ -11,9 +10,39 @@ export const FORM_STATES = {
   CHECKING: 'checking'
 };
 
-// Comprehensive validation configuration for all form fields
+// ✅ COMPLETE validation configuration for all form fields
 export const VALIDATION_CONFIG = {
-  // Username validation rules
+  // ✅ Full name validation rules (matches SignUpForm field name)
+  FULL_NAME: {
+    MIN_LENGTH: 2,
+    MAX_LENGTH: 50,
+    PATTERN: /^[a-zA-Z\s'-]*$/, // Letters, spaces, hyphens, apostrophes
+    MESSAGES: {
+      REQUIRED: 'Full name is required',
+      MIN_LENGTH: 'Full name must be at least 2 characters',
+      MAX_LENGTH: 'Full name cannot exceed 50 characters',
+      PATTERN: 'Full name can only contain letters, spaces, hyphens, and apostrophes',
+      SUCCESS: 'Looks good!',
+      INVALID: 'Invalid name format'
+    }
+  },
+
+  // ✅ Name validation rules (keeping for backward compatibility)
+  NAME: {
+    MIN_LENGTH: 2,
+    MAX_LENGTH: 50,
+    PATTERN: /^[a-zA-Z\s'-]*$/, // Letters, spaces, hyphens, apostrophes
+    MESSAGES: {
+      REQUIRED: 'Name is required',
+      MIN_LENGTH: 'Name must be at least 2 characters',
+      MAX_LENGTH: 'Name cannot exceed 50 characters',
+      PATTERN: 'Name can only contain letters, spaces, hyphens, and apostrophes',
+      SUCCESS: 'Looks good!',
+      INVALID: 'Invalid name format'
+    }
+  },
+
+  // ✅ Username validation rules
   USERNAME: {
     MIN_LENGTH: 3,
     MAX_LENGTH: 30,
@@ -31,7 +60,7 @@ export const VALIDATION_CONFIG = {
     }
   },
 
-  // Phone number validation (Indian mobile numbers)
+  // ✅ Phone number validation (Indian mobile numbers)
   PHONE: {
     LENGTH: 10,
     PATTERN: /^[6-9]\d{9}$/, // Indian mobile number pattern
@@ -46,7 +75,7 @@ export const VALIDATION_CONFIG = {
     }
   },
 
-  // Email validation rules
+  // ✅ Email validation rules
   EMAIL: {
     PATTERN: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
     MAX_LENGTH: 254, // RFC compliant max email length
@@ -61,7 +90,7 @@ export const VALIDATION_CONFIG = {
     }
   },
 
-  // Password validation rules
+  // ✅ Password validation rules
   PASSWORD: {
     MIN_LENGTH: 8,
     MAX_LENGTH: 128,
@@ -94,37 +123,7 @@ export const VALIDATION_CONFIG = {
     }
   },
 
-  // ✅ FIXED: Full name validation rules (matches SignUpForm field name)
-  FULL_NAME: {
-    MIN_LENGTH: 2,
-    MAX_LENGTH: 50,
-    PATTERN: /^[a-zA-Z\s'-]*$/, // Letters, spaces, hyphens, apostrophes
-    MESSAGES: {
-      REQUIRED: 'Full name is required',
-      MIN_LENGTH: 'Full name must be at least 2 characters',
-      MAX_LENGTH: 'Full name cannot exceed 50 characters',
-      PATTERN: 'Full name can only contain letters, spaces, hyphens, and apostrophes',
-      SUCCESS: 'Looks good!',
-      INVALID: 'Invalid name format'
-    }
-  },
-
-  // Name validation rules (keeping for backward compatibility)
-  NAME: {
-    MIN_LENGTH: 2,
-    MAX_LENGTH: 50,
-    PATTERN: /^[a-zA-Z\s'-]*$/, // Letters, spaces, hyphens, apostrophes
-    MESSAGES: {
-      REQUIRED: 'Name is required',
-      MIN_LENGTH: 'Name must be at least 2 characters',
-      MAX_LENGTH: 'Name cannot exceed 50 characters',
-      PATTERN: 'Name can only contain letters, spaces, hyphens, and apostrophes',
-      SUCCESS: 'Looks good!',
-      INVALID: 'Invalid name format'
-    }
-  },
-
-  // Confirm password validation
+  // ✅ Confirm password validation
   CONFIRM_PASSWORD: {
     MESSAGES: {
       REQUIRED: 'Please confirm your password',
@@ -135,7 +134,7 @@ export const VALIDATION_CONFIG = {
   }
 };
 
-// OTP (One-Time Password) configuration
+// ✅ OTP (One-Time Password) configuration
 export const OTP_CONFIG = {
   LENGTH: 6,
   EXPIRY_TIME: 300, // 5 minutes in seconds
@@ -149,152 +148,134 @@ export const OTP_CONFIG = {
     INVALID: 'Invalid OTP. Please try again',
     MAX_ATTEMPTS: 'Maximum attempts exceeded. Please request a new OTP',
     SUCCESS: 'OTP verified successfully!',
-    REQUIRED: 'Please enter the OTP',
-    LENGTH: 'OTP must be 6 digits',
     RESEND_AVAILABLE: 'You can resend OTP now',
-    RESEND_WAIT: 'Please wait before requesting new OTP'
+    WAIT_TO_RESEND: 'Please wait before requesting a new OTP',
+    SENDING: 'Sending OTP...',
+    VERIFYING: 'Verifying OTP...'
   }
 };
 
-// API configuration for form submissions
+// ✅ API configuration constants
 export const API_CONFIG = {
+  TIMEOUT: 10000, // 10 seconds
+  RETRY_ATTEMPTS: 3,
+  RETRY_DELAY: 1000, // 1 second
   ENDPOINTS: {
-    // Authentication endpoints
-    VALIDATE_USERNAME: '/api/auth/validate-username',
-    VALIDATE_EMAIL: '/api/auth/validate-email',
-    SEND_OTP: '/api/auth/send-otp',
-    VERIFY_OTP: '/api/auth/verify-otp',
-    REGISTER: '/api/auth/register',
-    LOGIN: '/api/auth/login',
-    LOGOUT: '/api/auth/logout',
-    GOOGLE_AUTH: '/api/auth/google',
-    FACEBOOK_AUTH: '/api/auth/facebook',
-    
-    // User management endpoints
-    PROFILE: '/api/user/profile',
-    UPDATE_PROFILE: '/api/user/update',
-    CHANGE_PASSWORD: '/api/user/change-password',
-    DELETE_ACCOUNT: '/api/user/delete'
+    BASE_URL: 'http://127.0.0.1:8000',
+    AUTH: {
+      LOGIN: '/api/auth/login/',
+      REGISTER: '/api/auth/register/',
+      LOGOUT: '/api/auth/logout/',
+      REFRESH: '/api/auth/refresh/',
+      VERIFY_EMAIL: '/api/auth/verify-email/',
+      SEND_OTP: '/api/auth/send-otp/',
+      VERIFY_OTP: '/api/auth/verify-otp/',
+      CHECK_USERNAME: '/api/auth/check-username/',
+      CHECK_EMAIL: '/api/auth/check-email/'
+    }
   },
-  
-  TIMEOUTS: {
-    DEFAULT: 5000, // 5 seconds
-    UPLOAD: 30000, // 30 seconds for file uploads
-    AUTH: 10000, // 10 seconds for authentication
-    VALIDATION: 3000 // 3 seconds for field validation
-  },
-  
-  RETRY: {
-    MAX_ATTEMPTS: 3,
-    DELAY: 1000, // 1 second between retries
-    BACKOFF_MULTIPLIER: 2 // Exponential backoff
+  HEADERS: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
   }
 };
 
-// Form timing configuration for various operations
+// ✅ Timing configuration for various operations
 export const TIMING_CONFIG = {
-  DEBOUNCE_DELAY: 300, // For real-time validation
-  SUBMIT_DELAY: 2000, // Mock submission delay
-  SUCCESS_DISPLAY: 1500, // How long to show success state
-  ERROR_DISPLAY: 3000, // How long to show error state
-  LOADING_MIN: 500, // Minimum loading time for UX
+  // Form submission and processing
+  FORM_SUBMIT_DELAY: 1000,
+  SUCCESS_MESSAGE_DISPLAY: 2000,
+  ERROR_MESSAGE_DISPLAY: 3000,
   
-  ANIMATION: {
-    FAST: 200,
-    NORMAL: 300,
-    SLOW: 500,
-    VERY_SLOW: 1000
-  },
+  // OTP related timing
+  OTP_SEND_DELAY: 2000,
+  OTP_VERIFICATION_DELAY: 1500,
+  OTP_TIMER_DURATION: 60,
   
-  VALIDATION: {
-    REAL_TIME_DELAY: 500, // Delay for real-time validation
-    ASYNC_CHECK_DELAY: 1000, // Delay for async validations (username, email)
-    SUCCESS_SHOW_TIME: 2000 // How long to show success messages
-  }
+  // Username availability check
+  USERNAME_CHECK_DELAY: 1000,
+  
+  // UI transitions and animations
+  MODAL_TRANSITION: 300,
+  TOOLTIP_DELAY: 500,
+  DEBOUNCE_DELAY: 300,
+  
+  // API timeouts
+  API_TIMEOUT: 10000,
+  FILE_UPLOAD_TIMEOUT: 30000
 };
 
-// Theme configuration for consistent styling
+// ✅ Theme and UI configuration
 export const THEME_CONFIG = {
+  // Color scheme
   COLORS: {
-    PRIMARY: '#a855f7', // Purple
-    SECONDARY: '#ec4899', // Pink
-    SUCCESS: '#22c55e', // Green
-    ERROR: '#ef4444', // Red
-    WARNING: '#f59e0b', // Yellow/Orange
-    INFO: '#3b82f6', // Blue
-    NEUTRAL: '#6b7280' // Gray
+    PRIMARY: '#8B5CF6', // Purple
+    SECONDARY: '#EC4899', // Pink
+    SUCCESS: '#10B981', // Green
+    ERROR: '#EF4444', // Red
+    WARNING: '#F59E0B', // Yellow
+    INFO: '#3B82F6' // Blue
   },
   
-  GRADIENTS: {
-    PRIMARY: 'linear-gradient(135deg, #a855f7, #ec4899)',
-    SUCCESS: 'linear-gradient(135deg, #22c55e, #16a34a)',
-    ERROR: 'linear-gradient(135deg, #ef4444, #dc2626)',
-    BACKGROUND: 'linear-gradient(135deg, #667eea, #764ba2)'
+  // Component sizes
+  SIZES: {
+    INPUT_HEIGHT: 'h-12',
+    BUTTON_HEIGHT: 'h-12',
+    MODAL_WIDTH: 'max-w-md',
+    BORDER_RADIUS: 'rounded-xl'
   },
   
-  SPACING: {
-    XS: 4,
-    SM: 8,
-    MD: 16,
-    LG: 24,
-    XL: 32,
-    XXL: 48
-  },
-  
-  BORDER_RADIUS: {
-    SM: 4,
-    MD: 8,
-    LG: 12,
-    XL: 16,
-    XXL: 24,
-    FULL: '50%'
-  },
-  
-  SHADOWS: {
-    SM: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-    MD: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-    LG: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-    XL: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+  // Animation classes
+  ANIMATIONS: {
+    FADE_IN: 'animate-fade-in',
+    SLIDE_UP: 'animate-slide-up',
+    SPIN: 'animate-spin',
+    PULSE: 'animate-pulse'
   }
 };
 
-// Comprehensive error messages for different scenarios
+// ✅ Error messages for different scenarios
 export const ERROR_MESSAGES = {
   // Network and connectivity errors
-  NETWORK: 'Network error. Please check your internet connection.',
-  SERVER: 'Server error. Please try again later.',
-  TIMEOUT: 'Request timed out. Please try again.',
-  CONNECTION: 'Unable to connect. Please check your connection.',
-  
-  // Form validation errors
-  VALIDATION: 'Please fix the form errors and try again.',
-  REQUIRED_FIELDS: 'Please fill in all required fields.',
-  INVALID_FORMAT: 'Please check the format of your inputs.',
+  NETWORK_ERROR: 'Network error. Please check your internet connection.',
+  TIMEOUT_ERROR: 'Request timed out. Please try again.',
+  SERVER_ERROR: 'Server error. Please try again later.',
+  CONNECTION_LOST: 'Connection lost. Please check your internet connection.',
   
   // Authentication errors
+  INVALID_CREDENTIALS: 'Invalid email or password. Please try again.',
+  ACCOUNT_NOT_FOUND: 'No account found with this email address.',
+  ACCOUNT_SUSPENDED: 'Your account has been suspended. Please contact support.',
+  SESSION_EXPIRED: 'Your session has expired. Please login again.',
   UNAUTHORIZED: 'You are not authorized to perform this action.',
-  FORBIDDEN: 'Access denied.',
-  INVALID_CREDENTIALS: 'Invalid email or password.',
-  ACCOUNT_LOCKED: 'Account is temporarily locked. Please try again later.',
-  SESSION_EXPIRED: 'Your session has expired. Please log in again.',
   
-  // Resource errors
-  NOT_FOUND: 'Resource not found.',
-  ALREADY_EXISTS: 'This item already exists.',
-  QUOTA_EXCEEDED: 'You have exceeded your quota.',
+  // Form validation errors
+  FORM_INVALID: 'Please fix the errors in the form and try again.',
+  REQUIRED_FIELDS: 'Please fill in all required fields.',
+  INVALID_FORMAT: 'Please check the format of your input.',
   
-  // Generic fallback
-  GENERIC: 'Something went wrong. Please try again.',
-  UNKNOWN: 'An unknown error occurred.',
-  MAINTENANCE: 'System is under maintenance. Please try again later.'
+  // File upload errors
+  FILE_TOO_LARGE: 'File size is too large. Please choose a smaller file.',
+  INVALID_FILE_TYPE: 'Invalid file type. Please choose a different file.',
+  UPLOAD_FAILED: 'File upload failed. Please try again.',
+  
+  // Generic errors
+  SOMETHING_WRONG: 'Something went wrong. Please try again.',
+  UNKNOWN_ERROR: 'An unknown error occurred. Please contact support if this persists.',
+  OPERATION_FAILED: 'Operation failed. Please try again.'
 };
 
-// Success messages for positive feedback
+// ✅ Success messages for different scenarios
 export const SUCCESS_MESSAGES = {
   // Authentication success
-  REGISTRATION: 'Account created successfully! Welcome to Connectify!',
-  LOGIN: 'Welcome back! You have been logged in successfully.',
-  LOGOUT: 'You have been logged out successfully.',
+  LOGIN_SUCCESS: 'Successfully logged in!',
+  LOGOUT_SUCCESS: 'Successfully logged out!',
+  REGISTRATION_SUCCESS: 'Account created successfully!',
+  PASSWORD_RESET: 'Password reset successfully!',
+  
+  // Email and verification
+  EMAIL_SENT: 'Email sent successfully!',
+  EMAIL_VERIFIED: 'Email verified successfully!',
   
   // Profile and account management
   PROFILE_UPDATE: 'Your profile has been updated successfully.',
@@ -316,7 +297,7 @@ export const SUCCESS_MESSAGES = {
   ACTION_COMPLETED: 'Action completed successfully.'
 };
 
-// Loading messages for better user experience
+// ✅ Loading messages for better user experience
 export const LOADING_MESSAGES = {
   // General loading states
   LOADING: 'Loading...',
@@ -342,7 +323,7 @@ export const LOADING_MESSAGES = {
   FETCHING: 'Fetching data...'
 };
 
-// Validation utility constants
+// ✅ Validation utility constants
 export const VALIDATION_UTILS = {
   // Common regex patterns
   PATTERNS: {
@@ -367,7 +348,7 @@ export const VALIDATION_UTILS = {
   }
 };
 
-// Export default object for easy importing
+// ✅ Export default object for easy importing
 export default {
   FORM_STATES,
   VALIDATION_CONFIG,

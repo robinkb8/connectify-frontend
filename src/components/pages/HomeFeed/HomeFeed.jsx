@@ -1,4 +1,4 @@
-// ===== REPLACE src/components/pages/HomeFeed/HomeFeed.jsx =====
+// ===== src/components/pages/HomeFeed/HomeFeed.jsx =====
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search } from "lucide-react";
 import { Input } from '../../ui/Input/Input';
@@ -234,6 +234,7 @@ function HomeFeed() {
         );
 
       case "messages":
+        {/* ✅ FIXED: Messages page now renders without additional padding since MessagesPage handles it internally */}
         return <MessagesPage />;
 
       case "profile":
