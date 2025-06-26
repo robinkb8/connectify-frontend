@@ -199,7 +199,7 @@ const ConnectifyLanding = () => {
                             <div className="flex items-center space-x-3 mb-3">
                               <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full"></div>
                               <div>
-                                <div className="text-white font-semibold text-sm">Alex Chen</div>
+                                <div className="text-white font-semibold text-sm">Robin</div>
                                 <div className="text-gray-400 text-xs">2 hours ago</div>
                               </div>
                             </div>
@@ -227,7 +227,7 @@ const ConnectifyLanding = () => {
                             <div className="flex items-center space-x-3 mb-3">
                               <div className="w-10 h-10 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full"></div>
                               <div>
-                                <div className="text-white font-semibold text-sm">Sarah Kim</div>
+                                <div className="text-white font-semibold text-sm">Sarah</div>
                                 <div className="text-gray-400 text-xs">4 hours ago</div>
                               </div>
                             </div>

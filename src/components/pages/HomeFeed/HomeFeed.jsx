@@ -1,11 +1,9 @@
 // src/components/pages/HomeFeed/HomeFeed.jsx - UPDATED WITH REAL STORIES
 import React, { useState, useEffect, useCallback } from 'react';
 import TopNavbar from './components/TopNavbar';
-import StoriesSection from './components/StoriesSection';
 import PostCard from './components/PostCard';
 import BottomNavbar from './components/BottomNavbar';
 import CreatePostModal from '../../forms/CreatePostModal';
-import CreateStoryModal from '../../forms/CreateStoryModal'; // ✅ NEW IMPORT
 
 // ✅ API Configuration
 const API_BASE_URL = 'http://127.0.0.1:8000/api';
@@ -87,7 +85,6 @@ const HomeFeed = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showCreateStoryModal, setShowCreateStoryModal] = useState(false); // ✅ NEW STATE
   const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -190,31 +187,6 @@ const HomeFeed = () => {
     // Refresh the feed to show the new post
     await handleRefresh();
   }, [handleRefresh]);
-
-  // ✅ NEW: HANDLE CREATE STORY
-  const handleCreateStory = useCallback(() => {
-    console.log('🔍 Create story button clicked');
-    setShowCreateStoryModal(true);
-  }, []);
-
-  const handleCloseCreateStoryModal = useCallback(() => {
-    setShowCreateStoryModal(false);
-  }, []);
-
-  const handleStoryCreated = useCallback(async (newStory) => {
-    console.log('✅ New story created:', newStory);
-    setShowCreateStoryModal(false);
-    
-    // Stories section will automatically refresh when it detects new content
-    // No need to manually refresh here
-  }, []);
-
-  // ✅ NEW: HANDLE STORY VIEWING
-  const handleViewStory = useCallback((story) => {
-    console.log('✅ Viewing story:', story);
-    // TODO: Implement story viewer modal
-    // For now, just log the action
-  }, []);
 
   // ✅ LOADING STATE
   if (loading && posts.length === 0) {
@@ -355,14 +327,7 @@ const HomeFeed = () => {
       
       {/* Main Content */}
       <main className="main-content">
-        {/* ✅ REAL STORIES SECTION */}
-        <div className="stories-container">
-          <StoriesSection 
-            onCreateStory={handleCreateStory}
-            onViewStory={handleViewStory}
-          />
-        </div>
-        
+       
         {/* Refresh Button */}
         <div className="refresh-container">
           <button
@@ -435,13 +400,6 @@ const HomeFeed = () => {
         onPostCreated={handlePostCreated}
       />
       
-      {/* ✅ NEW: CREATE STORY MODAL */}
-      <CreateStoryModal 
-        isOpen={showCreateStoryModal}
-        onClose={handleCloseCreateStoryModal}
-        onStoryCreated={handleStoryCreated}
-      />
-
       <style jsx>{`
         /* ✅ RESPONSIVE FEED CONTAINER */
         .app-container {
