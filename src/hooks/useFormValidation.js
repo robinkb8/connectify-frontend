@@ -2,6 +2,8 @@
 import { useReducer, useCallback, useMemo } from 'react';
 import { VALIDATION_CONFIG, FORM_STATES } from '../utils/constants/validation';
 
+let usernameTimeout = null;
+
 // ✅ COMPLETE validation functions for all form fields
 const FORM_VALIDATORS = {
   // ✅ Full name validation (matches SignUpForm field)
@@ -180,48 +182,6 @@ const FORM_VALIDATORS = {
   }
 };
 
-// ✅ Django API check for username availability
-const checkUsernameAvailability = async (username) => {
-  try {
-    console.log('Checking username availability with Django:', username);
-
-    const response = await fetch('http://127.0.0.1:8000/api/auth/check-username/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({ username })
-    });
-
-    const data = await response.json();
-    console.log('Django username check response:', data);
-
-    if (response.ok) {
-      return {
-        isValid: data.available,
-        message: data.available
-          ? 'Username is available!'
-          : 'Username is already taken',
-        isChecking: false
-      };
-    } else {
-      return {
-        isValid: false,
-        message: data.message || 'Could not check username availability',
-        isChecking: false
-      };
-    }
-  } catch (error) {
-    console.error('Username check network error:', error);
-    return {
-      isValid: false,
-      message: 'Could not check username availability',
-      isChecking: false
-    };
-  }
-};
-
 // ✅ Form reducer for efficient state management
 const formReducer = (state, action) => {
   switch (action.type) {
@@ -285,24 +245,73 @@ export const useFormValidation = (initialValues = {}) => {
       return;
     }
 
-    // ✅ Handle username async validation with REAL Django API
-    if (field === 'username') {
-      dispatch({ type: 'SET_CHECKING', field, isChecking: true });
+ // ✅ REPLACE THE ENTIRE if (field === 'username') BLOCK WITH THIS
+if (field === 'username') {
+  // Clear previous timeout to debounce
+  if (usernameTimeout) {
+    clearTimeout(usernameTimeout);
+  }
+  
+  // Basic validation first
+  const basicValidation = FORM_VALIDATORS.username(value);
+  
+  if (!basicValidation.isValid || value.length < 3) {
+    dispatch({ type: 'SET_VALIDATION', field, result: basicValidation });
+    return;
+  }
+  
+  // Show checking state immediately
+  dispatch({ type: 'SET_CHECKING', field, isChecking: true });
+  
+  // Debounced API call
+  usernameTimeout = setTimeout(async () => {
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/auth/check-username/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ username: value.trim().toLowerCase() })
+      });
       
-      // First do basic validation (format, length, etc.)
-      const basicValidation = FORM_VALIDATORS.username(value);
-      
-      if (!basicValidation.isValid) {
-        // If basic validation fails, set the result and stop
-        dispatch({ type: 'SET_VALIDATION', field, result: basicValidation });
-        return;
+      if (response.ok) {
+        const data = await response.json();
+        dispatch({ 
+          type: 'SET_VALIDATION', 
+          field, 
+          result: {
+            isValid: data.available === true,
+            message: data.available ? 'Username is available!' : 'Username is already taken',
+            isChecking: false
+          }
+        });
+      } else {
+        dispatch({ 
+          type: 'SET_VALIDATION', 
+          field, 
+          result: {
+            isValid: true,
+            message: 'Username format is valid',
+            isChecking: false
+          }
+        });
       }
-      
-      // If basic validation passes, check availability with Django
-      const availabilityCheck = await checkUsernameAvailability(value);
-      dispatch({ type: 'SET_VALIDATION', field, result: availabilityCheck });
-      return;
+    } catch (error) {
+      dispatch({ 
+        type: 'SET_VALIDATION', 
+        field, 
+        result: {
+          isValid: true,
+          message: 'Username format is valid',
+          isChecking: false
+        }
+      });
     }
+  }, 800);
+  
+  return;
+}
 
     // ✅ Handle regular field validation
     if (FORM_VALIDATORS[field]) {

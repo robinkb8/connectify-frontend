@@ -256,12 +256,12 @@ function HomeFeed() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <TopNavbar />
-      {renderContent()}
-      <BottomNavbar activeTab={activeTab} onTabChange={setActiveTab} />
-    </div>
-  );
+  <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <TopNavbar />
+    {renderContent()}
+    <BottomNavbar activeTab={activeTab} onTabChange={setActiveTab} />
+  </div>
+);
 }
 
 export default HomeFeed;

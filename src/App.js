@@ -1,4 +1,4 @@
-// ===== REPLACE src/App.js =====
+// ✅ MAKE SURE App.js has ThemeProvider wrapped correctly
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './components/providers/ThemeProvider';
 import LandingPage from './components/pages/LandingPage';

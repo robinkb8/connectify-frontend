@@ -1,35 +1,53 @@
-// ===== src/components/forms/LoginForm/LoginForm.jsx - SYNTAX FIXED =====
+// ===== src/components/forms/LoginForm/LoginForm.jsx =====
 import React, { useState, useCallback, useEffect } from 'react';
 import { useFormValidation } from '../../../hooks/useFormValidation';
 import { FORM_STATES } from '../../../utils/constants/validation';
 import Input from '../../ui/Input/Input';
 import { Button } from '../../ui/Button/Button';
-import { X, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { X, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+// ✅ Google Client ID
+const CLIENT_ID = '1030493380102-arir8r2f12aemko0ksdd4hlh6m2qgu5h.apps.googleusercontent.com';
+
+// ✅ Decode Google ID token
+const decodeJwt = (token) => {
+  const base64Url = token.split('.')[1];
+  const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+  const jsonPayload = decodeURIComponent(
+    atob(base64)
+      .split('')
+      .map((char) => `%${('00' + char.charCodeAt(0).toString(16)).slice(-2)}`)
+      .join('')
+  );
+  return JSON.parse(jsonPayload);
+};
+
+// ✅ API Config
 const DJANGO_API_CONFIG = {
   baseURL: 'http://127.0.0.1:8000',
   endpoints: {
     login: '/api/auth/login/',
-    checkEmail: '/api/auth/check-email/'
+    checkEmail: '/api/auth/check-email/',
   },
   requestConfig: {
     headers: {
       'Content-Type': 'application/json',
-      'Accept': 'application/json'
+      Accept: 'application/json',
     },
-    credentials: 'include'
-  }
+    credentials: 'include',
+  },
 };
 
+// ✅ Form Config
 const LOGIN_FORM_CONFIG = {
   initialValues: {
     email: '',
-    password: ''
+    password: '',
   },
   timing: {
     errorDisplayTime: 3000,
-    successDisplayTime: 2000
+    successDisplayTime: 2000,
   },
   messages: {
     loginSuccess: 'Login successful! Redirecting...',
@@ -39,56 +57,43 @@ const LOGIN_FORM_CONFIG = {
     googleAuthSuccess: 'Google authentication successful!',
     googleLoginSuccess: 'Logged in with Google successfully!',
     networkError: 'Network error. Please check your connection.',
-    serverError: 'Server error. Please try again later.'
-  }
+    serverError: 'Server error. Please try again later.',
+  },
 };
 
+// ✅ Utility Functions
 const LOGIN_FORM_UTILS = {
   makeApiCall: async (endpoint, data = null) => {
     const url = `${DJANGO_API_CONFIG.baseURL}${endpoint}`;
     const config = {
       method: data ? 'POST' : 'GET',
       ...DJANGO_API_CONFIG.requestConfig,
-      ...(data && { body: JSON.stringify(data) })
+      ...(data && { body: JSON.stringify(data) }),
     };
-
     const response = await fetch(url, config);
     const result = await response.json();
-    
     return {
       success: response.ok,
       data: result,
-      error: response.ok ? null : result.message || `HTTP ${response.status}`
-    };
-  },
-
-  simulateGoogleAuth: async () => {
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    return {
-      email: 'user@example.com',
-      name: 'John Doe',
-      avatar: 'https://example.com/avatar.jpg'
+      error: response.ok ? null : result.message || `HTTP ${response.status}`,
     };
   },
 
   checkEmailExists: async (email) => {
-    try {
-      const result = await LOGIN_FORM_UTILS.makeApiCall(
-        DJANGO_API_CONFIG.endpoints.checkEmail,
-        { email }
-      );
-      return { available: result.success ? result.data.available : true };
-    } catch {
-      return { available: true };
-    }
+    const result = await LOGIN_FORM_UTILS.makeApiCall(
+      DJANGO_API_CONFIG.endpoints.checkEmail,
+      { email }
+    );
+    return {
+      available: result.data.available,
+      exists: result.data.exists,
+    };
   },
 
   handleLoginSuccess: (onClose, reset, setFormState, setGoogleAuthState, message) => {
     console.log('✅ Login successful');
-    
     if (setFormState) setFormState(FORM_STATES.SUCCESS);
     if (setGoogleAuthState) setGoogleAuthState(FORM_STATES.SUCCESS);
-    
     setTimeout(() => {
       onClose();
       if (reset) reset();
@@ -101,141 +106,162 @@ const LOGIN_FORM_UTILS = {
   handleLoginError: (setFormState, setGoogleAuthState, message) => {
     if (setFormState) setFormState(FORM_STATES.ERROR);
     if (setGoogleAuthState) setGoogleAuthState(FORM_STATES.ERROR);
-    
     console.error('❌ Login failed:', message);
     alert(message);
-    
     setTimeout(() => {
       if (setFormState) setFormState(FORM_STATES.IDLE);
       if (setGoogleAuthState) setGoogleAuthState(FORM_STATES.IDLE);
     }, LOGIN_FORM_CONFIG.timing.errorDisplayTime);
-  }
+  },
 };
 
+// ✅ Component Starts
 function LoginForm({ isOpen, onClose, onSwitchToSignUp }) {
   const [formState, setFormState] = useState(FORM_STATES.IDLE);
   const [googleAuthState, setGoogleAuthState] = useState(FORM_STATES.IDLE);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
-  const { values, errors, touched, isValid, handleChange, handleBlur, reset } = useFormValidation(
-    LOGIN_FORM_CONFIG.initialValues
+  const {
+    values,
+    errors,
+    touched,
+    isValid,
+    handleChange,
+    handleBlur,
+    reset,
+  } = useFormValidation(LOGIN_FORM_CONFIG.initialValues);
+
+  const handleInputChange = useCallback(
+    (fieldName) => (e) => {
+      const value = e.target.value;
+      handleChange(fieldName, value);
+    },
+    [handleChange]
   );
 
-  const handleInputChange = useCallback((fieldName) => (e) => {
-    const value = e.target.value;
-    handleChange(fieldName, value);
-  }, [handleChange]);
+  const handleInputBlur = useCallback(
+    (fieldName) => () => {
+      handleBlur(fieldName);
+    },
+    [handleBlur]
+  );
 
-  const handleInputBlur = useCallback((fieldName) => () => {
-    handleBlur(fieldName);
-  }, [handleBlur]);
+  const handleSubmit = useCallback(
+    async (e) => {
+      e.preventDefault();
+      if (!isValid) {
+        alert('Please fill in all fields correctly.');
+        return;
+      }
 
-  const handleSubmit = useCallback(async (e) => {
-    e.preventDefault();
-    
-    if (!isValid) {
-      alert('Please fill in all fields correctly.');
-      return;
-    }
+      setFormState(FORM_STATES.SUBMITTING);
+      try {
+        const result = await LOGIN_FORM_UTILS.makeApiCall(
+          DJANGO_API_CONFIG.endpoints.login,
+          {
+            email: values.email,
+            password: values.password,
+          }
+        );
 
-    setFormState(FORM_STATES.SUBMITTING);
-
-    try {
-      console.log('🔄 Attempting login with Django API...');
-      
-      const result = await LOGIN_FORM_UTILS.makeApiCall(
-        DJANGO_API_CONFIG.endpoints.login,
-        {
-          email: values.email,
-          password: values.password
+        if (result.success) {
+          navigate('/home');
+          LOGIN_FORM_UTILS.handleLoginSuccess(
+            onClose,
+            reset,
+            setFormState,
+            null,
+            result.data.message || LOGIN_FORM_CONFIG.messages.loginSuccess
+          );
+        } else {
+          setFormState(FORM_STATES.ERROR);
+          alert(`Login failed: ${result.error}`);
+          setTimeout(() => setFormState(FORM_STATES.IDLE), 3000);
         }
-      );
-
-      if (result.success) {
-        console.log('✅ Login successful:', result.data);
-        
-        navigate('/home');
-        
-        LOGIN_FORM_UTILS.handleLoginSuccess(
-          onClose, 
-          reset, 
-          setFormState, 
-          null, 
-          result.data.message || LOGIN_FORM_CONFIG.messages.loginSuccess
-        );
-      } else {
+      } catch (error) {
         setFormState(FORM_STATES.ERROR);
-        alert(`Login failed: ${result.error}`);
-        
-        setTimeout(() => {
-          setFormState(FORM_STATES.IDLE);
-        }, 3000);
+        console.error('Login error:', error);
+        alert(LOGIN_FORM_CONFIG.messages.serverError);
+        setTimeout(() => setFormState(FORM_STATES.IDLE), 3000);
       }
-    } catch (error) {
-      setFormState(FORM_STATES.ERROR);
-      console.error('Login error:', error);
-      alert(LOGIN_FORM_CONFIG.messages.serverError);
-      
-      setTimeout(() => {
-        setFormState(FORM_STATES.IDLE);
-      }, 3000);
-    }
-  }, [isValid, values, onClose, reset, navigate]);
+    },
+    [isValid, values, onClose, reset, navigate]
+  );
 
-  const handleGoogleSignIn = useCallback(async () => {
-    setGoogleAuthState(FORM_STATES.SUBMITTING);
-    console.log(LOGIN_FORM_CONFIG.messages.googleAuthStart);
+  const handleCredentialResponse = useCallback(
+    async (response) => {
+      try {
+        const decoded = decodeJwt(response.credential);
+        const googleUser = {
+          email: decoded.email,
+          name: decoded.name,
+          picture: decoded.picture,
+        };
 
-    try {
-      const googleUser = await LOGIN_FORM_UTILS.simulateGoogleAuth();
-      console.log(LOGIN_FORM_CONFIG.messages.googleAuthSuccess, googleUser);
+        console.log('✅ Google User:', googleUser);
 
-      const emailCheck = await LOGIN_FORM_UTILS.checkEmailExists(googleUser.email);
-
-      if (!emailCheck.available) {
-        setGoogleAuthState(FORM_STATES.SUCCESS);
-        
-        navigate('/home');
-        
-        LOGIN_FORM_UTILS.handleLoginSuccess(
-          onClose, 
-          reset, 
-          null, 
-          setGoogleAuthState, 
-          LOGIN_FORM_CONFIG.messages.googleLoginSuccess
+        const emailCheck = await LOGIN_FORM_UTILS.checkEmailExists(
+          googleUser.email
         );
-      } else {
-        setGoogleAuthState(FORM_STATES.ERROR);
-        alert(LOGIN_FORM_CONFIG.messages.accountNotFound);
-        
-        setTimeout(() => {
-          setGoogleAuthState(FORM_STATES.IDLE);
-        }, LOGIN_FORM_CONFIG.timing.errorDisplayTime);
-      }
-    } catch (error) {
-      LOGIN_FORM_UTILS.handleLoginError(
-        null, 
-        setGoogleAuthState, 
-        LOGIN_FORM_CONFIG.messages.loginFailed
-      );
-    }
-  }, [onClose, reset, navigate]);
 
-  const handleClose = useCallback((e) => {
-    if (e.target === e.currentTarget) onClose();
-  }, [onClose]);
+        if (!emailCheck.available) {
+          LOGIN_FORM_UTILS.handleLoginSuccess(
+            onClose,
+            reset,
+            null,
+            setGoogleAuthState,
+            LOGIN_FORM_CONFIG.messages.googleLoginSuccess
+          );
+          navigate('/home');
+        } else {
+          setGoogleAuthState(FORM_STATES.ERROR);
+          alert(LOGIN_FORM_CONFIG.messages.accountNotFound);
+          setTimeout(() => {
+            setGoogleAuthState(FORM_STATES.IDLE);
+          }, LOGIN_FORM_CONFIG.timing.errorDisplayTime);
+        }
+      } catch (error) {
+        LOGIN_FORM_UTILS.handleLoginError(
+          null,
+          setGoogleAuthState,
+          LOGIN_FORM_CONFIG.messages.loginFailed
+        );
+      }
+    },
+    [navigate, onClose, reset]
+  );
+
+  const handleGoogleSignIn = useCallback(() => {
+    if (window.google) {
+      window.google.accounts.id.prompt();
+    }
+  }, []);
+
+  useEffect(() => {
+    if (window.google) {
+      window.google.accounts.id.initialize({
+        client_id: CLIENT_ID,
+        callback: handleCredentialResponse,
+      });
+    }
+  }, [handleCredentialResponse]);
+
+  const handleClose = useCallback(
+    (e) => {
+      if (e.target === e.currentTarget) onClose();
+    },
+    [onClose]
+  );
 
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === 'Escape') onClose();
     };
-
     if (isOpen) {
       document.addEventListener('keydown', handleEscape);
       document.body.style.overflow = 'hidden';
     }
-
     return () => {
       document.removeEventListener('keydown', handleEscape);
       document.body.style.overflow = 'unset';
@@ -244,7 +270,8 @@ function LoginForm({ isOpen, onClose, onSwitchToSignUp }) {
 
   if (!isOpen) return null;
 
-  return (
+
+    return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} />
 
@@ -335,7 +362,7 @@ function LoginForm({ isOpen, onClose, onSwitchToSignUp }) {
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 z-10" />
                 <Input
-                  type={showPassword ? "text" : "password"}
+                  type={showPassword ? 'text' : 'password'}
                   placeholder="Enter your password"
                   value={values.password}
                   onChange={handleInputChange('password')}
@@ -355,8 +382,8 @@ function LoginForm({ isOpen, onClose, onSwitchToSignUp }) {
               </div>
 
               <div className="text-right">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className="text-sm text-purple-400 hover:text-purple-300 transition-colors duration-200"
                   onClick={() => alert('Forgot password functionality will be implemented soon!')}
                 >
