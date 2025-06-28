@@ -13,6 +13,7 @@ import {
   Bell
 } from 'lucide-react';
 import { Button } from '../Button/Button';
+import { NoNotificationsEmpty } from '../EmptyState/EmptyState';
 
 // ✅ Notification Types & Mock Data
 const NOTIFICATION_TYPES = {
@@ -330,18 +331,7 @@ function NotificationPanel({ isOpen, onClose, onNavigate }) {
               />
             ))
           ) : (
-            <div className="p-8 text-center">
-              <Bell className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                {filter === 'unread' ? 'All caught up!' : 'No notifications yet'}
-              </h3>
-              <p className="text-gray-500 dark:text-gray-400">
-                {filter === 'unread' 
-                  ? 'You have no unread notifications.'
-                  : 'When you get notifications, they\'ll show up here.'
-                }
-              </p>
-            </div>
+            <NoNotificationsEmpty size="medium" />
           )}
         </div>
 

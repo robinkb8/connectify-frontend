@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Search, Send, Phone, Video, MoreHorizontal } from "lucide-react";
 import Input from '../../ui/Input';
 import { Button } from '../../ui/Button';
+import { NoMessagesEmpty } from '../../ui/EmptyState/EmptyState';
 
 function MessagesPage() {
   const [selectedChat, setSelectedChat] = useState("1");
@@ -216,15 +217,9 @@ function MessagesPage() {
             </div>
           </div>
         </div>
-      ) : (
+     ) : (
         <div className="flex-1 flex items-center justify-center bg-white dark:bg-gray-900">
-          <div className="text-center">
-            <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Send className="w-8 h-8 text-gray-500 dark:text-gray-400" />
-            </div>
-            <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Select a conversation</h3>
-            <p className="text-gray-500 dark:text-gray-400">Choose a chat to start messaging</p>
-          </div>
+          <NoMessagesEmpty onFindPeople={() => console.log('Find people to message')} />
         </div>
       )}
     </div>

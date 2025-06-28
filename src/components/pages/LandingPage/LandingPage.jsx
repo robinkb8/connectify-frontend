@@ -3,6 +3,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import { ArrowRight, Users, MessageCircle, Heart, Share2, Mail, MapPin, Phone } from "lucide-react";
 import SignUpModal from "../../forms/SignUpForm/SignUpForm";
 import LoginForm from "../../forms/LoginForm/LoginForm";
+import { useToast } from '../ui/Toast';
+
 
 const ConnectifyLanding = () => {
   // ✅ BACKGROUND ANIMATION STATE

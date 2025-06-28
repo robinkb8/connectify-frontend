@@ -8,6 +8,7 @@ import PostCard from './components/PostCard';
 import SimpleCreatePost from './components/SimpleCreatePost';
 import UserProfile from '../Profile/UserProfile';
 import MessagesPage from '../Messages/MessagesPage';
+import { NoPostsEmpty, LoadingState, LoadingErrorEmpty } from '../../ui/EmptyState/EmptyState';
 
 // ✅ DJANGO API CONFIGURATION - Your existing API
 const API_BASE_URL = 'http://127.0.0.1:8000/api';
@@ -149,58 +150,78 @@ function HomeFeed() {
             
 
               {/* ✅ Posts Feed */}
+             {/* ✅ Loading State */}
+              {loading && posts.length === 0 && (
+                <LoadingState message="Loading your feed..." />
+              )}
+
+              {/* ✅ Error State */}
+              {error && !loading && (
+                <LoadingErrorEmpty onRetry={() => loadPosts(1)} />
+              )}
+
+              {/* ✅ Empty State */}
+              {!loading && !error && posts.length === 0 && (
+                <NoPostsEmpty onCreatePost={() => console.log('Create post')} />
+              )}
+
+              {/* ✅ Posts Feed */}
               <div className="space-y-6">
-                {loading && posts.length === 0 ? (
-                  <div className="space-y-6">
-                    {[...Array(3)].map((_, i) => (
-                      <div key={i} className="animate-pulse">
-                        <div className="flex items-center space-x-3 mb-3">
-                          <div className="w-10 h-10 bg-gray-300 rounded-full"></div>
-                          <div className="flex-1">
-                            <div className="h-4 bg-gray-300 rounded w-1/4 mb-2"></div>
-                            <div className="h-3 bg-gray-200 rounded w-1/6"></div>
-                          </div>
-                        </div>
-                        <div className="h-4 bg-gray-300 rounded mb-2"></div>
-                        <div className="h-4 bg-gray-300 rounded w-3/4 mb-3"></div>
-                        <div className="h-48 bg-gray-300 rounded"></div>
-                      </div>
-                    ))}
-                  </div>
-                ) : error ? (
-                  <div className="text-center py-8 text-red-500">
-                    <p>{error}</p>
-                    <button 
-                      onClick={() => loadPosts(1)}
-                      className="mt-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-                    >
-                      Retry
-                    </button>
-                  </div>
-                ) : posts.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <p>No posts available</p>
-                  </div>
-                ) : (
-                  <>
-                    {filteredPosts.map((post) => (
-                      <PostCard key={post.id} post={post} />
-                    ))}
-                    
-                    {hasMore && (
-                      <div className="text-center py-4">
-                        <button
-                          onClick={loadMorePosts}
-                          disabled={loading}
-                          className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
-                        >
-                          {loading ? 'Loading...' : 'Load More'}
-                        </button>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
+  {loading && posts.length === 0 ? (
+    // ✅ LOADING STATE - Show skeletons when actually loading
+    <div className="space-y-6">
+      {[...Array(3)].map((_, i) => (
+        <div key={i} className="animate-pulse">
+          <div className="flex items-center space-x-3 mb-3">
+            <div className="w-10 h-10 bg-gray-300 dark:bg-gray-700 rounded-full"></div>
+            <div className="flex-1">
+              <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-1/4 mb-2"></div>
+              <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded w-1/6"></div>
+            </div>
+          </div>
+          <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded mb-2"></div>
+          <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-3/4 mb-3"></div>
+          <div className="h-48 bg-gray-300 dark:bg-gray-700 rounded"></div>
+        </div>
+      ))}
+    </div>
+  ) : error ? (
+    // ✅ ERROR STATE
+    <div className="text-center py-8 text-red-500">
+      <p>{error}</p>
+      <button 
+        onClick={() => loadPosts(1)}
+        className="mt-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+      >
+        Retry
+      </button>
+    </div>
+  ) : posts.length === 0 ? (
+    // ✅ EMPTY STATE
+    <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+      <p>No posts available</p>
+    </div>
+  ) : (
+    // ✅ POSTS EXIST - Show actual posts
+    <>
+      {filteredPosts.map((post) => (
+        <PostCard key={post.id} post={post} />
+      ))}
+      
+      {hasMore && (
+        <div className="text-center py-4">
+          <button
+            onClick={loadMorePosts}
+            disabled={loading}
+            className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
+          >
+            {loading ? 'Loading...' : 'Load More'}
+          </button>
+        </div>
+      )}
+    </>
+  )}
+</div>
             </div>
           </main>
         );

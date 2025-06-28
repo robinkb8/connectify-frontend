@@ -1,4 +1,3 @@
- 
 // ===== src/components/modals/CommentsModal/CommentsModal.jsx =====
 import React, { useState, useRef, useEffect } from 'react';
 import { 
@@ -40,20 +39,6 @@ const mockComments = [
         isLiked: true,
         isReply: true,
         parentId: '1'
-      },
-      {
-        id: '1-2',
-        user: {
-          name: 'Alex Rivera',
-          username: 'alexr',
-          avatar: null
-        },
-        content: 'Same here! Following for more updates 👀',
-        timestamp: '45m ago',
-        likes: 1,
-        isLiked: false,
-        isReply: true,
-        parentId: '1'
       }
     ]
   },
@@ -68,19 +53,6 @@ const mockComments = [
     timestamp: '4h ago',
     likes: 8,
     isLiked: true,
-    replies: []
-  },
-  {
-    id: '3',
-    user: {
-      name: 'David Wilson',
-      username: 'davidw',
-      avatar: null
-    },
-    content: 'Would love to collaborate on something like this. DM me if you\'re interested!',
-    timestamp: '6h ago',
-    likes: 5,
-    isLiked: false,
     replies: []
   }
 ];
@@ -137,14 +109,12 @@ const CommentItem = ({
               
               {/* Options Menu */}
               <div className="relative">
-                <Button
-                  variant="ghost"
-                  size="icon"
+                <button
                   onClick={() => setShowOptions(!showOptions)}
-                  className="h-6 w-6 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  className="h-6 w-6 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center justify-center"
                 >
                   <MoreHorizontal className="h-4 w-4" />
-                </Button>
+                </button>
                 
                 {showOptions && (
                   <>
@@ -224,20 +194,19 @@ const CommentItem = ({
                     rows={2}
                   />
                   <div className="flex justify-end space-x-2 mt-2">
-                    <Button
-                      variant="ghost"
+                    <button
                       onClick={() => setShowReplyBox(false)}
-                      className="text-xs py-1 px-3 h-auto"
+                      className="text-xs py-1 px-3 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
                     >
                       Cancel
-                    </Button>
-                    <Button
+                    </button>
+                    <button
                       onClick={handleReplySubmit}
                       disabled={!replyText.trim()}
-                      className="text-xs py-1 px-3 h-auto bg-blue-600 hover:bg-blue-700"
+                      className="text-xs py-1 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded disabled:bg-gray-300 disabled:cursor-not-allowed"
                     >
                       Reply
-                    </Button>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -256,7 +225,7 @@ const CommentItem = ({
               onLike={onLike}
               onReply={onReply}
               onDelete={onDelete}
-              isOwnComment={reply.user.username === 'you'} // Replace with actual user check
+              isOwnComment={reply.user.username === 'you'}
               level={level + 1}
             />
           ))}
@@ -276,18 +245,28 @@ function CommentsModal({ isOpen, onClose, post }) {
   // Auto-focus textarea when modal opens
   useEffect(() => {
     if (isOpen && textareaRef.current) {
-      textareaRef.current.focus();
+      setTimeout(() => {
+        textareaRef.current.focus();
+      }, 100);
     }
   }, [isOpen]);
 
   // Handle new comment submission
   const handleSubmitComment = async () => {
-    if (!newComment.trim() || isSubmitting) return;
+    console.log('🚀 Submit comment clicked!', newComment);
+    
+    if (!newComment.trim() || isSubmitting) {
+      console.log('❌ Cannot submit - empty or already submitting');
+      return;
+    }
 
     setIsSubmitting(true);
+    console.log('✅ Submitting comment...');
     
     try {
       // TODO: Replace with actual API call
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      
       const newCommentObj = {
         id: Date.now().toString(),
         user: {
@@ -304,9 +283,11 @@ function CommentsModal({ isOpen, onClose, post }) {
 
       setComments(prev => [newCommentObj, ...prev]);
       setNewComment('');
+      console.log('✅ Comment added successfully');
       
     } catch (error) {
-      console.error('Failed to post comment:', error);
+      console.error('❌ Failed to post comment:', error);
+      alert('Failed to post comment. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -387,20 +368,18 @@ function CommentsModal({ isOpen, onClose, post }) {
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-            Comments
+            Comments ({comments.length})
           </h2>
-          <Button
-            variant="ghost"
-            size="icon"
+          <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+            className="h-8 w-8 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center"
           >
             <X className="h-5 w-5" />
-          </Button>
+          </button>
         </div>
 
         {/* Comments List */}
-        <div className="flex-1 overflow-y-auto max-h-[60vh] px-6">
+        <div className="flex-1 overflow-y-auto max-h-[50vh] px-6">
           {comments.length > 0 ? (
             comments.map((comment) => (
               <CommentItem
@@ -425,48 +404,68 @@ function CommentsModal({ isOpen, onClose, post }) {
           )}
         </div>
 
-        {/* Comment Input */}
-        <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+        {/* 🚨 GUARANTEED WORKING COMMENT INPUT WITH SEND BUTTON */}
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
           <div className="flex space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-teal-500 rounded-full flex items-center justify-center flex-shrink-0">
-              <span className="text-white font-semibold text-xs">You</span>
+            {/* User Avatar */}
+            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-teal-500 rounded-full flex items-center justify-center flex-shrink-0">
+              <span className="text-white font-bold text-sm">You</span>
             </div>
+            
+            {/* Input Container */}
             <div className="flex-1">
+              {/* Textarea */}
               <textarea
                 ref={textareaRef}
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 placeholder="Write a comment..."
-                className="w-full p-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-900 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
+                className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 resize-none focus:outline-none focus:border-blue-500 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
                 rows={3}
                 disabled={isSubmitting}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                    e.preventDefault();
                     handleSubmitComment();
                   }
                 }}
               />
-              <div className="flex justify-between items-center mt-2">
+              
+              {/* Bottom Actions Row */}
+              <div className="flex justify-between items-center mt-3">
                 <span className="text-xs text-gray-500 dark:text-gray-400">
-                  Press Cmd+Enter to post
+                  Press Cmd+Enter to post quickly
                 </span>
-                <Button
+                
+                {/* 🎯 GUARANTEED VISIBLE SEND BUTTON */}
+                <button
                   onClick={handleSubmitComment}
                   disabled={!newComment.trim() || isSubmitting}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2"
+                  className={`
+                    flex items-center space-x-2 px-6 py-2 rounded-lg font-semibold text-sm transition-all duration-200 min-w-[80px] justify-center
+                    ${!newComment.trim() || isSubmitting 
+                      ? 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed' 
+                      : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white cursor-pointer shadow-md hover:shadow-lg'
+                    }
+                  `}
+                  style={{ 
+                    minHeight: '40px',
+                    border: 'none',
+                    outline: 'none'
+                  }}
                 >
                   {isSubmitting ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <>
+                      <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
                       <span>Posting...</span>
-                    </div>
+                    </>
                   ) : (
                     <>
-                      <Send className="w-4 h-4 mr-2" />
-                      Post
+                      <Send className="w-4 h-4" />
+                      <span>Post</span>
                     </>
                   )}
-                </Button>
+                </button>
               </div>
             </div>
           </div>

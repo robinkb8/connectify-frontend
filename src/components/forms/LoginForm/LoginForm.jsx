@@ -4,6 +4,7 @@ import { useFormValidation } from '../../../hooks/useFormValidation';
 import { FORM_STATES } from '../../../utils/constants/validation';
 import Input from '../../ui/Input/Input';
 import { Button } from '../../ui/Button/Button';
+import { useToast } from '../../ui/Toast';
 import { X, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -121,6 +122,7 @@ function LoginForm({ isOpen, onClose, onSwitchToSignUp }) {
   const [googleAuthState, setGoogleAuthState] = useState(FORM_STATES.IDLE);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const {
     values,
@@ -150,10 +152,10 @@ function LoginForm({ isOpen, onClose, onSwitchToSignUp }) {
   const handleSubmit = useCallback(
     async (e) => {
       e.preventDefault();
-      if (!isValid) {
-        alert('Please fill in all fields correctly.');
-        return;
-      }
+        if (!isValid) {
+      toast.error('Please fill in all fields correctly.');
+      return;
+    }
 
       setFormState(FORM_STATES.SUBMITTING);
       try {
@@ -165,7 +167,8 @@ function LoginForm({ isOpen, onClose, onSwitchToSignUp }) {
           }
         );
 
-        if (result.success) {
+         if (result.success) {
+          toast.success('Login successful! Redirecting...'); 
           navigate('/home');
           LOGIN_FORM_UTILS.handleLoginSuccess(
             onClose,
@@ -176,13 +179,13 @@ function LoginForm({ isOpen, onClose, onSwitchToSignUp }) {
           );
         } else {
           setFormState(FORM_STATES.ERROR);
-          alert(`Login failed: ${result.error}`);
+          toast.error(`Login failed: ${result.error}`);
           setTimeout(() => setFormState(FORM_STATES.IDLE), 3000);
         }
-      } catch (error) {
+     } catch (error) {
         setFormState(FORM_STATES.ERROR);
         console.error('Login error:', error);
-        alert(LOGIN_FORM_CONFIG.messages.serverError);
+        toast.error('Server error. Please try again later.'); 
         setTimeout(() => setFormState(FORM_STATES.IDLE), 3000);
       }
     },
@@ -214,9 +217,9 @@ function LoginForm({ isOpen, onClose, onSwitchToSignUp }) {
             LOGIN_FORM_CONFIG.messages.googleLoginSuccess
           );
           navigate('/home');
-        } else {
+         } else {
           setGoogleAuthState(FORM_STATES.ERROR);
-          alert(LOGIN_FORM_CONFIG.messages.accountNotFound);
+          toast.error('No account found with this email. Please sign up first.');
           setTimeout(() => {
             setGoogleAuthState(FORM_STATES.IDLE);
           }, LOGIN_FORM_CONFIG.timing.errorDisplayTime);

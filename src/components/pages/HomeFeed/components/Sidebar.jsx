@@ -15,6 +15,13 @@ function Sidebar({ isOpen, onClose }) {
     onClose(); // Close sidebar after navigation
   };
 
+  const handleSettingsClick = () => {
+  console.log('Navigating to settings page...');
+  navigate('/settings');
+  onClose(); // Close sidebar after navigation
+};
+
+
   const menuItems = [
     { icon: Home, label: 'Home', active: true, onClick: null },
     { icon: Search, label: 'Search', active: false, onClick: null },
@@ -89,7 +96,10 @@ function Sidebar({ isOpen, onClose }) {
           </button>
 
           {/* Settings */}
-          <button className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-all duration-200">
+          <button 
+  onClick={handleSettingsClick}
+  className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-all duration-200"
+>
             <Settings className="h-6 w-6" />
             <span className="font-medium">Settings</span>
           </button>

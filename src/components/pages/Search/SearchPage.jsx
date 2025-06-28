@@ -1,5 +1,6 @@
  
 // ===== src/components/pages/Search/SearchPage.jsx =====
+import { NoSearchResultsEmpty } from '../../ui/EmptyState/EmptyState';
 import React, { useState } from 'react';
 import { Search } from "lucide-react";
 import { Input } from '../../ui/Input/Input';
@@ -51,10 +52,11 @@ function SearchPage() {
               filteredResults.map((post) => (
                 <PostCard key={post.id} post={post} />
               ))
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <p>No results found for "{searchQuery}"</p>
-              </div>
+           ) : (
+              <NoSearchResultsEmpty 
+                searchQuery={searchQuery}
+                onClearSearch={() => setSearchQuery('')}
+              />
             )}
           </div>
         ) : (
