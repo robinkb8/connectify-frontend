@@ -12,7 +12,7 @@ import MessagesPage from '../Messages/MessagesPage';
 // ✅ DJANGO API CONFIGURATION - Your existing API
 const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
-// ✅ DATA TRANSFORMATION - Your existing function, keeping it the same
+// ✅ DATA TRANSFORMATION - Your existing function
 const transformApiPost = (apiPost) => {
   console.log('🔄 Transforming API post:', apiPost);
   
@@ -83,7 +83,7 @@ const fetchPosts = async (page = 1) => {
   }
 };
 
-// ✅ MAIN HOMEFEED COMPONENT WITH NEW DESIGN
+// ✅ MAIN HOMEFEED COMPONENT
 function HomeFeed() {
   // ✅ State Management
   const [activeTab, setActiveTab] = useState("home");
@@ -136,6 +136,9 @@ function HomeFeed() {
     post.author?.username?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // ✅ Determine if TopNavbar is visible
+  const isTopNavbarVisible = activeTab === 'home';
+
   // ✅ RENDER CONTENT BASED ON ACTIVE TAB
   const renderContent = () => {
     switch (activeTab) {
@@ -151,39 +154,50 @@ function HomeFeed() {
               {/* ✅ Posts Feed */}
               <div className="space-y-6">
                 {loading && posts.length === 0 ? (
-                  <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto"></div>
-                    <p className="text-muted-foreground mt-2">Loading posts...</p>
+                  <div className="space-y-6">
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="animate-pulse">
+                        <div className="flex items-center space-x-3 mb-3">
+                          <div className="w-10 h-10 bg-gray-300 rounded-full"></div>
+                          <div className="flex-1">
+                            <div className="h-4 bg-gray-300 rounded w-1/4 mb-2"></div>
+                            <div className="h-3 bg-gray-200 rounded w-1/6"></div>
+                          </div>
+                        </div>
+                        <div className="h-4 bg-gray-300 rounded mb-2"></div>
+                        <div className="h-4 bg-gray-300 rounded w-3/4 mb-3"></div>
+                        <div className="h-48 bg-gray-300 rounded"></div>
+                      </div>
+                    ))}
                   </div>
                 ) : error ? (
-                  <div className="text-center py-8">
-                    <p className="text-red-500">{error}</p>
+                  <div className="text-center py-8 text-red-500">
+                    <p>{error}</p>
                     <button 
                       onClick={() => loadPosts(1)}
-                      className="mt-2 text-purple-500 hover:text-purple-600 font-medium"
+                      className="mt-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
                     >
-                      Try again
+                      Retry
                     </button>
                   </div>
                 ) : posts.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">No posts yet. Be the first to share something!</p>
+                  <div className="text-center py-12 text-muted-foreground">
+                    <p>No posts available</p>
                   </div>
                 ) : (
                   <>
-                    {posts.map((post) => (
+                    {filteredPosts.map((post) => (
                       <PostCard key={post.id} post={post} />
                     ))}
                     
-                    {/* ✅ Load More Button */}
                     {hasMore && (
-                      <div className="text-center py-8">
-                        <button 
+                      <div className="text-center py-4">
+                        <button
                           onClick={loadMorePosts}
                           disabled={loading}
-                          className="text-purple-500 hover:text-purple-600 font-medium disabled:opacity-50"
+                          className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
                         >
-                          {loading ? 'Loading...' : 'Load more posts...'}
+                          {loading ? 'Loading...' : 'Load More'}
                         </button>
                       </div>
                     )}
@@ -196,20 +210,23 @@ function HomeFeed() {
 
       case "search":
         return (
-          <main className="pt-16 pb-20 px-4 max-w-2xl mx-auto">
+          <main className="pt-4 pb-20 px-4 max-w-2xl mx-auto">
             <div className="space-y-6">
+              {/* ✅ Search Header */}
               <div className="pt-4">
+                <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Search</h1>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 w-4 h-4" />
                   <Input
                     placeholder="Search posts, people, and topics..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-12 py-3 text-lg rounded-full"
+                    className="pl-10 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100"
                   />
                 </div>
               </div>
 
+              {/* ✅ Search Results */}
               {searchQuery ? (
                 <div className="space-y-6">
                   <h2 className="text-lg font-semibold">Search results for "{searchQuery}"</h2>
@@ -234,19 +251,22 @@ function HomeFeed() {
         );
 
       case "messages":
-        {/* ✅ FIXED: Messages page now renders without additional padding since MessagesPage handles it internally */}
-        return <MessagesPage />;
+        return (
+          <div className="pt-0 pb-20">
+            <MessagesPage />
+          </div>
+        );
 
       case "profile":
         return (
-          <main className="pt-16 pb-20 px-4">
+          <main className="pt-4 pb-20 px-4">
             <UserProfile isOwnProfile={true} />
           </main>
         );
 
       default:
         return (
-          <main className="pt-16 pb-20 px-4 max-w-2xl mx-auto">
+          <main className="pt-4 pb-20 px-4 max-w-2xl mx-auto">
             <div className="text-center py-8">
               <p className="text-muted-foreground">Page not found</p>
             </div>
@@ -256,12 +276,13 @@ function HomeFeed() {
   };
 
   return (
-  <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-    <TopNavbar />
-    {renderContent()}
-    <BottomNavbar activeTab={activeTab} onTabChange={setActiveTab} />
-  </div>
-);
+    <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+      {/* ✅ Pass activeTab to TopNavbar - it will conditionally render */}
+      <TopNavbar activeTab={activeTab} />
+      {renderContent()}
+      <BottomNavbar activeTab={activeTab} onTabChange={setActiveTab} />
+    </div>
+  );
 }
 
 export default HomeFeed;

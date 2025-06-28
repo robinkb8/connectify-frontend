@@ -1,28 +1,27 @@
- 
-// ===== src/components/pages/Profile/UserProfile.jsx =====
+// ===== src/components/pages/Profile/UserProfile.jsx - UPDATED =====
 import React, { useState } from 'react';
-import { Settings, MapPin, Calendar, LinkIcon } from "lucide-react";
+import { Settings, MapPin, Calendar, LinkIcon, Edit3, MoreHorizontal } from "lucide-react";
 import { Button } from '../../ui/Button/Button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/Tabs/Tabs';
 import PostCard from '../HomeFeed/components/PostCard';
 
-function UserProfile({ isOwnProfile = false }) {
+function UserProfile({ isOwnProfile = false, onBack }) {
   const [activeTab, setActiveTab] = useState("posts");
 
   // ✅ Mock user data - replace with real API calls later
   const user = {
-    name: "Your Name",
-    username: "yourname",
-    bio: "Full-stack developer passionate about creating amazing user experiences. Coffee enthusiast ☕️",
-    location: "San Francisco, CA",
+    name: "ROBIN",
+    username: "Robinkb",
+    bio: "Full-stack developer passionate about creating amazing user experiences. Love working with React, Node.js, and exploring new technologies. Always learning, always building! 🚀",
+    location: "Ernakulam kerala ",
     website: "yoursite.dev",
     avatar: "",
-    coverImage: "",
     verified: true,
-    joinDate: "March 2022",
+    joinDate: "March 2023",
     followers: 1234,
     following: 567,
     posts: 89,
+    media: 42,
   };
 
   // ✅ Mock posts data - replace with real API calls later
@@ -42,7 +41,7 @@ function UserProfile({ isOwnProfile = false }) {
     {
       id: 2,
       author: { username: user.username, avatar: user.avatar },
-      content: "Beautiful sunset from my rooftop garden 🌅",
+      content: "Beautiful sunset from my rooftop garden 🌅 Nature never fails to amaze me!",
       image_url: null,
       total_likes: 89,
       total_comments: 15,
@@ -50,133 +49,221 @@ function UserProfile({ isOwnProfile = false }) {
       time_since_posted: "1d",
       is_liked: false,
       is_active: true
+    },
+    {
+      id: 3,
+      author: { username: user.username, avatar: user.avatar },
+      content: "Working on some exciting new features. Can't wait to show you all! 💻✨",
+      image_url: null,
+      total_likes: 67,
+      total_comments: 18,
+      total_shares: 9,
+      time_since_posted: "3d",
+      is_liked: true,
+      is_active: true
     }
   ];
 
   return (
-    <div className="max-w-4xl mx-auto">
-      {/* Cover Photo */}
-      <div className="h-48 md:h-64 bg-gradient-to-r from-purple-500 to-pink-500 relative">
-        {user.coverImage && (
-          <img src={user.coverImage} alt="Cover" className="w-full h-full object-cover" />
-        )}
-        <div className="absolute inset-0 bg-black/20"></div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900">
+      {/* Header */}
+      <div className="sticky top-0 z-50 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-white/10">
+        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+          {onBack && (
+            <Button 
+              variant="ghost" 
+              onClick={onBack} 
+              className="text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10"
+            >
+              ← Back
+            </Button>
+          )}
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Profile</h1>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10"
+          >
+            <MoreHorizontal className="h-5 w-5" />
+          </Button>
+        </div>
       </div>
 
-      {/* Profile Info */}
-      <div className="px-4 pb-4">
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between -mt-16 md:-mt-20">
-          <div className="flex flex-col md:flex-row md:items-end space-y-4 md:space-y-0 md:space-x-4">
-            <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 p-1 mx-auto md:mx-0">
-              <div className="w-full h-full rounded-full bg-background flex items-center justify-center overflow-hidden">
-                {user.avatar ? (
-                  <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-4xl md:text-5xl font-bold">{user.name.charAt(0)}</span>
-                )}
-              </div>
-            </div>
-
-            <div className="text-center md:text-left space-y-2 md:pb-4">
-              <div className="flex items-center justify-center md:justify-start space-x-2">
-                <h1 className="text-2xl md:text-3xl font-bold">{user.name}</h1>
-                {user.verified && (
-                  <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-xs">✓</span>
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* Profile Header Card - No Background Photo */}
+        <div className="bg-white/60 dark:bg-black/40 backdrop-blur-md border border-gray-200 dark:border-white/20 rounded-2xl mb-6 shadow-xl">
+          <div className="p-8">
+            <div className="flex flex-col md:flex-row items-start gap-6">
+              {/* Profile Picture */}
+              <div className="relative">
+                <div className="w-32 h-32 rounded-full bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 p-1">
+                  <div className="w-full h-full rounded-full bg-white dark:bg-gray-900 flex items-center justify-center overflow-hidden">
+                    {user.avatar ? (
+                      <img 
+                        src={user.avatar} 
+                        alt="Profile" 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                        {user.name.charAt(0)}
+                      </span>
+                    )}
                   </div>
+                </div>
+                {isOwnProfile && (
+                  <Button
+                    size="icon"
+                    className="absolute -bottom-2 -right-2 rounded-full bg-purple-600 hover:bg-purple-700 text-white shadow-lg"
+                  >
+                    <Edit3 className="h-4 w-4" />
+                  </Button>
                 )}
               </div>
-              <p className="text-muted-foreground">@{user.username}</p>
-            </div>
-          </div>
 
-          <div className="flex items-center justify-center md:justify-end space-x-2 mt-4 md:mt-0">
-            {isOwnProfile ? (
-              <Button variant="outline">
-                <Settings className="w-4 h-4 mr-2" />
-                Edit Profile
-              </Button>
-            ) : (
-              <>
-                <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
-                  Follow
-                </Button>
-                <Button variant="outline">Message</Button>
-              </>
-            )}
+              {/* Profile Info */}
+              <div className="flex-1 space-y-4">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                        {user.name}
+                      </h1>
+                      {user.verified && (
+                        <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                          <span className="text-white text-xs">✓</span>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-purple-600 dark:text-purple-300 text-lg mb-2">
+                      @{user.username}
+                    </p>
+                    <div className="inline-flex px-3 py-1 bg-purple-100 dark:bg-purple-600/20 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30 rounded-full text-sm font-medium">
+                      Pro Member
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    {isOwnProfile ? (
+                      <Button 
+                        variant="outline" 
+                        className="border-gray-300 dark:border-white/20 text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10"
+                      >
+                        <Settings className="w-4 h-4 mr-2" />
+                        Edit Profile
+                      </Button>
+                    ) : (
+                      <>
+                        <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6">
+                          Follow
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          className="border-gray-300 dark:border-white/20 text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10"
+                        >
+                          Message
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Bio */}
+                <p className="text-gray-700 dark:text-gray-300 text-lg leading-relaxed max-w-2xl">
+                  {user.bio}
+                </p>
+
+                {/* Details */}
+                <div className="flex flex-wrap gap-6 text-gray-600 dark:text-gray-400">
+                  {user.location && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      <span>{user.location}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    <span>Joined {user.joinDate}</span>
+                  </div>
+                  {user.website && (
+                    <div className="flex items-center gap-2">
+                      <LinkIcon className="h-4 w-4" />
+                      <a 
+                        href={`https://${user.website}`} 
+                        className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 transition-colors"
+                      >
+                        {user.website}
+                      </a>
+                    </div>
+                  )}
+                </div>
+
+                {/* Stats */}
+                <div className="flex gap-8 pt-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {user.following.toLocaleString()}
+                    </div>
+                    <div className="text-gray-600 dark:text-gray-400 text-sm">Following</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {user.followers.toLocaleString()}
+                    </div>
+                    <div className="text-gray-600 dark:text-gray-400 text-sm">Followers</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {user.posts}
+                    </div>
+                    <div className="text-gray-600 dark:text-gray-400 text-sm">Posts</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {user.media}
+                    </div>
+                    <div className="text-gray-600 dark:text-gray-400 text-sm">Media</div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="mt-6 space-y-4">
-          <p className="text-center md:text-left">{user.bio}</p>
-
-          <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm text-muted-foreground">
-            {user.location && (
-              <div className="flex items-center space-x-1">
-                <MapPin className="w-4 h-4" />
-                <span>{user.location}</span>
-              </div>
-            )}
-            {user.website && (
-              <div className="flex items-center space-x-1">
-                <LinkIcon className="w-4 h-4" />
-                <a href={`https://${user.website}`} className="text-purple-500 hover:underline">
-                  {user.website}
-                </a>
-              </div>
-            )}
-            <div className="flex items-center space-x-1">
-              <Calendar className="w-4 h-4" />
-              <span>Joined {user.joinDate}</span>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-center md:justify-start space-x-6 text-sm">
-            <div>
-              <span className="font-bold">{user.posts}</span> <span className="text-muted-foreground">Posts</span>
-            </div>
-            <div>
-              <span className="font-bold">{user.followers.toLocaleString()}</span>{" "}
-              <span className="text-muted-foreground">Followers</span>
-            </div>
-            <div>
-              <span className="font-bold">{user.following}</span>{" "}
-              <span className="text-muted-foreground">Following</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="border-t border-border mt-6">
+        {/* Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-transparent h-auto p-0">
-            <TabsTrigger
-              value="posts"
-              className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-purple-500 rounded-none py-4"
-            >
-              Posts
-            </TabsTrigger>
-            <TabsTrigger
-              value="media"
-              className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-purple-500 rounded-none py-4"
-            >
-              Media
-            </TabsTrigger>
-          </TabsList>
+          <div className="bg-white/60 dark:bg-black/40 backdrop-blur-md border border-gray-200 dark:border-white/20 rounded-2xl mb-6">
+            <TabsList className="grid w-full grid-cols-2 bg-transparent h-auto p-0">
+              <TabsTrigger
+                value="posts"
+                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-gray-700 dark:text-gray-300 rounded-none py-4 font-medium"
+              >
+                Posts
+              </TabsTrigger>
+              <TabsTrigger
+                value="media"
+                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-gray-700 dark:text-gray-300 rounded-none py-4 font-medium"
+              >
+                Media
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-          <TabsContent value="posts" className="mt-6 space-y-6">
+          <TabsContent value="posts" className="space-y-4 mt-6">
             {userPosts.map((post) => (
               <PostCard key={post.id} post={post} />
             ))}
           </TabsContent>
 
           <TabsContent value="media" className="mt-6">
-            <div className="grid grid-cols-3 gap-1">
-              {Array.from({ length: 9 }).map((_, i) => (
-                <div key={i} className="aspect-square bg-muted rounded-lg overflow-hidden">
-                  <div className="w-full h-full bg-gradient-to-br from-purple-200 to-pink-200 dark:from-purple-800 dark:to-pink-800 flex items-center justify-center">
-                    <span className="text-2xl opacity-50">📷</span>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {Array.from({ length: 6 }).map((i) => (
+                <div 
+                  key={i} 
+                  className="aspect-square bg-white/60 dark:bg-black/40 backdrop-blur-md border border-gray-200 dark:border-white/20 rounded-lg overflow-hidden"
+                >
+                  <div className="w-full h-full bg-gradient-to-br from-purple-200 to-pink-200 dark:from-purple-800 dark:to-pink-800 flex items-center justify-center hover:scale-105 transition-transform cursor-pointer">
+                    <span className="text-4xl opacity-50">📷</span>
                   </div>
                 </div>
               ))}

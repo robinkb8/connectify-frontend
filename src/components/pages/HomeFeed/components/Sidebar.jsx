@@ -9,7 +9,7 @@ function Sidebar({ isOpen, onClose }) {
   const menuItems = [
     { icon: Home, label: 'Home', active: true },
     { icon: Search, label: 'Search' },
-    { icon: User, label: 'Profile' },
+    { icon: User, label: 'Upgrade profile' },
   ];
 
   if (!isOpen) return null;
