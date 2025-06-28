@@ -8,7 +8,7 @@ import {
   Bookmark
 } from "lucide-react";
 import { Button } from '../../../../ui/Button/Button';
-import CommentsModal from '../../../../modals/CommentsModal';
+import CommentsModal from '../../../../modals/CommentsModal/CommentsModal';
 import ShareModal from '../../../../modals/ShareModal';
 import PostOptionsMenu from '../../../../modals/PostOptionsMenu';
 

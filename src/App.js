@@ -1,9 +1,9 @@
-// src/App.js
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './components/providers/ThemeProvider';
 import LandingPage from './components/pages/LandingPage';
 import HomeFeed from './components/pages/HomeFeed';
 import UpgradePage from './components/pages/UpgradePage';
+import SettingsPage from './components/pages/Settings/SettingsPage'; // ✅ NEW IMPORT
 
 function App() {
   return (
@@ -14,6 +14,7 @@ function App() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/home" element={<HomeFeed />} />
             <Route path="/upgrade" element={<UpgradePage />} />
+            <Route path="/settings" element={<SettingsPage />} /> {/* ✅ NEW ROUTE */}
           </Routes>
         </div>
       </Router>
