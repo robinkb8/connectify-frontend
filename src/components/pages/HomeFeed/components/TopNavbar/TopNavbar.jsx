@@ -1,4 +1,4 @@
-// ===== src/components/pages/HomeFeed/components/TopNavbar/TopNavbar.jsx =====
+// src/components/pages/HomeFeed/components/TopNavbar/TopNavbar.jsx
 import React, { useState } from 'react';
 import { Menu, Bell } from "lucide-react";
 import { Button } from '../../../../ui/Button/Button';
@@ -30,7 +30,7 @@ function TopNavbar({ activeTab }) {
             </Button>
 
             <h1 className="text-xl font-bold">
-              <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-blue-400 to-teal-400 bg-clip-text text-transparent">
                 Connectify
               </span>
             </h1>

@@ -1,15 +1,24 @@
+// src/components/pages/HomeFeed/components/Sidebar.jsx
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Home, Search, User, Settings, LogOut, X, Moon, Sun } from 'lucide-react';
 import { Button } from '../../../ui/Button/Button';
 import { useTheme } from '../../../providers/ThemeProvider';
 
 function Sidebar({ isOpen, onClose }) {
   const { theme, toggleTheme } = useTheme();
+  const navigate = useNavigate();
+
+  const handleUpgradeClick = () => {
+    console.log('Navigating to upgrade page...');
+    navigate('/upgrade');
+    onClose(); // Close sidebar after navigation
+  };
 
   const menuItems = [
-    { icon: Home, label: 'Home', active: true },
-    { icon: Search, label: 'Search' },
-    { icon: User, label: 'Upgrade profile' },
+    { icon: Home, label: 'Home', active: true, onClick: null },
+    { icon: Search, label: 'Search', active: false, onClick: null },
+    { icon: User, label: 'Upgrade profile', active: false, onClick: handleUpgradeClick },
   ];
 
   if (!isOpen) return null;
@@ -47,6 +56,7 @@ function Sidebar({ isOpen, onClose }) {
             return (
               <button
                 key={item.label}
+                onClick={item.onClick}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                   item.active 
                     ? 'bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800' 

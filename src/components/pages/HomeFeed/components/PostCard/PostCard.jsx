@@ -1,4 +1,4 @@
-// ===== REPLACE src/components/pages/HomeFeed/components/PostCard.jsx =====
+// src/components/pages/HomeFeed/components/PostCard/PostCard.jsx
 import React, { useState } from 'react';
 import { 
   Heart, 
@@ -62,7 +62,19 @@ function PostCard({ post }) {
     }
   };
 
-  // ✅ Enhanced Image Rendering with Multiple Layout Support
+  const handleComment = () => {
+    setShowComments(true);
+  };
+
+  const handleShare = () => {
+    setShowShare(true);
+  };
+
+  const handleSave = () => {
+    setIsSaved(!isSaved);
+  };
+
+  // ✅ Image rendering logic for multiple images
   const renderImages = () => {
     if (!content.images || content.images.length === 0) return null;
 
@@ -70,14 +82,11 @@ function PostCard({ post }) {
 
     if (imageCount === 1) {
       return (
-        <div className="rounded-xl overflow-hidden">
+        <div className="relative">
           <img
             src={content.images[0]}
             alt="Post content"
-            className="w-full h-auto max-h-96 object-cover cursor-pointer hover:opacity-95 transition-opacity"
-            onError={(e) => {
-              e.target.src = '/api/placeholder/600/400';
-            }}
+            className="w-full max-h-96 object-cover rounded-lg cursor-pointer"
           />
         </div>
       );
@@ -85,16 +94,13 @@ function PostCard({ post }) {
 
     if (imageCount === 2) {
       return (
-        <div className="grid grid-cols-2 gap-2 rounded-xl overflow-hidden">
+        <div className="grid grid-cols-2 gap-2">
           {content.images.map((image, index) => (
             <img
               key={index}
               src={image}
               alt={`Post content ${index + 1}`}
-              className="w-full h-48 object-cover cursor-pointer hover:opacity-95 transition-opacity"
-              onError={(e) => {
-                e.target.src = '/api/placeholder/300/200';
-              }}
+              className="w-full h-64 object-cover rounded-lg cursor-pointer"
             />
           ))}
         </div>
@@ -103,23 +109,21 @@ function PostCard({ post }) {
 
     if (imageCount === 3) {
       return (
-        <div className="grid grid-cols-2 gap-2 rounded-xl overflow-hidden">
+        <div className="grid grid-cols-2 gap-2">
           <img
             src={content.images[0]}
             alt="Post content 1"
-            className="w-full h-96 object-cover cursor-pointer hover:opacity-95 transition-opacity"
+            className="w-full h-64 object-cover rounded-lg cursor-pointer row-span-2"
           />
           <div className="grid grid-rows-2 gap-2">
-            <img
-              src={content.images[1]}
-              alt="Post content 2"
-              className="w-full h-47 object-cover cursor-pointer hover:opacity-95 transition-opacity"
-            />
-            <img
-              src={content.images[2]}
-              alt="Post content 3"
-              className="w-full h-47 object-cover cursor-pointer hover:opacity-95 transition-opacity"
-            />
+            {content.images.slice(1).map((image, index) => (
+              <img
+                key={index + 1}
+                src={image}
+                alt={`Post content ${index + 2}`}
+                className="w-full h-32 object-cover rounded-lg cursor-pointer"
+              />
+            ))}
           </div>
         </div>
       );
@@ -127,13 +131,13 @@ function PostCard({ post }) {
 
     if (imageCount >= 4) {
       return (
-        <div className="grid grid-cols-2 gap-2 rounded-xl overflow-hidden">
+        <div className="grid grid-cols-2 gap-2">
           {content.images.slice(0, 3).map((image, index) => (
             <img
               key={index}
               src={image}
               alt={`Post content ${index + 1}`}
-              className={`w-full object-cover cursor-pointer hover:opacity-95 transition-opacity ${
+              className={`w-full object-cover rounded-lg cursor-pointer ${
                 index === 0 ? "h-96 row-span-2" : "h-47"
               }`}
             />
@@ -159,13 +163,13 @@ function PostCard({ post }) {
 
   return (
     <>
-      {/* ✅ NEW DESIGN - Glassmorphism Card */}
+      {/* ✅ NEW DESIGN - Glassmorphism Card with Blue/Teal Colors */}
       <div className="bg-card/50 backdrop-blur-sm border border-border rounded-2xl p-6 space-y-4">
         
         {/* ✅ Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-teal-500 flex items-center justify-center">
               <span className="text-white font-bold text-lg">
                 {user.name.charAt(0).toUpperCase()}
               </span>
@@ -213,35 +217,37 @@ function PostCard({ post }) {
               }`}
             >
               <Heart className={`h-5 w-5 ${isLiked ? "fill-current" : ""}`} />
-              <span>{likesCount}</span>
+              <span className="text-sm font-medium">{likesCount}</span>
             </Button>
 
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setShowComments(true)}
+              onClick={handleComment}
               className="flex items-center space-x-2 text-muted-foreground hover:text-foreground"
             >
               <MessageCircle className="h-5 w-5" />
-              <span>{stats.comments}</span>
+              <span className="text-sm font-medium">{stats.comments}</span>
             </Button>
 
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setShowShare(true)}
+              onClick={handleShare}
               className="flex items-center space-x-2 text-muted-foreground hover:text-foreground"
             >
               <Share2 className="h-5 w-5" />
-              <span>{stats.shares}</span>
+              <span className="text-sm font-medium">{stats.shares}</span>
             </Button>
           </div>
 
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setIsSaved(!isSaved)}
-            className={`${isSaved ? "text-purple-500 hover:text-purple-400" : "text-muted-foreground hover:text-foreground"}`}
+            onClick={handleSave}
+            className={`${
+              isSaved ? "text-blue-500" : "text-muted-foreground"
+            } hover:text-foreground`}
           >
             <Bookmark className={`h-5 w-5 ${isSaved ? "fill-current" : ""}`} />
           </Button>
@@ -249,16 +255,16 @@ function PostCard({ post }) {
       </div>
 
       {/* ✅ Modals */}
-      <CommentsModal 
-        isOpen={showComments} 
-        onClose={() => setShowComments(false)} 
+      <CommentsModal
+        isOpen={showComments}
+        onClose={() => setShowComments(false)}
         postId={post.id}
       />
 
       <ShareModal
         isOpen={showShare}
         onClose={() => setShowShare(false)}
-        postContent={content.text || "Check out this post on Connectify!"}
+        postContent={content.text}
       />
     </>
   );

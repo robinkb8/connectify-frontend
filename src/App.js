@@ -1,8 +1,9 @@
-// ✅ MAKE SURE App.js has ThemeProvider wrapped correctly
+// src/App.js
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './components/providers/ThemeProvider';
 import LandingPage from './components/pages/LandingPage';
 import HomeFeed from './components/pages/HomeFeed';
+import UpgradePage from './components/pages/UpgradePage';
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/home" element={<HomeFeed />} />
+            <Route path="/upgrade" element={<UpgradePage />} />
           </Routes>
         </div>
       </Router>

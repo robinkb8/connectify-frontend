@@ -2,10 +2,9 @@
 import React from "react";
 
 const buttonVariants = {
-  default: "bg-primary text-primary-foreground hover:bg-primary/90 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600",
-  outline: "border border-input hover:bg-accent hover:text-accent-foreground dark:border-gray-600 dark:hover:bg-gray-800 dark:text-gray-100",
-  ghost: "hover:bg-accent hover:text-accent-foreground dark:hover:bg-gray-800 dark:text-gray-100",
-  // ... add dark: classes to other variants
+  default: "bg-gradient-to-r from-blue-500 to-teal-500 text-white hover:from-blue-600 hover:to-teal-600 dark:from-blue-500 dark:to-teal-500 dark:hover:from-blue-600 dark:hover:to-teal-600",
+  outline: "border border-slate-700 hover:bg-slate-800/50 hover:text-white dark:border-slate-600 dark:hover:bg-slate-800 dark:text-slate-100",
+  ghost: "hover:bg-slate-800/50 hover:text-white dark:hover:bg-slate-800 dark:text-slate-100",
 };
 
 const buttonSizes = {
@@ -22,7 +21,7 @@ export const Button = React.forwardRef(({
   children,
   ...props 
 }, ref) => {
-  const baseClasses = "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background";
+  const baseClasses = "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background";
   
   const variantClasses = buttonVariants[variant] || buttonVariants.default;
   const sizeClasses = buttonSizes[size] || buttonSizes.default;

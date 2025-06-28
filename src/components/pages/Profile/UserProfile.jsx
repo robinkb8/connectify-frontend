@@ -1,4 +1,4 @@
-// ===== src/components/pages/Profile/UserProfile.jsx - UPDATED =====
+// src/components/pages/Profile/UserProfile.jsx
 import React, { useState } from 'react';
 import { Settings, MapPin, Calendar, LinkIcon, Edit3, MoreHorizontal } from "lucide-react";
 import { Button } from '../../ui/Button/Button';
@@ -65,7 +65,7 @@ function UserProfile({ isOwnProfile = false, onBack }) {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50 dark:from-slate-900 dark:via-blue-900 dark:to-slate-900">
       {/* Header */}
       <div className="sticky top-0 z-50 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-white/10">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -96,7 +96,7 @@ function UserProfile({ isOwnProfile = false, onBack }) {
             <div className="flex flex-col md:flex-row items-start gap-6">
               {/* Profile Picture */}
               <div className="relative">
-                <div className="w-32 h-32 rounded-full bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 p-1">
+                <div className="w-32 h-32 rounded-full bg-gradient-to-r from-blue-500 via-teal-500 to-emerald-500 p-1">
                   <div className="w-full h-full rounded-full bg-white dark:bg-gray-900 flex items-center justify-center overflow-hidden">
                     {user.avatar ? (
                       <img 
@@ -105,7 +105,7 @@ function UserProfile({ isOwnProfile = false, onBack }) {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                      <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent">
                         {user.name.charAt(0)}
                       </span>
                     )}
@@ -114,7 +114,7 @@ function UserProfile({ isOwnProfile = false, onBack }) {
                 {isOwnProfile && (
                   <Button
                     size="icon"
-                    className="absolute -bottom-2 -right-2 rounded-full bg-purple-600 hover:bg-purple-700 text-white shadow-lg"
+                    className="absolute -bottom-2 -right-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
                   >
                     <Edit3 className="h-4 w-4" />
                   </Button>
@@ -135,10 +135,10 @@ function UserProfile({ isOwnProfile = false, onBack }) {
                         </div>
                       )}
                     </div>
-                    <p className="text-purple-600 dark:text-purple-300 text-lg mb-2">
+                    <p className="text-blue-600 dark:text-blue-300 text-lg mb-2">
                       @{user.username}
                     </p>
-                    <div className="inline-flex px-3 py-1 bg-purple-100 dark:bg-purple-600/20 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30 rounded-full text-sm font-medium">
+                    <div className="inline-flex px-3 py-1 bg-blue-100 dark:bg-blue-600/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30 rounded-full text-sm font-medium">
                       Pro Member
                     </div>
                   </div>
@@ -154,7 +154,7 @@ function UserProfile({ isOwnProfile = false, onBack }) {
                       </Button>
                     ) : (
                       <>
-                        <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6">
+                        <Button className="bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white px-6">
                           Follow
                         </Button>
                         <Button 
@@ -188,10 +188,7 @@ function UserProfile({ isOwnProfile = false, onBack }) {
                   {user.website && (
                     <div className="flex items-center gap-2">
                       <LinkIcon className="h-4 w-4" />
-                      <a 
-                        href={`https://${user.website}`} 
-                        className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 transition-colors"
-                      >
+                      <a href={`https://${user.website}`} className="text-blue-600 dark:text-blue-400 hover:underline">
                         {user.website}
                       </a>
                     </div>
@@ -201,28 +198,16 @@ function UserProfile({ isOwnProfile = false, onBack }) {
                 {/* Stats */}
                 <div className="flex gap-8 pt-4">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {user.following.toLocaleString()}
-                    </div>
-                    <div className="text-gray-600 dark:text-gray-400 text-sm">Following</div>
+                    <div className="text-2xl font-bold text-gray-900 dark:text-white">{user.posts}</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Posts</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {user.followers.toLocaleString()}
-                    </div>
-                    <div className="text-gray-600 dark:text-gray-400 text-sm">Followers</div>
+                    <div className="text-2xl font-bold text-gray-900 dark:text-white">{user.followers.toLocaleString()}</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Followers</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {user.posts}
-                    </div>
-                    <div className="text-gray-600 dark:text-gray-400 text-sm">Posts</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {user.media}
-                    </div>
-                    <div className="text-gray-600 dark:text-gray-400 text-sm">Media</div>
+                    <div className="text-2xl font-bold text-gray-900 dark:text-white">{user.following}</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Following</div>
                   </div>
                 </div>
               </div>
@@ -230,19 +215,19 @@ function UserProfile({ isOwnProfile = false, onBack }) {
           </div>
         </div>
 
-        {/* Content Tabs */}
+        {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="bg-white/60 dark:bg-black/40 backdrop-blur-md border border-gray-200 dark:border-white/20 rounded-2xl mb-6">
             <TabsList className="grid w-full grid-cols-2 bg-transparent h-auto p-0">
               <TabsTrigger
                 value="posts"
-                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-gray-700 dark:text-gray-300 rounded-none py-4 font-medium"
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-teal-600 data-[state=active]:text-white text-gray-700 dark:text-gray-300 rounded-none py-4 font-medium"
               >
                 Posts
               </TabsTrigger>
               <TabsTrigger
                 value="media"
-                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-gray-700 dark:text-gray-300 rounded-none py-4 font-medium"
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-teal-600 data-[state=active]:text-white text-gray-700 dark:text-gray-300 rounded-none py-4 font-medium"
               >
                 Media
               </TabsTrigger>
@@ -262,7 +247,7 @@ function UserProfile({ isOwnProfile = false, onBack }) {
                   key={i} 
                   className="aspect-square bg-white/60 dark:bg-black/40 backdrop-blur-md border border-gray-200 dark:border-white/20 rounded-lg overflow-hidden"
                 >
-                  <div className="w-full h-full bg-gradient-to-br from-purple-200 to-pink-200 dark:from-purple-800 dark:to-pink-800 flex items-center justify-center hover:scale-105 transition-transform cursor-pointer">
+                  <div className="w-full h-full bg-gradient-to-br from-blue-200 to-teal-200 dark:from-blue-800 dark:to-teal-800 flex items-center justify-center hover:scale-105 transition-transform cursor-pointer">
                     <span className="text-4xl opacity-50">📷</span>
                   </div>
                 </div>
