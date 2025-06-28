@@ -5,6 +5,7 @@ import { FORM_STATES } from '../../../utils/constants/validation';
 import Input from '../../ui/Input/Input';
 import { Button } from '../../ui/Button/Button';
 import { X, Mail, Lock, User, Phone, Eye, EyeOff } from "lucide-react";
+import { toast } from '../../ui/Toast'; 
 
 const DJANGO_API_CONFIG = {
   baseURL: 'http://127.0.0.1:8000',
@@ -140,12 +141,12 @@ function SignUpForm({ isOpen, onClose, onSwitchToLogin }) {
         console.log('✅ OTP sent successfully');
       } else {
         setOtpState(SIGNUP_FORM_CONFIG.otpStates.NOT_SENT);
-        alert(`Failed to send OTP: ${result.error}`);
+        toast.error(`Failed to send OTP: ${result.error}`);
       }
     } catch (error) {
       setOtpState(SIGNUP_FORM_CONFIG.otpStates.NOT_SENT);
       console.error('OTP sending error:', error);
-      alert(SIGNUP_FORM_CONFIG.messages.serverError);
+      toast.error(SIGNUP_FORM_CONFIG.messages.serverError);
     }
   }, [values.email, validation.email]);
 
@@ -165,7 +166,7 @@ function SignUpForm({ isOpen, onClose, onSwitchToLogin }) {
         console.log('✅ OTP verified successfully');
       } else {
         setOtpState(SIGNUP_FORM_CONFIG.otpStates.SENT);
-        alert(SIGNUP_FORM_CONFIG.messages.invalidOtp);
+        toast.error(SIGNUP_FORM_CONFIG.messages.invalidOtp);
         setOtp('');
       }
     } catch (error) {
@@ -179,7 +180,7 @@ function SignUpForm({ isOpen, onClose, onSwitchToLogin }) {
     e.preventDefault();
     
     if (!isValid || otpState !== SIGNUP_FORM_CONFIG.otpStates.VERIFIED) {
-      alert('Please complete all fields and verify your email first.');
+      toast.warning('Please complete all fields and verify your email first.');
       return;
     }
 
@@ -207,7 +208,7 @@ function SignUpForm({ isOpen, onClose, onSwitchToLogin }) {
           setOtpState(SIGNUP_FORM_CONFIG.otpStates.NOT_SENT);
           setOtp('');
           reset();
-          alert('Account created successfully! You can now login.');
+          toast.success('Account created successfully! You can now login.');
         }, SIGNUP_FORM_CONFIG.timing.successDisplayTime);
       } else {
         setFormState(FORM_STATES.ERROR);

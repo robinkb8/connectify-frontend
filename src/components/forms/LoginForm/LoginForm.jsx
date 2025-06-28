@@ -91,18 +91,18 @@ const LOGIN_FORM_UTILS = {
     };
   },
 
-  handleLoginSuccess: (onClose, reset, setFormState, setGoogleAuthState, message) => {
-    console.log('✅ Login successful');
-    if (setFormState) setFormState(FORM_STATES.SUCCESS);
-    if (setGoogleAuthState) setGoogleAuthState(FORM_STATES.SUCCESS);
-    setTimeout(() => {
-      onClose();
-      if (reset) reset();
-      if (setFormState) setFormState(FORM_STATES.IDLE);
-      if (setGoogleAuthState) setGoogleAuthState(FORM_STATES.IDLE);
-      alert(message);
-    }, LOGIN_FORM_CONFIG.timing.successDisplayTime);
-  },
+  handleLoginSuccess: (onClose, reset, setFormState, setGoogleAuthState, message, toast) => {
+  console.log('✅ Login successful');
+  if (setFormState) setFormState(FORM_STATES.SUCCESS);
+  if (setGoogleAuthState) setGoogleAuthState(FORM_STATES.SUCCESS);
+  toast.success(message); // ✅ USE TOAST
+  setTimeout(() => {
+    onClose();
+    if (reset) reset();
+    if (setFormState) setFormState(FORM_STATES.IDLE);
+    if (setGoogleAuthState) setGoogleAuthState(FORM_STATES.IDLE);
+  }, LOGIN_FORM_CONFIG.timing.successDisplayTime);
+},
 
   handleLoginError: (setFormState, setGoogleAuthState, message) => {
     if (setFormState) setFormState(FORM_STATES.ERROR);
@@ -176,6 +176,7 @@ function LoginForm({ isOpen, onClose, onSwitchToSignUp }) {
             setFormState,
             null,
             result.data.message || LOGIN_FORM_CONFIG.messages.loginSuccess
+            toast
           );
         } else {
           setFormState(FORM_STATES.ERROR);
@@ -215,6 +216,7 @@ function LoginForm({ isOpen, onClose, onSwitchToSignUp }) {
             null,
             setGoogleAuthState,
             LOGIN_FORM_CONFIG.messages.googleLoginSuccess
+            toast
           );
           navigate('/home');
          } else {
@@ -388,7 +390,7 @@ function LoginForm({ isOpen, onClose, onSwitchToSignUp }) {
                 <button
                   type="button"
                   className="text-sm text-blue-400 hover:text-blue-300 transition-colors duration-200"
-                  onClick={() => alert('Forgot password functionality will be implemented soon!')}
+                  onClick={() => toast.info('Forgot password functionality will be implemented soon!')}
                 >
                   Forgot your password?
                 </button>

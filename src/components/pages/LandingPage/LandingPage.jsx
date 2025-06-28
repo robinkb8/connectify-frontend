@@ -3,8 +3,12 @@ import React, { useState, useEffect, useCallback } from "react";
 import { ArrowRight, Users, MessageCircle, Heart, Share2, Mail, MapPin, Phone } from "lucide-react";
 import SignUpModal from "../../forms/SignUpForm/SignUpForm";
 import LoginForm from "../../forms/LoginForm/LoginForm";
-import { useToast } from '../ui/Toast';
+import { toast } from '../../ui/Toast';
 
+const testToasts = () => {
+  toast.success("✅ Toast system working!");
+  setTimeout(() => toast.error("❌ Error toast test!"), 1000);
+};
 
 const ConnectifyLanding = () => {
   // ✅ BACKGROUND ANIMATION STATE
