@@ -276,8 +276,8 @@ function LoginForm({ isOpen, onClose, onSwitchToSignUp }) {
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} />
 
       <div className="relative w-full max-w-md">
-        <div className="relative bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 rounded-3xl border border-purple-500/20 shadow-2xl backdrop-blur-xl">
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-pink-500/10 rounded-3xl" />
+        <div className="relative bg-gradient-to-br from-slate-900 via-blue-900/20 to-slate-900 rounded-3xl border border-blue-500/20 shadow-2xl backdrop-blur-xl">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-teal-500/10 rounded-3xl" />
 
           <div className="relative p-8">
             <button
@@ -289,9 +289,9 @@ function LoginForm({ isOpen, onClose, onSwitchToSignUp }) {
 
             <div className="text-center mb-8">
               <h2 className="text-3xl font-bold mb-2">
-                <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                  Welcome Back
-                </span>
+                <span className="bg-gradient-to-r from-blue-400 to-teal-400 bg-clip-text text-transparent">
+                     Welcome Back
+                    </span>
               </h2>
               <p className="text-gray-400">
                 Sign in to your account
@@ -367,7 +367,7 @@ function LoginForm({ isOpen, onClose, onSwitchToSignUp }) {
                   value={values.password}
                   onChange={handleInputChange('password')}
                   onBlur={handleInputBlur('password')}
-                  className="h-12 pl-10 pr-10 bg-slate-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-purple-500/20"
+                  className="h-12 pl-10 pr-10 bg-slate-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500/20"
                 />
                 <button
                   type="button"
@@ -384,7 +384,7 @@ function LoginForm({ isOpen, onClose, onSwitchToSignUp }) {
               <div className="text-right">
                 <button
                   type="button"
-                  className="text-sm text-purple-400 hover:text-purple-300 transition-colors duration-200"
+                  className="text-sm text-blue-400 hover:text-blue-300 transition-colors duration-200"
                   onClick={() => alert('Forgot password functionality will be implemented soon!')}
                 >
                   Forgot your password?
@@ -394,7 +394,7 @@ function LoginForm({ isOpen, onClose, onSwitchToSignUp }) {
               <Button
                 type="submit"
                 disabled={formState === FORM_STATES.SUBMITTING || !isValid}
-                className="w-full h-12 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold shadow-lg hover:shadow-purple-500/25 transition-all duration-300 disabled:cursor-not-allowed"
+                className="w-full h-12 bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold shadow-lg hover:shadow-blue-500/25 transition-all duration-300 disabled:cursor-not-allowed"
               >
                 {formState === FORM_STATES.SUBMITTING ? (
                   <div className="flex items-center justify-center space-x-2">
@@ -411,7 +411,7 @@ function LoginForm({ isOpen, onClose, onSwitchToSignUp }) {
               <span className="text-gray-400">Don't have an account? </span>
               <button
                 onClick={onSwitchToSignUp}
-                className="text-purple-400 hover:text-purple-300 transition-colors font-medium"
+                className="text-blue-400 hover:text-blue-300 transition-colors font-medium"
               >
                 Sign Up
               </button>

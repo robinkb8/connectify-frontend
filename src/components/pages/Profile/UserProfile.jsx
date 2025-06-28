@@ -1,30 +1,36 @@
 // src/components/pages/Profile/UserProfile.jsx
 import React, { useState } from 'react';
-import { Settings, MapPin, Calendar, LinkIcon, Edit3, MoreHorizontal } from "lucide-react";
+import { Settings, MapPin, Calendar, LinkIcon, Edit3, MoreHorizontal, MessageCircle, UserPlus, UserCheck } from "lucide-react";
 import { Button } from '../../ui/Button/Button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/Tabs/Tabs';
 import PostCard from '../HomeFeed/components/PostCard';
 
 function UserProfile({ isOwnProfile = false, onBack }) {
   const [activeTab, setActiveTab] = useState("posts");
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [followerCount, setFollowerCount] = useState(1234);
 
-  // ✅ Mock user data - replace with real API calls later
+  // DEBUG: Log the isOwnProfile value
+  console.log("🔍 UserProfile isOwnProfile:", isOwnProfile);
+
+  // ✅ Mock user data
   const user = {
     name: "ROBIN",
     username: "Robinkb",
     bio: "Full-stack developer passionate about creating amazing user experiences. Love working with React, Node.js, and exploring new technologies. Always learning, always building! 🚀",
-    location: "Ernakulam kerala ",
+    location: "Ernakulam kerala",
     website: "yoursite.dev",
     avatar: "",
     verified: true,
     joinDate: "March 2023",
-    followers: 1234,
+    followers: followerCount,
     following: 567,
     posts: 89,
     media: 42,
   };
 
-  // ✅ Mock posts data - replace with real API calls later
+  // ✅ Mock posts data with correct structure for PostCard
   const userPosts = [
     {
       id: 1,
@@ -36,7 +42,7 @@ function UserProfile({ isOwnProfile = false, onBack }) {
       total_shares: 12,
       time_since_posted: "2h",
       is_liked: false,
-      is_active: true
+      is_active: true,
     },
     {
       id: 2,
@@ -48,7 +54,7 @@ function UserProfile({ isOwnProfile = false, onBack }) {
       total_shares: 7,
       time_since_posted: "1d",
       is_liked: false,
-      is_active: true
+      is_active: true,
     },
     {
       id: 3,
@@ -60,9 +66,44 @@ function UserProfile({ isOwnProfile = false, onBack }) {
       total_shares: 9,
       time_since_posted: "3d",
       is_liked: true,
-      is_active: true
-    }
+      is_active: true,
+    },
   ];
+
+  // ✅ Handle Follow/Unfollow
+  const handleFollow = async () => {
+    console.log("🔥 Follow button clicked!");
+    setIsLoading(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      if (isFollowing) {
+        setIsFollowing(false);
+        setFollowerCount(prev => prev - 1);
+        console.log('✅ Unfollowed user');
+      } else {
+        setIsFollowing(true);
+        setFollowerCount(prev => prev + 1);
+        console.log('✅ Followed user');
+      }
+    } catch (error) {
+      console.error('❌ Error updating follow status:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ✅ Handle Message
+  const handleMessage = () => {
+    console.log('💬 Message button clicked!');
+    alert('Message functionality coming soon!');
+  };
+
+  // ✅ Handle Edit Profile
+  const handleEditProfile = () => {
+    console.log('⚙️ Edit Profile clicked!');
+    alert('Edit Profile functionality coming soon!');
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50 dark:from-slate-900 dark:via-blue-900 dark:to-slate-900">
@@ -90,7 +131,7 @@ function UserProfile({ isOwnProfile = false, onBack }) {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Profile Header Card - No Background Photo */}
+        {/* Profile Header Card */}
         <div className="bg-white/60 dark:bg-black/40 backdrop-blur-md border border-gray-200 dark:border-white/20 rounded-2xl mb-6 shadow-xl">
           <div className="p-8">
             <div className="flex flex-col md:flex-row items-start gap-6">
@@ -114,6 +155,7 @@ function UserProfile({ isOwnProfile = false, onBack }) {
                 {isOwnProfile && (
                   <Button
                     size="icon"
+                    onClick={handleEditProfile}
                     className="absolute -bottom-2 -right-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
                   >
                     <Edit3 className="h-4 w-4" />
@@ -143,29 +185,7 @@ function UserProfile({ isOwnProfile = false, onBack }) {
                     </div>
                   </div>
 
-                  <div className="flex gap-3">
-                    {isOwnProfile ? (
-                      <Button 
-                        variant="outline" 
-                        className="border-gray-300 dark:border-white/20 text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10"
-                      >
-                        <Settings className="w-4 h-4 mr-2" />
-                        Edit Profile
-                      </Button>
-                    ) : (
-                      <>
-                        <Button className="bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white px-6">
-                          Follow
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          className="border-gray-300 dark:border-white/20 text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10"
-                        >
-                          Message
-                        </Button>
-                      </>
-                    )}
-                  </div>
+                  {/* Removed Edit Profile from here - now in stats area */}
                 </div>
 
                 {/* Bio */}
@@ -195,19 +215,77 @@ function UserProfile({ isOwnProfile = false, onBack }) {
                   )}
                 </div>
 
-                {/* Stats */}
-                <div className="flex gap-8 pt-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-gray-900 dark:text-white">{user.posts}</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">Posts</div>
+                {/* Stats with Follow & Message Buttons - CORRECT LOGIC */}
+                <div className="flex flex-col gap-4 pt-4">
+                  {/* Stats Row */}
+                  <div className="flex gap-8">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-gray-900 dark:text-white">{user.posts}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">Posts</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-gray-900 dark:text-white">{user.followers.toLocaleString()}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">Followers</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-gray-900 dark:text-white">{user.following}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">Following</div>
+                    </div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-gray-900 dark:text-white">{user.followers.toLocaleString()}</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">Followers</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-gray-900 dark:text-white">{user.following}</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">Following</div>
+
+                  {/* ACTION BUTTONS - CORRECT CONDITIONAL LOGIC */}
+                  <div className="flex gap-3">
+                    {isOwnProfile ? (
+                      /* YOUR OWN PROFILE - Show Edit Profile */
+                      <Button 
+                        onClick={handleEditProfile}
+                        className="flex-1 py-3 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white transition-all duration-200 font-semibold"
+                      >
+                        <Settings className="w-4 h-4 mr-2" />
+                        Edit Profile
+                      </Button>
+                    ) : (
+                      /* OTHER USER'S PROFILE - Show Follow & Message */
+                      <>
+                        {/* Follow Button */}
+                        <Button 
+                          onClick={handleFollow}
+                          disabled={isLoading}
+                          className={`flex-1 py-3 transition-all duration-200 font-semibold ${
+                            isFollowing
+                              ? "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-red-100 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400"
+                              : "bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white shadow-lg"
+                          }`}
+                        >
+                          {isLoading ? (
+                            <div className="flex items-center justify-center">
+                              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2"></div>
+                              Loading...
+                            </div>
+                          ) : isFollowing ? (
+                            <>
+                              <UserCheck className="w-4 h-4 mr-2" />
+                              Following
+                            </>
+                          ) : (
+                            <>
+                              <UserPlus className="w-4 h-4 mr-2" />
+                              Follow
+                            </>
+                          )}
+                        </Button>
+
+                        {/* Message Button */}
+                        <Button 
+                          onClick={handleMessage}
+                          variant="outline" 
+                          className="flex-1 py-3 border-blue-300 dark:border-blue-400 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-400 dark:hover:border-blue-300 transition-all duration-200 font-semibold"
+                        >
+                          <MessageCircle className="w-4 h-4 mr-2" />
+                          Message
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -242,7 +320,7 @@ function UserProfile({ isOwnProfile = false, onBack }) {
 
           <TabsContent value="media" className="mt-6">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {Array.from({ length: 6 }).map((i) => (
+              {Array.from({ length: 6 }).map((_, i) => (
                 <div 
                   key={i} 
                   className="aspect-square bg-white/60 dark:bg-black/40 backdrop-blur-md border border-gray-200 dark:border-white/20 rounded-lg overflow-hidden"

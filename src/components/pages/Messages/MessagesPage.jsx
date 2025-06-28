@@ -98,7 +98,7 @@ function MessagesPage() {
             >
               <div className="flex items-center space-x-3">
                 <div className="relative">
-                  <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                  <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-teal-500 rounded-full flex items-center justify-center">
                     <span className="text-white font-bold text-lg">
                       {chat.user.name.charAt(0)}
                     </span>
@@ -118,7 +118,7 @@ function MessagesPage() {
                         {chat.timestamp}
                       </span>
                       {chat.unread > 0 && (
-                        <div className="w-5 h-5 bg-purple-500 text-white text-xs rounded-full flex items-center justify-center">
+                        <div className="w-5 h-5 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center">
                           {chat.unread}
                         </div>
                       )}
@@ -141,7 +141,7 @@ function MessagesPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <div className="relative">
-                  <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                  <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-teal-500 rounded-full flex items-center justify-center">
                     <span className="text-white font-bold">
                       {selectedChatData.user.name.charAt(0)}
                     </span>
@@ -178,18 +178,18 @@ function MessagesPage() {
             {messages.map((message) => (
               <div key={message.id} className={`flex ${message.sender === "me" ? "justify-end" : "justify-start"}`}>
                 <div
-                  className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
-                    message.sender === "me" 
-                      ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white" 
-                      : "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-600"
-                  }`}
+                 className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
+  message.sender === "me" 
+    ? "bg-gradient-to-r from-blue-600 to-teal-600 text-white" 
+    : "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-600"
+}`}
                 >
                   <p>{message.text}</p>
-                  <p className={`text-xs mt-1 ${
-                    message.sender === "me" 
-                      ? "text-purple-100" 
-                      : "text-gray-500 dark:text-gray-400"
-                  }`}>
+                 <p className={`text-xs mt-1 ${
+  message.sender === "me" 
+    ? "text-blue-100" 
+    : "text-gray-500 dark:text-gray-400"
+}`}>
                     {message.timestamp}
                   </p>
                 </div>
@@ -206,11 +206,11 @@ function MessagesPage() {
                 onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
                 className="flex-1 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100"
               />
-              <Button
-                onClick={handleSendMessage}
-                disabled={!messageText.trim()}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
-              >
+             <Button
+  onClick={handleSendMessage}
+  disabled={!messageText.trim()}
+  className="bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white"
+>
                 <Send className="w-4 h-4" />
               </Button>
             </div>

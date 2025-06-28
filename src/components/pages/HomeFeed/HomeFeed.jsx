@@ -146,10 +146,7 @@ function HomeFeed() {
         return (
           <main className="pt-16 pb-20 px-4 max-w-2xl mx-auto">
             <div className="space-y-6">
-              {/* ✅ Create Post Component */}
-              <div className="pt-4">
-                <SimpleCreatePost onPostCreated={() => loadPosts(1)} />
-              </div>
+            
 
               {/* ✅ Posts Feed */}
               <div className="space-y-6">

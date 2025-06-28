@@ -35,7 +35,7 @@ function Sidebar({ isOpen, onClose }) {
         {/* HEADER */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
           <h2 className="text-xl font-bold">
-            <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent">
               Connectify
             </span>
           </h2>
@@ -59,7 +59,7 @@ function Sidebar({ isOpen, onClose }) {
                 onClick={item.onClick}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                   item.active 
-                    ? 'bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800' 
+                    ? 'bg-gradient-to-r from-blue-50 to-teal-50 dark:from-blue-900/20 dark:to-teal-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800' 
                     : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
                 }`}
               >
@@ -81,7 +81,7 @@ function Sidebar({ isOpen, onClose }) {
             {theme === 'dark' ? (
               <Sun className="h-6 w-6 text-yellow-500" />
             ) : (
-              <Moon className="h-6 w-6 text-indigo-500" />
+              <Moon className="h-6 w-6 text-blue-500" />
             )}
             <span className="font-medium">
               {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}

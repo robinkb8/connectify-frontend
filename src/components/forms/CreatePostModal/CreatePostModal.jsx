@@ -126,7 +126,7 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
           <button
             onClick={handleSubmit}
             disabled={isSubmitting || (!content.trim() && !image)}
-            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-2 rounded-full font-semibold disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-200 shadow-lg"
+            className="bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white px-6 py-2 rounded-full font-semibold disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-200 shadow-lg"
           >
             {isSubmitting ? (
               <div className="flex items-center space-x-2">
@@ -160,7 +160,7 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="What's on your mind?"
-              className="w-full min-h-[120px] p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-200"
+              className="w-full min-h-[120px] p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-200"
               disabled={isSubmitting}
               maxLength={2200}
             />
@@ -212,7 +212,7 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
                 htmlFor="image-upload"
                 className="flex items-center space-x-2 px-4 py-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 cursor-pointer text-gray-700 dark:text-gray-300"
               >
-                <Image className="h-5 w-5 text-purple-600" />
+                <Image className="h-5 w-5 text-blue-600" />
                 <span className="font-medium">Photo</span>
               </label>
               
