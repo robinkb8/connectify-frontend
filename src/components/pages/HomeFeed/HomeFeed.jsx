@@ -1,15 +1,11 @@
-// ===== src/components/pages/HomeFeed/HomeFeed.jsx - JUST FIXED THE IMPORTS =====
+// ===== src/components/pages/HomeFeed/HomeFeed.jsx - FIXED FOR ORIGINAL DESIGN =====
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search } from "lucide-react";
 import { Input } from '../../ui/Input/Input';
 
-// ✅ FIXED IMPORTS - Using YOUR existing components
-import MobileHeader from '../../layout/MobileHeader';
-import MobileBottomNav from '../../layout/MobileBottomNav';
+// ✅ Import Enhanced Components (Keep existing functionality)
 import PostCard from './components/PostCard';
 import SimpleCreatePost from './components/SimpleCreatePost';
-import UserProfile from '../Profile/UserProfile';
-import MessagesPage from '../Messages/MessagesPage';
 import { NoPostsEmpty, LoadingState, LoadingErrorEmpty } from '../../ui/EmptyState/EmptyState';
 import EnhancedCommentsModal from '../../modals/EnhancedCommentsModal';
 
@@ -89,10 +85,9 @@ const fetchPosts = async (page = 1) => {
   }
 };
 
-// ✅ MAIN HOMEFEED COMPONENT
+// ✅ MAIN HOMEFEED COMPONENT - SIMPLIFIED TO WORK WITH ResponsiveLayout
 function HomeFeed() {
-  // ✅ State Management
-  const [activeTab, setActiveTab] = useState("home");
+  // ✅ State Management - Your existing state + comments modal
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -155,9 +150,10 @@ function HomeFeed() {
 
   const handlePostClick = (post) => {
     console.log('📱 Post clicked:', post.id);
+    // Could navigate to detailed post view or expand inline
   };
 
-  // ✅ Update post stats
+  // ✅ Update post stats when interactions happen
   const updatePostStats = useCallback((postId, updates) => {
     setPosts(prevPosts => 
       prevPosts.map(post => 
@@ -168,162 +164,66 @@ function HomeFeed() {
     );
   }, []);
 
-  // ✅ Get page title
-  const getPageTitle = () => {
-    switch (activeTab) {
-      case 'home': return 'Home';
-      case 'search': return 'Search';
-      case 'messages': return 'Messages';
-      case 'profile': return 'Profile';
-      case 'notifications': return 'Notifications';
-      default: return 'Home';
-    }
-  };
+  // ✅ MAIN RENDER - ResponsiveLayout handles navigation, we just show content
+  return (
+    <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+      {/* ✅ Create Post Component (if you want it) */}
+      {/* <SimpleCreatePost /> */}
 
-  // ✅ RENDER CONTENT BASED ON ACTIVE TAB
-  const renderContent = () => {
-    switch (activeTab) {
-      case "home":
-        return (
+      {/* ✅ Posts Feed with Enhanced Loading States */}
+      <div className="space-y-6">
+        {loading && posts.length === 0 ? (
+          // ✅ LOADING STATE - Show skeletons
           <div className="space-y-6">
-            <SimpleCreatePost onPostCreated={() => loadPosts(1)} />
-
-            <div className="space-y-6">
-              {loading && posts.length === 0 ? (
-                <div className="space-y-6">
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className="animate-pulse">
-                      <div className="flex items-center space-x-3 mb-3">
-                        <div className="w-10 h-10 bg-gray-300 dark:bg-gray-700 rounded-full"></div>
-                        <div className="flex-1">
-                          <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-1/4 mb-2"></div>
-                          <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded w-1/6"></div>
-                        </div>
-                      </div>
-                      <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded mb-2"></div>
-                      <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-3/4 mb-3"></div>
-                      <div className="h-48 bg-gray-300 dark:bg-gray-700 rounded"></div>
-                    </div>
-                  ))}
-                </div>
-              ) : error ? (
-                <LoadingErrorEmpty onRetry={() => loadPosts(1)} />
-              ) : posts.length === 0 ? (
-                <NoPostsEmpty onCreatePost={() => console.log('Create post')} />
-              ) : (
-                <>
-                  {filteredPosts.map((post) => (
-                    <PostCard 
-                      key={post.id} 
-                      post={post}
-                      onCommentClick={() => handleCommentClick(post)}
-                      onPostClick={() => handlePostClick(post)}
-                      onStatsUpdate={(updates) => updatePostStats(post.id, updates)}
-                    />
-                  ))}
-                  
-                  {hasMore && (
-                    <div className="text-center py-4">
-                      <button
-                        onClick={loadMorePosts}
-                        disabled={loading}
-                        className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors"
-                      >
-                        {loading ? 'Loading...' : 'Load More'}
-                      </button>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        );
-
-      case "search":
-        return (
-          <div className="space-y-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 w-4 h-4" />
-              <Input
-                placeholder="Search posts, people, and topics..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-
-            {searchQuery ? (
-              <div className="space-y-6">
-                <h2 className="text-lg font-semibold">Search results for "{searchQuery}"</h2>
-                {filteredPosts.length > 0 ? (
-                  filteredPosts.map((post) => (
-                    <PostCard 
-                      key={post.id} 
-                      post={post}
-                      onCommentClick={() => handleCommentClick(post)}
-                      onPostClick={() => handlePostClick(post)}
-                      onStatsUpdate={(updates) => updatePostStats(post.id, updates)}
-                    />
-                  ))
-                ) : (
-                  <div className="text-center py-8">
-                    <p>No posts found matching "{searchQuery}"</p>
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="animate-pulse">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="w-10 h-10 bg-gray-300 dark:bg-gray-700 rounded-full"></div>
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-1/4 mb-2"></div>
+                    <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded w-1/6"></div>
                   </div>
-                )}
+                </div>
+                <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded mb-2"></div>
+                <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-3/4 mb-3"></div>
+                <div className="h-48 bg-gray-300 dark:bg-gray-700 rounded"></div>
               </div>
-            ) : (
-              <div className="text-center py-12">
-                <Search className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>Search for posts, people, and topics</p>
+            ))}
+          </div>
+        ) : error ? (
+          // ✅ ERROR STATE
+          <LoadingErrorEmpty onRetry={() => loadPosts(1)} />
+        ) : posts.length === 0 ? (
+          // ✅ EMPTY STATE
+          <NoPostsEmpty onCreatePost={() => console.log('Create post')} />
+        ) : (
+          // ✅ POSTS EXIST - Show actual posts with enhanced interactions
+          <>
+            {filteredPosts.map((post) => (
+              <PostCard 
+                key={post.id} 
+                post={post}
+                onCommentClick={() => handleCommentClick(post)}
+                onPostClick={() => handlePostClick(post)}
+                onStatsUpdate={(updates) => updatePostStats(post.id, updates)}
+              />
+            ))}
+            
+            {/* ✅ Load More Button */}
+            {hasMore && (
+              <div className="text-center py-4">
+                <button
+                  onClick={loadMorePosts}
+                  disabled={loading}
+                  className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors"
+                >
+                  {loading ? 'Loading...' : 'Load More'}
+                </button>
               </div>
             )}
-          </div>
-        );
-
-      case "messages":
-        return <MessagesPage />;
-
-      case "profile":
-        return <UserProfile isOwnProfile={true} />;
-
-      case "notifications":
-        return (
-          <div className="text-center py-12">
-            <p>Notifications coming soon...</p>
-          </div>
-        );
-
-      default:
-        return (
-          <div className="text-center py-8">
-            <p>Page not found</p>
-          </div>
-        );
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-white dark:bg-gray-900">
-      
-      {/* ✅ Mobile Header (using YOUR component) */}
-      <MobileHeader
-        title={getPageTitle()}
-        showBack={false}
-        showMenu={true}
-        onMenuToggle={() => console.log('Menu toggle')}
-      />
-      
-      {/* ✅ Main Content */}
-      <div className="pt-16 pb-20 px-4 max-w-2xl mx-auto">
-        {renderContent()}
+          </>
+        )}
       </div>
-
-      {/* ✅ Mobile Bottom Nav (using YOUR component) */}
-      <MobileBottomNav
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        onCreatePost={() => console.log('Create post')}
-      />
 
       {/* ✅ Enhanced Comments Modal */}
       <EnhancedCommentsModal
@@ -335,6 +235,7 @@ function HomeFeed() {
         postId={selectedPost?.id}
         postAuthor={selectedPost?.author}
         onCommentAdded={(newComment) => {
+          // Update comment count for the selected post
           if (selectedPost) {
             updatePostStats(selectedPost.id, {
               total_comments: selectedPost.total_comments + 1

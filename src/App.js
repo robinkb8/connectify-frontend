@@ -1,13 +1,13 @@
-// ===== src/App.js - UPDATED WITH RESPONSIVE LAYOUT =====
+// ===== src/App.js - RESTORED ORIGINAL DESIGN =====
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { ThemeProvider } from './components/providers/ThemeProvider';
 import { ToastProvider } from './components/ui/Toast';
 
-// ✅ Import new ResponsiveLayout
+// ✅ Import ResponsiveLayout (Your Original System)
 import ResponsiveLayout from './components/layout/ResponsiveLayout';
 
-// ✅ Import Enhanced Components
+// ✅ Import Enhanced Post Creation Modal
 import EnhancedPostCreationModal from './components/modals/EnhancedPostCreationModal';
 
 // ✅ Import Pages
@@ -19,7 +19,7 @@ import UserProfile from './components/pages/Profile';
 import SettingsPage from './components/pages/Settings';
 import UpgradePage from './components/pages/UpgradePage';
 
-// ✅ Main App Layout Component
+// ✅ Main App Layout Component (Your Original Design)
 function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -45,7 +45,7 @@ function AppLayout() {
     else setActiveTab('home');
   }, [location.pathname]);
 
-  // ✅ Handle tab navigation
+  // ✅ Handle tab navigation (Your Original Logic)
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
     
@@ -69,6 +69,9 @@ function AppLayout() {
       case 'settings':
         navigate('/settings');
         break;
+      case 'upgrade':
+        navigate('/upgrade');
+        break;
       case 'logout':
         // Handle logout
         navigate('/');
@@ -86,8 +89,6 @@ function AppLayout() {
   // ✅ Handle new post created
   const handlePostCreated = (newPost) => {
     console.log('New post created:', newPost);
-    // You can add logic here to update the feed, show success message, etc.
-    
     // Redirect to home if not already there
     if (location.pathname !== '/home') {
       navigate('/home');
@@ -101,6 +102,7 @@ function AppLayout() {
 
   return (
     <>
+      {/* ✅ Your Original ResponsiveLayout with Bottom Nav & Hamburger */}
       <ResponsiveLayout
         activeTab={activeTab}
         onTabChange={handleTabChange}
@@ -132,7 +134,7 @@ function AppLayout() {
   );
 }
 
-// ✅ Main App Component
+// ✅ Main App Component (Your Original Structure)
 function App() {
   return (
     <ThemeProvider defaultTheme="light" storageKey="connectify-theme">

@@ -1,7 +1,7 @@
-// ===== src/components/pages/HomeFeed/components/SimpleCreatePost.jsx - JUST FIXED THE IMPORT =====
+// ===== src/components/pages/HomeFeed/components/SimpleCreatePost.jsx - ORIGINAL FIXED =====
 import React, { useState } from 'react';
 import { Button } from '../../../ui/Button/Button';
-// ✅ FIXED: Using YOUR existing modal
+// ✅ FIXED: Using the correct modal that exists
 import EnhancedPostCreationModal from '../../../modals/EnhancedPostCreationModal';
 
 function SimpleCreatePost({ onPostCreated }) {
@@ -32,6 +32,7 @@ function SimpleCreatePost({ onPostCreated }) {
         </div>
       </div>
 
+      {/* ✅ Using correct modal */}
       <EnhancedPostCreationModal 
         isOpen={showModal} 
         onClose={() => setShowModal(false)}

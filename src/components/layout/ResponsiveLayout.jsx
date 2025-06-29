@@ -1,74 +1,147 @@
- 
-// ===== src/components/layout/ResponsiveLayout.jsx =====
+// ===== SIMPLE FIX: Update ResponsiveLayout.jsx to detect theme from DOM =====
 import React, { useState, useEffect } from 'react';
-import MobileHeader from './MobileHeader';
 import MobileBottomNav from './MobileBottomNav';
+import MobileHeader from './MobileHeader';
 import DesktopSidebar from './DesktopSidebar';
 
-// ✅ Mobile Pull-to-Refresh Component
-const PullToRefresh = ({ onRefresh, children }) => {
-  const [pullDistance, setPullDistance] = useState(0);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [startY, setStartY] = useState(0);
-
-  const handleTouchStart = (e) => {
-    setStartY(e.touches[0].clientY);
-  };
-
-  const handleTouchMove = (e) => {
-    const currentY = e.touches[0].clientY;
-    const distance = currentY - startY;
+// ✅ Simple theme detection (works with existing theme system)
+const useSimpleTheme = () => {
+  const [theme, setTheme] = useState('light');
+  
+  useEffect(() => {
+    // Check initial theme from DOM
+    const checkTheme = () => {
+      const isDark = document.documentElement.classList.contains('dark');
+      setTheme(isDark ? 'dark' : 'light');
+    };
     
-    if (distance > 0 && window.scrollY === 0) {
-      setPullDistance(Math.min(distance * 0.5, 100));
+    checkTheme();
+    
+    // Watch for theme changes
+    const observer = new MutationObserver(checkTheme);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+    
+    return () => observer.disconnect();
+  }, []);
+  
+  const toggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    
+    if (newTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
     }
+    
+    // Also try to trigger the same method used by settings
+    if (window.toggleTheme) {
+      window.toggleTheme();
+    }
+    
+    setTheme(newTheme);
   };
+  
+  return { theme, toggleTheme };
+};
 
-  const handleTouchEnd = async () => {
-    if (pullDistance > 50) {
-      setIsRefreshing(true);
-      await onRefresh?.();
-      setIsRefreshing(false);
+// ✅ Main Responsive Layout Component - SIMPLE THEME FIX
+const ResponsiveLayout = ({ 
+  children, 
+  activeTab, 
+  onTabChange, 
+  onCreatePost, 
+  user,
+  title = "Connectify",
+  showBack = false,
+  onBack,
+  headerActions
+}) => {
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  
+  // ✅ Use simple theme detection (same as your settings)
+  const { theme, toggleTheme } = useSimpleTheme();
+
+  // ✅ Detect mobile viewport
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // ✅ Handle refresh
+  const handleRefresh = async () => {
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    console.log('Page refreshed');
+    
+    if (window.onPageRefresh) {
+      window.onPageRefresh();
     }
-    setPullDistance(0);
   };
 
   return (
-    <div 
-      className="relative"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-    >
-      {/* Pull to refresh indicator */}
-      {(pullDistance > 0 || isRefreshing) && (
-        <div 
-          className="absolute top-0 left-0 right-0 flex items-center justify-center py-4 bg-blue-50 dark:bg-blue-900/20 transition-all duration-200 z-10"
-          style={{ transform: `translateY(${pullDistance}px)` }}
-        >
-          <div className="flex items-center space-x-2">
-            {isRefreshing ? (
-              <>
-                <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                <span className="text-blue-600 dark:text-blue-400 text-sm font-medium">Refreshing...</span>
-              </>
-            ) : (
-              <span className="text-blue-600 dark:text-blue-400 text-sm font-medium">
-                {pullDistance > 50 ? 'Release to refresh' : 'Pull to refresh'}
-              </span>
-            )}
-          </div>
-        </div>
-      )}
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
       
-      <div style={{ transform: `translateY(${pullDistance}px)` }}>
-        {children}
+      {/* ✅ Desktop Sidebar - SECONDARY ACTIONS ONLY */}
+      <DesktopSidebar 
+        activeTab={activeTab}
+        onTabChange={onTabChange}
+        user={user}
+        theme={theme}
+        onThemeToggle={toggleTheme}
+      />
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        
+        {/* ✅ Mobile Header - Only on mobile */}
+        <div className="lg:hidden">
+          <MobileHeader
+            title={title}
+            showBack={showBack}
+            onBack={onBack}
+            showMenu={true}
+            onMenuToggle={() => setShowMobileMenu(!showMobileMenu)}
+            actions={headerActions}
+            onTabChange={onTabChange}
+            user={user}
+            theme={theme}
+            onThemeToggle={toggleTheme}
+          />
+        </div>
+
+        {/* ✅ Content Area with proper spacing */}
+        <div className="flex-1 overflow-auto pb-20 lg:pb-20">
+          {isMobile ? (
+            <div className="h-full overflow-auto">
+              {children}
+            </div>
+          ) : (
+            <div className="h-full overflow-auto">
+              {children}
+            </div>
+          )}
+        </div>
+
+        {/* ✅ Bottom Navigation - ALWAYS VISIBLE */}
+        <MobileBottomNav
+          activeTab={activeTab}
+          onTabChange={onTabChange}
+          onCreatePost={onCreatePost}
+        />
       </div>
     </div>
   );
 };
 
-// ✅ Responsive Container Component
+// ✅ Export additional components for backwards compatibility
 export const ResponsiveContainer = ({ children, className = "" }) => {
   return (
     <div className={`w-full max-w-full px-4 sm:px-6 lg:px-8 ${className}`}>
@@ -79,7 +152,6 @@ export const ResponsiveContainer = ({ children, className = "" }) => {
   );
 };
 
-// ✅ Responsive Grid Component
 export const ResponsiveGrid = ({ children, cols = { sm: 1, md: 2, lg: 3 }, gap = 4, className = "" }) => {
   const gridClasses = `grid gap-${gap} grid-cols-${cols.sm} md:grid-cols-${cols.md} lg:grid-cols-${cols.lg} ${className}`;
   
@@ -90,7 +162,6 @@ export const ResponsiveGrid = ({ children, cols = { sm: 1, md: 2, lg: 3 }, gap =
   );
 };
 
-// ✅ Mobile-First Card Component
 export const ResponsiveCard = ({ children, className = "", clickable = false, onClick }) => {
   return (
     <div 
@@ -109,7 +180,6 @@ export const ResponsiveCard = ({ children, className = "", clickable = false, on
   );
 };
 
-// ✅ Responsive Text Component
 export const ResponsiveText = ({ variant = "body", children, className = "" }) => {
   const variants = {
     h1: "text-2xl sm:text-3xl lg:text-4xl font-bold",
@@ -124,110 +194,6 @@ export const ResponsiveText = ({ variant = "body", children, className = "" }) =
   return (
     <div className={`${variants[variant]} ${className}`}>
       {children}
-    </div>
-  );
-};
-
-// ✅ Main Responsive Layout Component
-const ResponsiveLayout = ({ 
-  children, 
-  activeTab, 
-  onTabChange, 
-  onCreatePost, 
-  user,
-  title = "Connectify",
-  showBack = false,
-  onBack,
-  headerActions
-}) => {
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-
-  // ✅ Detect mobile viewport
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  // ✅ Handle refresh
-  const handleRefresh = async () => {
-    // Simulate refresh
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    console.log('Page refreshed');
-    
-    // Trigger custom refresh if provided
-    if (window.onPageRefresh) {
-      window.onPageRefresh();
-    }
-  };
-
-  return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
-      
-      {/* Desktop Sidebar */}
-      <DesktopSidebar 
-        activeTab={activeTab}
-        onTabChange={onTabChange}
-        onCreatePost={onCreatePost}
-        user={user}
-      />
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0">
-        
-        {/* Mobile Header */}
-        <MobileHeader
-          title={title}
-          showBack={showBack}
-          onBack={onBack}
-          showMenu={true}
-          onMenuToggle={() => setShowMobileMenu(!showMobileMenu)}
-          actions={headerActions}
-        />
-
-        {/* Content Area */}
-        <div className="flex-1 overflow-auto pb-20 md:pb-0">
-          {isMobile ? (
-            <PullToRefresh onRefresh={handleRefresh}>
-              {children}
-            </PullToRefresh>
-          ) : (
-            <div className="h-full overflow-auto">
-              {children}
-            </div>
-          )}
-        </div>
-
-        {/* Mobile Bottom Navigation */}
-        <MobileBottomNav
-          activeTab={activeTab}
-          onTabChange={onTabChange}
-          onCreatePost={onCreatePost}
-        />
-      </div>
-
-      {/* Mobile Menu Overlay (if needed in future) */}
-      {showMobileMenu && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
-          onClick={() => setShowMobileMenu(false)}
-        >
-          <div className="absolute left-0 top-0 h-full w-80 bg-white dark:bg-gray-900 shadow-xl">
-            {/* Mobile menu content can go here */}
-            <div className="p-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Menu</h3>
-              <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">
-                Mobile menu content can be added here
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
