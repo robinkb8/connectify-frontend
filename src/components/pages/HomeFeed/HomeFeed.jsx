@@ -1,4 +1,4 @@
-// ===== src/components/pages/HomeFeed/HomeFeed.jsx =====
+// ===== src/components/pages/HomeFeed/HomeFeed.jsx - ENHANCED & INTEGRATED =====
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search } from "lucide-react";
 import { Input } from '../../ui/Input/Input';
@@ -9,11 +9,12 @@ import SimpleCreatePost from './components/SimpleCreatePost';
 import UserProfile from '../Profile/UserProfile';
 import MessagesPage from '../Messages/MessagesPage';
 import { NoPostsEmpty, LoadingState, LoadingErrorEmpty } from '../../ui/EmptyState/EmptyState';
+import EnhancedCommentsModal from '../../modals/EnhancedCommentsModal'; // ✅ Added Enhanced Comments Modal
 
 // ✅ DJANGO API CONFIGURATION - Your existing API
 const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
-// ✅ DATA TRANSFORMATION - Your existing function
+// ✅ DATA TRANSFORMATION - Your existing function with enhanced mapping
 const transformApiPost = (apiPost) => {
   console.log('🔄 Transforming API post:', apiPost);
   
@@ -21,7 +22,9 @@ const transformApiPost = (apiPost) => {
     id: apiPost.id,
     author: {
       username: apiPost.author?.username || 'Unknown User',
-      avatar: apiPost.author?.avatar || null
+      name: apiPost.author?.name || apiPost.author?.username || 'Unknown User', // ✅ Added name for enhanced PostCard
+      avatar: apiPost.author?.avatar || null,
+      verified: apiPost.author?.verified || false // ✅ Added verified status
     },
     content: apiPost.content || '',
     image_url: apiPost.image_url || null,
@@ -84,9 +87,9 @@ const fetchPosts = async (page = 1) => {
   }
 };
 
-// ✅ MAIN HOMEFEED COMPONENT
+// ✅ MAIN HOMEFEED COMPONENT - Enhanced with Comments Modal
 function HomeFeed() {
-  // ✅ State Management
+  // ✅ State Management - Your existing state + comments modal
   const [activeTab, setActiveTab] = useState("home");
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -95,7 +98,11 @@ function HomeFeed() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
 
-  // ✅ Load Posts on Component Mount
+  // ✅ NEW: Enhanced Comments Modal State
+  const [showComments, setShowComments] = useState(false);
+  const [selectedPost, setSelectedPost] = useState(null);
+
+  // ✅ Load Posts on Component Mount - Your existing logic
   useEffect(() => {
     loadPosts();
   }, []);
@@ -124,104 +131,106 @@ function HomeFeed() {
     }
   }, []);
 
-  // ✅ Load More Posts
+  // ✅ Load More Posts - Your existing logic
   const loadMorePosts = useCallback(() => {
     if (hasMore && !loading) {
       loadPosts(page + 1);
     }
   }, [hasMore, loading, page, loadPosts]);
 
-  // ✅ Search Functionality
+  // ✅ Search Functionality - Your existing logic
   const filteredPosts = posts.filter(post =>
     post.content?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     post.author?.username?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // ✅ Determine if TopNavbar is visible
-  const isTopNavbarVisible = activeTab === 'home';
+  // ✅ NEW: Enhanced Post Interaction Handlers
+  const handleCommentClick = (post) => {
+    console.log('💬 Opening comments for post:', post.id);
+    setSelectedPost(post);
+    setShowComments(true);
+  };
 
-  // ✅ RENDER CONTENT BASED ON ACTIVE TAB
+  const handlePostClick = (post) => {
+    console.log('📱 Post clicked:', post.id);
+    // Could navigate to detailed post view or expand inline
+  };
+
+  // ✅ NEW: Update post stats when interactions happen
+  const updatePostStats = useCallback((postId, updates) => {
+    setPosts(prevPosts => 
+      prevPosts.map(post => 
+        post.id === postId 
+          ? { ...post, ...updates }
+          : post
+      )
+    );
+  }, []);
+
+  // ✅ RENDER CONTENT BASED ON ACTIVE TAB - Your existing logic with enhanced PostCard
   const renderContent = () => {
     switch (activeTab) {
       case "home":
         return (
           <main className="pt-16 pb-20 px-4 max-w-2xl mx-auto">
             <div className="space-y-6">
-            
+              {/* ✅ Create Post Component (if you have it) */}
+              {/* <SimpleCreatePost /> */}
 
-              {/* ✅ Posts Feed */}
-             {/* ✅ Loading State */}
-              {loading && posts.length === 0 && (
-                <LoadingState message="Loading your feed..." />
-              )}
-
-              {/* ✅ Error State */}
-              {error && !loading && (
-                <LoadingErrorEmpty onRetry={() => loadPosts(1)} />
-              )}
-
-              {/* ✅ Empty State */}
-              {!loading && !error && posts.length === 0 && (
-                <NoPostsEmpty onCreatePost={() => console.log('Create post')} />
-              )}
-
-              {/* ✅ Posts Feed */}
+              {/* ✅ Posts Feed with Enhanced Loading States */}
               <div className="space-y-6">
-  {loading && posts.length === 0 ? (
-    // ✅ LOADING STATE - Show skeletons when actually loading
-    <div className="space-y-6">
-      {[...Array(3)].map((_, i) => (
-        <div key={i} className="animate-pulse">
-          <div className="flex items-center space-x-3 mb-3">
-            <div className="w-10 h-10 bg-gray-300 dark:bg-gray-700 rounded-full"></div>
-            <div className="flex-1">
-              <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-1/4 mb-2"></div>
-              <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded w-1/6"></div>
-            </div>
-          </div>
-          <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded mb-2"></div>
-          <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-3/4 mb-3"></div>
-          <div className="h-48 bg-gray-300 dark:bg-gray-700 rounded"></div>
-        </div>
-      ))}
-    </div>
-  ) : error ? (
-    // ✅ ERROR STATE
-    <div className="text-center py-8 text-red-500">
-      <p>{error}</p>
-      <button 
-        onClick={() => loadPosts(1)}
-        className="mt-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-      >
-        Retry
-      </button>
-    </div>
-  ) : posts.length === 0 ? (
-    // ✅ EMPTY STATE
-    <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-      <p>No posts available</p>
-    </div>
-  ) : (
-    // ✅ POSTS EXIST - Show actual posts
-    <>
-      {filteredPosts.map((post) => (
-        <PostCard key={post.id} post={post} />
-      ))}
-      
-      {hasMore && (
-        <div className="text-center py-4">
-          <button
-            onClick={loadMorePosts}
-            disabled={loading}
-            className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
-          >
-            {loading ? 'Loading...' : 'Load More'}
-          </button>
-        </div>
-      )}
-    </>
-  )}
-</div>
+                {loading && posts.length === 0 ? (
+                  // ✅ LOADING STATE - Show skeletons
+                  <div className="space-y-6">
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="animate-pulse">
+                        <div className="flex items-center space-x-3 mb-3">
+                          <div className="w-10 h-10 bg-gray-300 dark:bg-gray-700 rounded-full"></div>
+                          <div className="flex-1">
+                            <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-1/4 mb-2"></div>
+                            <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded w-1/6"></div>
+                          </div>
+                        </div>
+                        <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded mb-2"></div>
+                        <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-3/4 mb-3"></div>
+                        <div className="h-48 bg-gray-300 dark:bg-gray-700 rounded"></div>
+                      </div>
+                    ))}
+                  </div>
+                ) : error ? (
+                  // ✅ ERROR STATE
+                  <LoadingErrorEmpty onRetry={() => loadPosts(1)} />
+                ) : posts.length === 0 ? (
+                  // ✅ EMPTY STATE
+                  <NoPostsEmpty onCreatePost={() => console.log('Create post')} />
+                ) : (
+                  // ✅ POSTS EXIST - Show actual posts with enhanced interactions
+                  <>
+                    {filteredPosts.map((post) => (
+                      <PostCard 
+                        key={post.id} 
+                        post={post}
+                        onCommentClick={() => handleCommentClick(post)}
+                        onPostClick={() => handlePostClick(post)}
+                        onStatsUpdate={(updates) => updatePostStats(post.id, updates)}
+                      />
+                    ))}
+                    
+                    {/* ✅ Load More Button */}
+                    {hasMore && (
+                      <div className="text-center py-4">
+                        <button
+                          onClick={loadMorePosts}
+                          disabled={loading}
+                          className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors"
+                        >
+                          {loading ? 'Loading...' : 'Load More'}
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           </main>
         );
@@ -244,13 +253,19 @@ function HomeFeed() {
                 </div>
               </div>
 
-              {/* ✅ Search Results */}
+              {/* ✅ Search Results with Enhanced PostCard */}
               {searchQuery ? (
                 <div className="space-y-6">
                   <h2 className="text-lg font-semibold">Search results for "{searchQuery}"</h2>
                   {filteredPosts.length > 0 ? (
                     filteredPosts.map((post) => (
-                      <PostCard key={post.id} post={post} />
+                      <PostCard 
+                        key={post.id} 
+                        post={post}
+                        onCommentClick={() => handleCommentClick(post)}
+                        onPostClick={() => handlePostClick(post)}
+                        onStatsUpdate={(updates) => updatePostStats(post.id, updates)}
+                      />
                     ))
                   ) : (
                     <div className="text-center py-8 text-muted-foreground">
@@ -295,10 +310,33 @@ function HomeFeed() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-      {/* ✅ Pass activeTab to TopNavbar - it will conditionally render */}
+      {/* ✅ Your existing navigation */}
       <TopNavbar activeTab={activeTab} />
+      
+      {/* ✅ Your existing content rendering */}
       {renderContent()}
+      
+      {/* ✅ Your existing bottom navigation */}
       <BottomNavbar activeTab={activeTab} onTabChange={setActiveTab} />
+
+      {/* ✅ NEW: Enhanced Comments Modal */}
+      <EnhancedCommentsModal
+        isOpen={showComments}
+        onClose={() => {
+          setShowComments(false);
+          setSelectedPost(null);
+        }}
+        postId={selectedPost?.id}
+        postAuthor={selectedPost?.author}
+        onCommentAdded={(newComment) => {
+          // Update comment count for the selected post
+          if (selectedPost) {
+            updatePostStats(selectedPost.id, {
+              total_comments: selectedPost.total_comments + 1
+            });
+          }
+        }}
+      />
     </div>
   );
 }
