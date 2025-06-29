@@ -1,9 +1,8 @@
- 
-
-// ===== src/components/pages/HomeFeed/components/SimpleCreatePost.jsx =====
+// ===== src/components/pages/HomeFeed/components/SimpleCreatePost.jsx - JUST FIXED THE IMPORT =====
 import React, { useState } from 'react';
 import { Button } from '../../../ui/Button/Button';
-import PostCreationModal from '../../../modals/PostCreationModal';
+// ✅ FIXED: Using YOUR existing modal
+import EnhancedPostCreationModal from '../../../modals/EnhancedPostCreationModal';
 
 function SimpleCreatePost({ onPostCreated }) {
   const [showModal, setShowModal] = useState(false);
@@ -20,7 +19,7 @@ function SimpleCreatePost({ onPostCreated }) {
       <div className="bg-card/50 backdrop-blur-sm border border-border rounded-2xl p-6">
         <div className="flex space-x-4">
           <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
-            <span className="text-white font-bold text-lg">Y</span>
+            <span className="text-white font-bold text-lg">R</span>
           </div>
 
           <Button
@@ -33,10 +32,10 @@ function SimpleCreatePost({ onPostCreated }) {
         </div>
       </div>
 
-      <PostCreationModal 
+      <EnhancedPostCreationModal 
         isOpen={showModal} 
         onClose={() => setShowModal(false)}
-        onPostCreated={handlePostCreated}
+        onPostCreate={handlePostCreated}
       />
     </>
   );

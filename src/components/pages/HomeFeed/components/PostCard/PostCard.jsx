@@ -1,4 +1,4 @@
-// ===== src/components/pages/HomeFeed/components/PostCard/PostCard.jsx - UPDATED =====
+// ===== src/components/pages/HomeFeed/components/PostCard/PostCard.jsx - FULLY UPDATED =====
 import React, { useState } from 'react';
 import { 
   Heart, 
@@ -9,8 +9,8 @@ import {
 } from "lucide-react";
 import { Button } from '../../../../ui/Button/Button';
 
-// ✅ Enhanced PostCard with instant feedback (no toasts)
-function PostCard({ post, onCommentClick, onPostClick }) {
+// ✅ Enhanced PostCard with ALL required props and instant feedback
+function PostCard({ post, onCommentClick, onPostClick, onStatsUpdate }) {
   // ✅ Map your Django API data to the new design
   const user = {
     name: post.author?.name || post.author?.username || 'Unknown User',
@@ -36,9 +36,10 @@ function PostCard({ post, onCommentClick, onPostClick }) {
   const [isLiked, setIsLiked] = useState(post.is_liked || false);
   const [isSaved, setIsSaved] = useState(false);
   const [likesCount, setLikesCount] = useState(stats.likes);
+  const [sharesCount, setSharesCount] = useState(stats.shares);
   const [showOptions, setShowOptions] = useState(false);
 
-  // ✅ Handle Like with instant feedback
+  // ✅ Handle Like with instant feedback + parent update
   const handleLike = async () => {
     // ✅ INSTANT UI UPDATE
     const newLikedState = !isLiked;
@@ -46,6 +47,14 @@ function PostCard({ post, onCommentClick, onPostClick }) {
     
     setIsLiked(newLikedState);
     setLikesCount(newCount);
+
+    // ✅ Update parent component
+    if (onStatsUpdate) {
+      onStatsUpdate({
+        total_likes: newCount,
+        is_liked: newLikedState
+      });
+    }
 
     try {
       // Background API call (replace with real API)
@@ -61,6 +70,12 @@ function PostCard({ post, onCommentClick, onPostClick }) {
         // Revert on API failure
         setIsLiked(!newLikedState);
         setLikesCount(likesCount);
+        if (onStatsUpdate) {
+          onStatsUpdate({
+            total_likes: likesCount,
+            is_liked: !newLikedState
+          });
+        }
         console.error('Failed to update like');
       } else {
         console.log('✅ Like updated successfully');
@@ -69,6 +84,12 @@ function PostCard({ post, onCommentClick, onPostClick }) {
       // Revert on error
       setIsLiked(!newLikedState);
       setLikesCount(likesCount);
+      if (onStatsUpdate) {
+        onStatsUpdate({
+          total_likes: likesCount,
+          is_liked: !newLikedState
+        });
+      }
       console.error('❌ Error updating like:', error);
     }
   };
@@ -82,10 +103,18 @@ function PostCard({ post, onCommentClick, onPostClick }) {
     }
   };
 
-  // ✅ Handle Share with instant feedback
+  // ✅ Handle Share with instant feedback + parent update
   const handleShare = async () => {
     // ✅ INSTANT UI UPDATE
-    const newShareCount = stats.shares + 1;
+    const newShareCount = sharesCount + 1;
+    setSharesCount(newShareCount);
+
+    // ✅ Update parent component
+    if (onStatsUpdate) {
+      onStatsUpdate({
+        total_shares: newShareCount
+      });
+    }
     
     try {
       // Show native share if available
@@ -95,12 +124,20 @@ function PostCard({ post, onCommentClick, onPostClick }) {
           text: content.text,
           url: window.location.href
         });
+        console.log('✅ Content shared successfully');
       } else {
         // Fallback: copy to clipboard
         await navigator.clipboard.writeText(content.text);
         console.log('✅ Content copied to clipboard');
       }
     } catch (error) {
+      // Revert on error
+      setSharesCount(sharesCount);
+      if (onStatsUpdate) {
+        onStatsUpdate({
+          total_shares: sharesCount
+        });
+      }
       console.error('❌ Error sharing:', error);
     }
   };
@@ -118,6 +155,11 @@ function PostCard({ post, onCommentClick, onPostClick }) {
     } else {
       console.log('📄 Post clicked:', post.id);
     }
+  };
+
+  // ✅ Close options when clicking outside
+  const handleOptionsBlur = () => {
+    setTimeout(() => setShowOptions(false), 150);
   };
 
   // ✅ Render Images
@@ -155,51 +197,44 @@ function PostCard({ post, onCommentClick, onPostClick }) {
       );
     }
 
-    if (imageCount >= 3) {
-      return (
-        <div className="mt-4 grid grid-cols-2 gap-2 rounded-xl overflow-hidden max-h-96">
-          <img
-            src={content.images[0]}
-            alt="Post content 1"
-            className="w-full h-full object-cover cursor-pointer hover:opacity-95 transition-opacity row-span-2"
-            onClick={handlePostClick}
-          />
-          {content.images.slice(1, 3).map((img, index) => (
-            <img
-              key={index + 1}
-              src={img}
-              alt={`Post content ${index + 2}`}
-              className="w-full h-24 object-cover cursor-pointer hover:opacity-95 transition-opacity"
-              onClick={handlePostClick}
-            />
-          ))}
-          {imageCount > 3 && (
-            <div className="relative">
-              <img
-                src={content.images[3]}
-                alt="Post content 4"
-                className="w-full h-24 object-cover cursor-pointer"
-                onClick={handlePostClick}
-              />
-              <div className="absolute inset-0 bg-black/60 flex items-center justify-center cursor-pointer hover:bg-black/70 transition-colors" onClick={handlePostClick}>
-                <span className="text-white text-lg font-bold">+{imageCount - 3}</span>
+    // 3+ images: show first image large, others in grid
+    return (
+      <div className="mt-4 rounded-xl overflow-hidden">
+        <img
+          src={content.images[0]}
+          alt="Post content 1"
+          className="w-full h-64 object-cover cursor-pointer hover:opacity-95 transition-opacity"
+          onClick={handlePostClick}
+        />
+        {imageCount > 1 && (
+          <div className="grid grid-cols-2 gap-1 mt-1">
+            {content.images.slice(1, 3).map((img, index) => (
+              <div key={index} className="relative">
+                <img
+                  src={img}
+                  alt={`Post content ${index + 2}`}
+                  className="w-full h-24 object-cover cursor-pointer hover:opacity-95 transition-opacity"
+                  onClick={handlePostClick}
+                />
+                {index === 1 && imageCount > 3 && (
+                  <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center cursor-pointer" onClick={handlePostClick}>
+                    <span className="text-white font-bold text-lg">+{imageCount - 3}</span>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    return null;
+            ))}
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
-    <div className="bg-white/60 dark:bg-black/40 backdrop-blur-md border border-gray-200 dark:border-white/20 rounded-2xl p-6 space-y-4 hover:shadow-lg transition-all duration-200">
-      
+    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200">
       {/* ✅ Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3 cursor-pointer" onClick={handlePostClick}>
-          <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-teal-500 flex items-center justify-center">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-teal-500 rounded-full flex items-center justify-center">
             {user.avatar ? (
               <img 
                 src={user.avatar} 
@@ -232,6 +267,7 @@ function PostCard({ post, onCommentClick, onPostClick }) {
             variant="ghost"
             size="icon"
             onClick={() => setShowOptions(!showOptions)}
+            onBlur={handleOptionsBlur}
             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
           >
             <MoreHorizontal className="h-5 w-5" />
@@ -299,7 +335,7 @@ function PostCard({ post, onCommentClick, onPostClick }) {
             className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-green-500 transition-colors"
           >
             <Share2 className="h-5 w-5" />
-            <span className="text-sm font-medium">{stats.shares}</span>
+            <span className="text-sm font-medium">{sharesCount}</span>
           </Button>
         </div>
 
