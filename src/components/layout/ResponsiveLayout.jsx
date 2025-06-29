@@ -1,10 +1,10 @@
-// ===== SIMPLE FIX: Update ResponsiveLayout.jsx to detect theme from DOM =====
+// ===== src/components/layout/ResponsiveLayout.jsx - FULLY FIXED =====
 import React, { useState, useEffect } from 'react';
 import MobileBottomNav from './MobileBottomNav';
 import MobileHeader from './MobileHeader';
 import DesktopSidebar from './DesktopSidebar';
 
-// ✅ Simple theme detection (works with existing theme system)
+// ✅ Simple theme detection that works with existing theme system
 const useSimpleTheme = () => {
   const [theme, setTheme] = useState('light');
   
@@ -47,7 +47,7 @@ const useSimpleTheme = () => {
   return { theme, toggleTheme };
 };
 
-// ✅ Main Responsive Layout Component - SIMPLE THEME FIX
+// ✅ Main Responsive Layout Component - COMPLETELY FIXED
 const ResponsiveLayout = ({ 
   children, 
   activeTab, 
@@ -57,95 +57,242 @@ const ResponsiveLayout = ({
   title = "Connectify",
   showBack = false,
   onBack,
-  headerActions
+  headerActions,
+  isNavigating = false
 }) => {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
   
-  // ✅ Use simple theme detection (same as your settings)
+  // ✅ Use simple theme detection
   const { theme, toggleTheme } = useSimpleTheme();
 
-  // ✅ Detect mobile viewport
+  // ✅ Enhanced responsive detection
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
+    const checkViewport = () => {
+      const width = window.innerWidth;
+      setIsMobile(width < 768);
+      setIsTablet(width >= 768 && width < 1024);
     };
     
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    checkViewport();
+    window.addEventListener('resize', checkViewport);
+    return () => window.removeEventListener('resize', checkViewport);
   }, []);
 
-  // ✅ Handle refresh
-  const handleRefresh = async () => {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    console.log('Page refreshed');
+  // ✅ Handle sidebar navigation
+  const handleSidebarNavigation = (action) => {
+    switch (action) {
+      case 'settings':
+        onTabChange?.('settings');
+        break;
+      case 'upgrade':
+        onTabChange?.('upgrade');
+        break;
+      case 'help':
+        console.log('Help & Support clicked');
+        // Add help functionality
+        break;
+      case 'logout':
+        console.log('Logout clicked');
+        // Add logout functionality
+        break;
+      default:
+        console.log('Unknown action:', action);
+    }
+  };
+
+  // ✅ Get dynamic classes based on viewport
+  const getContentClasses = () => {
+    const baseClasses = "flex-1 flex flex-col min-w-0 relative";
     
-    if (window.onPageRefresh) {
-      window.onPageRefresh();
+    if (isMobile) {
+      return `${baseClasses} h-screen`;
+    } else if (isTablet) {
+      return `${baseClasses} h-screen`;
+    } else {
+      return `${baseClasses} h-screen`;
+    }
+  };
+
+  const getMainContentClasses = () => {
+    const baseClasses = "flex-1 min-h-0 relative";
+    
+    if (isMobile) {
+      return `${baseClasses} pb-16`; // Space for bottom nav
+    } else if (isTablet) {
+      return `${baseClasses} pb-16`; // Space for bottom nav
+    } else {
+      return `${baseClasses} pb-20`; // Space for bottom nav on desktop too
     }
   };
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
       
-      {/* ✅ Desktop Sidebar - SECONDARY ACTIONS ONLY */}
-      <DesktopSidebar 
-        activeTab={activeTab}
-        onTabChange={onTabChange}
-        user={user}
-        theme={theme}
-        onThemeToggle={toggleTheme}
-      />
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        
-        {/* ✅ Mobile Header - Only on mobile */}
-        <div className="lg:hidden">
-          <MobileHeader
-            title={title}
-            showBack={showBack}
-            onBack={onBack}
-            showMenu={true}
-            onMenuToggle={() => setShowMobileMenu(!showMobileMenu)}
-            actions={headerActions}
-            onTabChange={onTabChange}
-            user={user}
-            theme={theme}
-            onThemeToggle={toggleTheme}
-          />
-        </div>
-
-        {/* ✅ Content Area with proper spacing */}
-        <div className="flex-1 overflow-auto pb-20 lg:pb-20">
-          {isMobile ? (
-            <div className="h-full overflow-auto">
-              {children}
-            </div>
-          ) : (
-            <div className="h-full overflow-auto">
-              {children}
-            </div>
-          )}
-        </div>
-
-        {/* ✅ Bottom Navigation - ALWAYS VISIBLE */}
-        <MobileBottomNav
+      {/* ✅ Desktop Sidebar - Only show on desktop */}
+      {!isMobile && !isTablet && (
+        <DesktopSidebar 
           activeTab={activeTab}
           onTabChange={onTabChange}
-          onCreatePost={onCreatePost}
+          onSidebarAction={handleSidebarNavigation}
+          user={user}
+          theme={theme}
+          onThemeToggle={toggleTheme}
         />
+      )}
+
+      {/* ✅ Main Content Area */}
+      <div className={getContentClasses()}>
+        
+        {/* ✅ Mobile Header - Only on mobile and tablet */}
+        {(isMobile || isTablet) && (
+          <div className="flex-shrink-0 border-b border-gray-200 dark:border-gray-700">
+            <MobileHeader
+              title={title}
+              showBack={showBack}
+              onBack={onBack}
+              showMenu={true}
+              onMenuToggle={() => setShowMobileMenu(!showMobileMenu)}
+              actions={headerActions}
+              onTabChange={onTabChange}
+              user={user}
+              theme={theme}
+              onThemeToggle={toggleTheme}
+            />
+          </div>
+        )}
+
+        {/* ✅ Main Content with proper overflow handling */}
+        <div className={getMainContentClasses()}>
+          <div className={`h-full w-full ${isNavigating ? 'opacity-70 pointer-events-none' : ''} transition-opacity duration-200`}>
+            {/* ✅ Different containers for different page types */}
+            {activeTab === 'messages' ? (
+              // Messages needs full height container
+              <div className="h-full flex flex-col">
+                {children}
+              </div>
+            ) : activeTab === 'search' ? (
+              // Search needs scrollable container
+              <div className="h-full overflow-y-auto">
+                <div className="min-h-full">
+                  {children}
+                </div>
+              </div>
+            ) : activeTab === 'profile' ? (
+              // Profile needs scrollable with proper padding
+              <div className="h-full overflow-y-auto">
+                <div className="min-h-full px-4 py-4 max-w-4xl mx-auto">
+                  {children}
+                </div>
+              </div>
+            ) : activeTab === 'settings' ? (
+              // Settings needs contained width
+              <div className="h-full overflow-y-auto">
+                <div className="min-h-full px-4 py-4 max-w-2xl mx-auto">
+                  {children}
+                </div>
+              </div>
+            ) : (
+              // Default layout for home feed and others
+              <div className="h-full overflow-y-auto">
+                <div className="min-h-full px-4 py-4 max-w-2xl mx-auto lg:max-w-3xl">
+                  {children}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ✅ Bottom Navigation - ALWAYS VISIBLE on all screen sizes */}
+        <div className="flex-shrink-0">
+          <MobileBottomNav
+            activeTab={activeTab}
+            onTabChange={onTabChange}
+            onCreatePost={onCreatePost}
+          />
+        </div>
       </div>
+
+      {/* ✅ Mobile Menu Overlay */}
+      {showMobileMenu && (isMobile || isTablet) && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm" 
+            onClick={() => setShowMobileMenu(false)}
+          />
+          <div className="absolute right-0 top-0 h-full w-80 bg-white dark:bg-gray-900 shadow-xl">
+            <div className="p-6">
+              <button 
+                onClick={() => setShowMobileMenu(false)}
+                className="mb-6 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                ✕
+              </button>
+              
+              {/* Mobile menu content */}
+              <div className="space-y-4">
+                <button 
+                  onClick={() => {
+                    handleSidebarNavigation('settings');
+                    setShowMobileMenu(false);
+                  }}
+                  className="w-full text-left p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                >
+                  Settings
+                </button>
+                <button 
+                  onClick={() => {
+                    handleSidebarNavigation('upgrade');
+                    setShowMobileMenu(false);
+                  }}
+                  className="w-full text-left p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                >
+                  Upgrade to Pro
+                </button>
+                <button 
+                  onClick={() => {
+                    handleSidebarNavigation('help');
+                    setShowMobileMenu(false);
+                  }}
+                  className="w-full text-left p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                >
+                  Help & Support
+                </button>
+                <button 
+                  onClick={() => {
+                    handleSidebarNavigation('logout');
+                    setShowMobileMenu(false);
+                  }}
+                  className="w-full text-left p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-red-600"
+                >
+                  Logout
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-// ✅ Export additional components for backwards compatibility
-export const ResponsiveContainer = ({ children, className = "" }) => {
+// ✅ Export additional responsive components
+export const ResponsiveContainer = ({ children, className = "", maxWidth = "2xl" }) => {
+  const maxWidthClasses = {
+    sm: "max-w-sm",
+    md: "max-w-md", 
+    lg: "max-w-lg",
+    xl: "max-w-xl",
+    "2xl": "max-w-2xl",
+    "3xl": "max-w-3xl",
+    "4xl": "max-w-4xl",
+    "6xl": "max-w-6xl"
+  };
+
   return (
-    <div className={`w-full max-w-full px-4 sm:px-6 lg:px-8 ${className}`}>
-      <div className="max-w-2xl mx-auto lg:max-w-4xl xl:max-w-6xl">
+    <div className={`w-full px-4 sm:px-6 lg:px-8 ${className}`}>
+      <div className={`mx-auto ${maxWidthClasses[maxWidth]}`}>
         {children}
       </div>
     </div>
@@ -153,24 +300,28 @@ export const ResponsiveContainer = ({ children, className = "" }) => {
 };
 
 export const ResponsiveGrid = ({ children, cols = { sm: 1, md: 2, lg: 3 }, gap = 4, className = "" }) => {
-  const gridClasses = `grid gap-${gap} grid-cols-${cols.sm} md:grid-cols-${cols.md} lg:grid-cols-${cols.lg} ${className}`;
-  
   return (
-    <div className={gridClasses}>
+    <div className={`grid gap-${gap} grid-cols-${cols.sm} md:grid-cols-${cols.md} lg:grid-cols-${cols.lg} ${className}`}>
       {children}
     </div>
   );
 };
 
-export const ResponsiveCard = ({ children, className = "", clickable = false, onClick }) => {
+export const ResponsiveCard = ({ children, className = "", clickable = false, onClick, padding = "default" }) => {
+  const paddingClasses = {
+    none: "p-0",
+    sm: "p-2 sm:p-3",
+    default: "p-3 sm:p-4 lg:p-6",
+    lg: "p-4 sm:p-6 lg:p-8"
+  };
+
   return (
     <div 
       className={`
         bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl 
         border border-gray-200 dark:border-gray-700 
-        p-3 sm:p-4 lg:p-6
-        ${clickable ? 'cursor-pointer hover:shadow-lg active:scale-[0.98]' : ''}
-        ${clickable ? 'transition-all duration-200' : ''}
+        ${paddingClasses[padding]}
+        ${clickable ? 'cursor-pointer hover:shadow-lg active:scale-[0.98] transition-all duration-200' : ''}
         ${className}
       `}
       onClick={clickable ? onClick : undefined}

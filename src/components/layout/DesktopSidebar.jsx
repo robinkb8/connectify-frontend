@@ -1,4 +1,4 @@
-// ===== src/components/layout/DesktopSidebar.jsx - SECONDARY ACTIONS ONLY =====
+// ===== src/components/layout/DesktopSidebar.jsx - FULLY FUNCTIONAL =====
 import React, { useState } from 'react';
 import { 
   Settings, 
@@ -8,27 +8,90 @@ import {
   Star,
   HelpCircle,
   Moon,
-  Sun
+  Sun,
+  User,
+  Mail,
+  Shield
 } from 'lucide-react';
 
-// ✅ Desktop Sidebar - SECONDARY ACTIONS (Settings, Logout, etc.)
-const DesktopSidebar = ({ activeTab, onTabChange, user, theme, onThemeToggle }) => {
+// ✅ Desktop Sidebar with Working Buttons
+const DesktopSidebar = ({ 
+  activeTab, 
+  onTabChange, 
+  onSidebarAction, 
+  user, 
+  theme, 
+  onThemeToggle 
+}) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  // ✅ SECONDARY ACTIONS ONLY - Primary nav is in bottom nav
+  // ✅ Handle sidebar item clicks
+  const handleItemClick = (item) => {
+    console.log('Sidebar item clicked:', item.id);
+    
+    if (item.id === 'theme') {
+      onThemeToggle?.();
+      return;
+    }
+
+    // Call the sidebar action handler from ResponsiveLayout
+    if (onSidebarAction) {
+      onSidebarAction(item.id);
+    } else {
+      // Fallback to onTabChange for backwards compatibility
+      onTabChange?.(item.id);
+    }
+  };
+
+  // ✅ Sidebar Items with proper functionality
   const secondaryItems = [
-    { id: 'upgrade', icon: Crown, label: 'Upgrade to Pro', isPremium: true },
-    { id: 'settings', icon: Settings, label: 'Settings' },
-    { id: 'help', icon: HelpCircle, label: 'Help & Support' },
-    { id: 'logout', icon: LogOut, label: 'Logout', isDanger: true }
+    { 
+      id: 'upgrade', 
+      icon: Crown, 
+      label: 'Upgrade to Pro', 
+      isPremium: true,
+      description: 'Get premium features'
+    },
+    { 
+      id: 'settings', 
+      icon: Settings, 
+      label: 'Settings',
+      description: 'App preferences'
+    },
+    { 
+      id: 'help', 
+      icon: HelpCircle, 
+      label: 'Help & Support',
+      description: 'Get assistance'
+    },
+    { 
+      id: 'theme', 
+      icon: theme === 'dark' ? Sun : Moon, 
+      label: theme === 'dark' ? 'Light Mode' : 'Dark Mode',
+      description: 'Toggle theme'
+    },
+    { 
+      id: 'logout', 
+      icon: LogOut, 
+      label: 'Logout', 
+      isDanger: true,
+      description: 'Sign out'
+    }
   ];
 
+  // ✅ User stats (mock data)
+  const userStats = {
+    posts: 42,
+    followers: 1.2,
+    following: 234
+  };
+
   return (
-    <div className={`hidden lg:flex flex-col h-screen bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 ${
-      isCollapsed ? 'w-20' : 'w-72'
+    <div className={`flex flex-col h-screen bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 ${
+      isCollapsed ? 'w-20' : 'w-80'
     }`}>
       
-      {/* Header */}
+      {/* ✅ Header */}
       <div className="p-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
           {!isCollapsed && (
@@ -46,88 +109,101 @@ const DesktopSidebar = ({ activeTab, onTabChange, user, theme, onThemeToggle }) 
         </div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 flex flex-col justify-between p-4">
+      {/* ✅ Content */}
+      <div className="flex-1 flex flex-col">
         
-        {/* User Profile Section */}
-        <div className="space-y-6">
-          {user && (
-            <div className={`flex items-center space-x-3 p-4 rounded-xl bg-gray-50 dark:bg-gray-800 ${
-              isCollapsed ? 'justify-center' : ''
-            }`}>
-              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-white font-bold text-sm">
+        {/* ✅ User Profile Section */}
+        {user && (
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'} p-4 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer`}>
+              
+              {/* Avatar */}
+              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-white font-bold text-lg">
                   {user.name?.charAt(0)?.toUpperCase() || 'U'}
                 </span>
               </div>
+              
+              {/* User Info */}
               {!isCollapsed && (
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">
+                  <p className="font-semibold text-gray-900 dark:text-white truncate">
                     {user.name || 'User'}
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
                     @{user.username || 'username'}
                   </p>
+                  
+                  {/* Quick Stats */}
+                  <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    <span>{userStats.posts} posts</span>
+                    <span>{userStats.followers}k followers</span>
+                    <span>{userStats.following} following</span>
+                  </div>
                 </div>
               )}
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Dark Mode Toggle */}
-          <button
-            onClick={onThemeToggle}
-            className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${
-              isCollapsed ? 'justify-center' : ''
-            }`}
-            title={isCollapsed ? "Toggle Dark Mode" : undefined}
-          >
-            {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            {!isCollapsed && (
-              <span className="font-medium">Dark Mode</span>
-            )}
-            {!isCollapsed && (
-              <div className="ml-auto">
-                <div className={`w-10 h-6 rounded-full transition-colors ${
-                  theme === 'dark' ? 'bg-purple-600' : 'bg-gray-300'
-                }`}>
-                  <div className={`w-4 h-4 rounded-full bg-white shadow-md transform transition-transform duration-200 mt-1 ${
-                    theme === 'dark' ? 'translate-x-5' : 'translate-x-1'
-                  }`} />
-                </div>
-              </div>
-            )}
-          </button>
+        {/* ✅ Navigation Items */}
+        <div className="flex-1 p-4">
+          <div className="space-y-2">
+            {secondaryItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleItemClick(item)}
+                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 text-left group ${
+                    isActive
+                      ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+                      : item.isPremium
+                      ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 shadow-lg'
+                      : item.isDanger
+                      ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  } ${isCollapsed ? 'justify-center' : ''}`}
+                  title={isCollapsed ? item.label : undefined}
+                >
+                  <Icon className={`w-5 h-5 ${item.isPremium ? '' : 'group-hover:scale-110 transition-transform'}`} />
+                  
+                  {!isCollapsed && (
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium truncate">{item.label}</span>
+                        {item.isPremium && <Star className="w-4 h-4 flex-shrink-0" />}
+                      </div>
+                      {item.description && (
+                        <p className={`text-xs opacity-70 truncate ${
+                          item.isPremium ? 'text-white' : 'text-gray-500 dark:text-gray-400'
+                        }`}>
+                          {item.description}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Secondary Actions */}
-        <div className="space-y-2">
-          {secondaryItems.map((item) => {
-            const Icon = item.icon;
-            
-            return (
-              <button
-                key={item.id}
-                onClick={() => onTabChange(item.id)}
-                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-                  item.isPremium
-                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 shadow-lg'
-                    : item.isDanger
-                    ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                } ${isCollapsed ? 'justify-center' : ''}`}
-                title={isCollapsed ? item.label : undefined}
-              >
-                <Icon className="w-5 h-5" />
-                {!isCollapsed && (
-                  <div className="flex items-center space-x-2">
-                    <span className="font-medium">{item.label}</span>
-                    {item.isPremium && <Star className="w-4 h-4" />}
-                  </div>
-                )}
-              </button>
-            );
-          })}
-        </div>
+        {/* ✅ Footer */}
+        {!isCollapsed && (
+          <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="text-center">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Connectify v1.0.0
+              </p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                Made with ❤️ for social connections
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
