@@ -1,15 +1,26 @@
-// src/components/pages/Profile/UserProfile.jsx
+// src/components/pages/Profile/UserProfile.jsx - ENHANCED WITH INSTANT FOLLOW FEEDBACK
 import React, { useState } from 'react';
-import { Settings, MapPin, Calendar, LinkIcon, Edit3, MoreHorizontal, MessageCircle, UserPlus, UserCheck } from "lucide-react";
+import { Settings, MapPin, Calendar, LinkIcon, Edit3, MoreHorizontal, MessageCircle, UserPlus, UserCheck, UserX, Loader2 } from "lucide-react";
 import { Button } from '../../ui/Button/Button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/Tabs/Tabs';
 import PostCard from '../HomeFeed/components/PostCard';
 
+// ✅ Enhanced Follow States
+const FOLLOW_STATES = {
+  NOT_FOLLOWING: 'not_following',
+  FOLLOWING: 'following',
+  PENDING: 'pending',
+  LOADING: 'loading',
+  ERROR: 'error'
+};
+
 function UserProfile({ isOwnProfile = false, onBack }) {
   const [activeTab, setActiveTab] = useState("posts");
-  const [isFollowing, setIsFollowing] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  
+  // ✅ Enhanced Follow State Management
+  const [followState, setFollowState] = useState(FOLLOW_STATES.NOT_FOLLOWING);
   const [followerCount, setFollowerCount] = useState(1234);
+  const [isHovered, setIsHovered] = useState(false);
 
   // DEBUG: Log the isOwnProfile value
   console.log("🔍 UserProfile isOwnProfile:", isOwnProfile);
@@ -28,6 +39,7 @@ function UserProfile({ isOwnProfile = false, onBack }) {
     following: 567,
     posts: 89,
     media: 42,
+    isPrivate: false // For testing private account features
   };
 
   // ✅ Mock posts data with correct structure for PostCard
@@ -70,26 +82,130 @@ function UserProfile({ isOwnProfile = false, onBack }) {
     },
   ];
 
-  // ✅ Handle Follow/Unfollow
+  // ✅ Enhanced Follow Handler with Instant Feedback
   const handleFollow = async () => {
-    console.log("🔥 Follow button clicked!");
-    setIsLoading(true);
+    const previousState = followState;
+    const previousCount = followerCount;
+
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log("🔥 Follow button clicked! Current state:", followState);
       
-      if (isFollowing) {
-        setIsFollowing(false);
-        setFollowerCount(prev => prev - 1);
-        console.log('✅ Unfollowed user');
-      } else {
-        setIsFollowing(true);
-        setFollowerCount(prev => prev + 1);
-        console.log('✅ Followed user');
+      // ✅ INSTANT UI UPDATE based on current state
+      if (followState === FOLLOW_STATES.NOT_FOLLOWING) {
+        setFollowState(FOLLOW_STATES.LOADING);
+        
+        // Optimistic update for public accounts
+        if (!user.isPrivate) {
+          setTimeout(() => {
+            setFollowState(FOLLOW_STATES.FOLLOWING);
+            setFollowerCount(prev => prev + 1);
+            console.log('✅ User followed (optimistic)');
+          }, 200);
+        } else {
+          // For private accounts, go to pending
+          setTimeout(() => {
+            setFollowState(FOLLOW_STATES.PENDING);
+            console.log('✅ Follow request sent (private account)');
+          }, 200);
+        }
+        
+      } else if (followState === FOLLOW_STATES.FOLLOWING) {
+        setFollowState(FOLLOW_STATES.LOADING);
+        
+        // Optimistic unfollow
+        setTimeout(() => {
+          setFollowState(FOLLOW_STATES.NOT_FOLLOWING);
+          setFollowerCount(prev => prev - 1);
+          console.log('✅ User unfollowed (optimistic)');
+        }, 200);
+        
+      } else if (followState === FOLLOW_STATES.PENDING) {
+        setFollowState(FOLLOW_STATES.LOADING);
+        
+        // Cancel follow request
+        setTimeout(() => {
+          setFollowState(FOLLOW_STATES.NOT_FOLLOWING);
+          console.log('✅ Follow request cancelled');
+        }, 200);
       }
+
+      // ✅ Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 400));
+      
+      // Simulate occasional failures (5% chance for testing)
+      if (Math.random() < 0.05) {
+        throw new Error('Network error');
+      }
+      
+      console.log('✅ Follow action API call successful');
+      
     } catch (error) {
-      console.error('❌ Error updating follow status:', error);
-    } finally {
-      setIsLoading(false);
+      console.error('❌ Follow action failed:', error);
+      
+      // ✅ Revert optimistic updates on error
+      setFollowState(previousState);
+      setFollowerCount(previousCount);
+      
+      // Show error state briefly
+      setFollowState(FOLLOW_STATES.ERROR);
+      setTimeout(() => {
+        setFollowState(previousState);
+      }, 2000);
+    }
+  };
+
+  // ✅ Get Follow Button Configuration
+  const getFollowButtonConfig = () => {
+    switch (followState) {
+      case FOLLOW_STATES.NOT_FOLLOWING:
+        return {
+          text: "Follow",
+          icon: <UserPlus className="w-4 h-4" />,
+          className: "bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95",
+          disabled: false
+        };
+      
+      case FOLLOW_STATES.FOLLOWING:
+        return {
+          text: isHovered ? "Unfollow" : "Following",
+          icon: isHovered ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />,
+          className: isHovered 
+            ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30"
+            : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600",
+          disabled: false
+        };
+      
+      case FOLLOW_STATES.PENDING:
+        return {
+          text: "Pending",
+          icon: <UserCheck className="w-4 h-4" />,
+          className: "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 text-yellow-600 dark:text-yellow-400",
+          disabled: false
+        };
+      
+      case FOLLOW_STATES.LOADING:
+        return {
+          text: "Loading...",
+          icon: <Loader2 className="w-4 h-4 animate-spin" />,
+          className: "bg-gray-100 dark:bg-gray-700 text-gray-400 cursor-wait",
+          disabled: true
+        };
+      
+      case FOLLOW_STATES.ERROR:
+        return {
+          text: "Try Again",
+          icon: <UserPlus className="w-4 h-4" />,
+          className: "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30",
+          disabled: false
+        };
+      
+      default:
+        return {
+          text: "Follow",
+          icon: <UserPlus className="w-4 h-4" />,
+          className: "bg-blue-500 hover:bg-blue-600 text-white",
+          disabled: false
+        };
     }
   };
 
@@ -104,6 +220,8 @@ function UserProfile({ isOwnProfile = false, onBack }) {
     console.log('⚙️ Edit Profile clicked!');
     alert('Edit Profile functionality coming soon!');
   };
+
+  const followButtonConfig = getFollowButtonConfig();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50 dark:from-slate-900 dark:via-blue-900 dark:to-slate-900">
@@ -181,11 +299,9 @@ function UserProfile({ isOwnProfile = false, onBack }) {
                       @{user.username}
                     </p>
                     <div className="inline-flex px-3 py-1 bg-blue-100 dark:bg-blue-600/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30 rounded-full text-sm font-medium">
-                      Pro Member
+                      {user.isPrivate ? "Private Account" : "Pro Member"}
                     </div>
                   </div>
-
-                  {/* Removed Edit Profile from here - now in stats area */}
                 </div>
 
                 {/* Bio */}
@@ -215,7 +331,7 @@ function UserProfile({ isOwnProfile = false, onBack }) {
                   )}
                 </div>
 
-                {/* Stats with Follow & Message Buttons - CORRECT LOGIC */}
+                {/* Stats with Follow & Message Buttons */}
                 <div className="flex flex-col gap-4 pt-4">
                   {/* Stats Row */}
                   <div className="flex gap-8">
@@ -224,7 +340,7 @@ function UserProfile({ isOwnProfile = false, onBack }) {
                       <div className="text-sm text-gray-600 dark:text-gray-400">Posts</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-gray-900 dark:text-white">{user.followers.toLocaleString()}</div>
+                      <div className="text-2xl font-bold text-gray-900 dark:text-white">{followerCount.toLocaleString()}</div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">Followers</div>
                     </div>
                     <div className="text-center">
@@ -233,7 +349,7 @@ function UserProfile({ isOwnProfile = false, onBack }) {
                     </div>
                   </div>
 
-                  {/* ACTION BUTTONS - CORRECT CONDITIONAL LOGIC */}
+                  {/* 🚀 ENHANCED ACTION BUTTONS */}
                   <div className="flex gap-3">
                     {isOwnProfile ? (
                       /* YOUR OWN PROFILE - Show Edit Profile */
@@ -245,34 +361,20 @@ function UserProfile({ isOwnProfile = false, onBack }) {
                         Edit Profile
                       </Button>
                     ) : (
-                      /* OTHER USER'S PROFILE - Show Follow & Message */
+                      /* OTHER USER'S PROFILE - Show Enhanced Follow & Message */
                       <>
-                        {/* Follow Button */}
+                        {/* ✅ ENHANCED FOLLOW BUTTON */}
                         <Button 
                           onClick={handleFollow}
-                          disabled={isLoading}
-                          className={`flex-1 py-3 transition-all duration-200 font-semibold ${
-                            isFollowing
-                              ? "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-red-100 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400"
-                              : "bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white shadow-lg"
-                          }`}
+                          disabled={followButtonConfig.disabled}
+                          className={`flex-1 py-3 transition-all duration-200 font-semibold border ${followButtonConfig.className}`}
+                          onMouseEnter={() => setIsHovered(true)}
+                          onMouseLeave={() => setIsHovered(false)}
                         >
-                          {isLoading ? (
-                            <div className="flex items-center justify-center">
-                              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2"></div>
-                              Loading...
-                            </div>
-                          ) : isFollowing ? (
-                            <>
-                              <UserCheck className="w-4 h-4 mr-2" />
-                              Following
-                            </>
-                          ) : (
-                            <>
-                              <UserPlus className="w-4 h-4 mr-2" />
-                              Follow
-                            </>
-                          )}
+                          <div className="flex items-center justify-center space-x-2">
+                            {followButtonConfig.icon}
+                            <span>{followButtonConfig.text}</span>
+                          </div>
                         </Button>
 
                         {/* Message Button */}
@@ -291,6 +393,44 @@ function UserProfile({ isOwnProfile = false, onBack }) {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* 🔧 TESTING CONTROLS - Remove in production */}
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
+          <h3 className="text-yellow-800 dark:text-yellow-200 font-semibold mb-2">🔧 Testing Controls</h3>
+          <div className="flex flex-wrap gap-2">
+            <Button 
+              size="sm"
+              onClick={() => setFollowState(FOLLOW_STATES.NOT_FOLLOWING)}
+              className="bg-blue-500 text-white text-xs"
+            >
+              Reset to "Follow"
+            </Button>
+            <Button 
+              size="sm"
+              onClick={() => setFollowState(FOLLOW_STATES.FOLLOWING)}
+              className="bg-gray-500 text-white text-xs"
+            >
+              Set to "Following"
+            </Button>
+            <Button 
+              size="sm"
+              onClick={() => setFollowState(FOLLOW_STATES.PENDING)}
+              className="bg-yellow-500 text-white text-xs"
+            >
+              Set to "Pending"
+            </Button>
+            <Button 
+              size="sm"
+              onClick={() => { user.isPrivate = !user.isPrivate; console.log('Private:', user.isPrivate); }}
+              className="bg-purple-500 text-white text-xs"
+            >
+              Toggle Private ({user.isPrivate ? 'Private' : 'Public'})
+            </Button>
+          </div>
+          <p className="text-yellow-700 dark:text-yellow-300 text-xs mt-2">
+            Current: isOwnProfile={isOwnProfile.toString()}, followState={followState}
+          </p>
         </div>
 
         {/* Tabs */}

@@ -1,331 +1,272 @@
-// ===== src/components/modals/CommentsModal/CommentsModal.jsx =====
-import React, { useState, useRef, useEffect } from 'react';
-import { 
-  X, 
-  Heart, 
-  MessageCircle, 
-  Send, 
-  MoreHorizontal,
-  Reply,
-  Trash2,
-  Flag
-} from 'lucide-react';
-import { Button } from '../../ui/Button/Button';
+// ===== Enhanced CommentsModal with Immediate Visual Feedback =====
+import React, { useState, useEffect, useRef } from 'react';
+import { X, MessageCircle, Heart, Reply, Trash2, Send } from 'lucide-react';
+import { commentsAPI } from '../../../utils/api/comments';
 
-// ✅ Mock Comments Data
-const mockComments = [
-  {
-    id: '1',
-    user: {
-      name: 'Sarah Johnson',
-      username: 'sarahj',
-      avatar: null
-    },
-    content: 'This is such an amazing project! Really love the design and functionality. Can\'t wait to see what you build next! 🚀',
-    timestamp: '2h ago',
-    likes: 12,
-    isLiked: false,
-    replies: [
-      {
-        id: '1-1',
-        user: {
-          name: 'Mike Chen',
-          username: 'mikechen',
-          avatar: null
-        },
-        content: 'Totally agree! The attention to detail is incredible.',
-        timestamp: '1h ago',
-        likes: 3,
-        isLiked: true,
-        isReply: true,
-        parentId: '1'
-      }
-    ]
-  },
-  {
-    id: '2',
-    user: {
-      name: 'Emma Davis',
-      username: 'emmad',
-      avatar: null
-    },
-    content: 'How long did this take you to build? The implementation looks really clean!',
-    timestamp: '4h ago',
-    likes: 8,
-    isLiked: true,
-    replies: []
-  }
-];
-
-// ✅ Individual Comment Component
-const CommentItem = ({ 
-  comment, 
-  onLike, 
-  onReply, 
-  onDelete, 
-  isOwnComment = false,
-  level = 0 
-}) => {
-  const [showReplyBox, setShowReplyBox] = useState(false);
+// ✅ Individual Comment Component with Smooth Animations
+const CommentItem = ({ comment, onLike, onReply, onDelete, isOwnComment }) => {
+  const [isLiked, setIsLiked] = useState(comment.isLiked || false);
+  const [likesCount, setLikesCount] = useState(comment.likes || 0);
+  const [showReplyInput, setShowReplyInput] = useState(false);
   const [replyText, setReplyText] = useState('');
-  const [showOptions, setShowOptions] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
+  // ✅ Instant like feedback
+  const handleLike = () => {
+    const newLikedState = !isLiked;
+    const newCount = newLikedState ? likesCount + 1 : likesCount - 1;
+    
+    // Immediate UI update
+    setIsLiked(newLikedState);
+    setLikesCount(newCount);
+    
+    // Call parent handler (can handle API in background)
+    onLike(comment.id, newLikedState);
+  };
+
+  // ✅ Smooth reply submission
   const handleReplySubmit = () => {
-    if (replyText.trim()) {
-      onReply(comment.id, replyText);
-      setReplyText('');
-      setShowReplyBox(false);
+    if (!replyText.trim()) return;
+    
+    onReply(comment.id, replyText);
+    setReplyText('');
+    setShowReplyInput(false);
+  };
+
+  // ✅ Smooth delete with animation
+  const handleDelete = () => {
+    if (window.confirm('Delete this comment?')) {
+      setIsDeleting(true);
+      // Small delay for smooth animation before removal
+      setTimeout(() => onDelete(comment.id), 300);
     }
   };
 
-  const handleLike = () => {
-    onLike(comment.id, !comment.isLiked);
-  };
-
   return (
-    <div className={`${level > 0 ? 'ml-12 border-l-2 border-gray-100 dark:border-gray-700 pl-4' : ''}`}>
-      <div className="flex space-x-3 py-3">
-        {/* User Avatar */}
-        <div className="flex-shrink-0">
-          <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-teal-500 rounded-full flex items-center justify-center">
-            <span className="text-white font-semibold text-xs">
-              {comment.user.name.charAt(0)}
-            </span>
-          </div>
+    <div className={`
+      transition-all duration-300 ease-out
+      ${isDeleting ? 'opacity-0 transform scale-95' : 'opacity-100 transform scale-100'}
+      ${comment.isNew ? 'animate-slideIn' : ''}
+    `}>
+      <div className="flex space-x-3 p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg transition-colors">
+        {/* Avatar */}
+        <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-teal-500 rounded-full flex items-center justify-center flex-shrink-0">
+          <span className="text-white font-bold text-sm">
+            {comment.user.name.charAt(0).toUpperCase()}
+          </span>
         </div>
 
         {/* Comment Content */}
-        <div className="flex-1 min-w-0">
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl px-4 py-3">
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center space-x-2">
-                <span className="font-semibold text-sm text-gray-900 dark:text-gray-100">
-                  {comment.user.name}
-                </span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  @{comment.user.username}
-                </span>
-              </div>
-              
-              {/* Options Menu */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowOptions(!showOptions)}
-                  className="h-6 w-6 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center justify-center"
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                </button>
-                
-                {showOptions && (
-                  <>
-                    <div className="fixed inset-0 z-10" onClick={() => setShowOptions(false)} />
-                    <div className="absolute right-0 top-7 w-32 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-20 py-1">
-                      {isOwnComment ? (
-                        <button
-                          onClick={() => {
-                            onDelete(comment.id);
-                            setShowOptions(false);
-                          }}
-                          className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-red-500 flex items-center space-x-2 text-sm"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          <span>Delete</span>
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => setShowOptions(false)}
-                          className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 flex items-center space-x-2 text-sm"
-                        >
-                          <Flag className="w-4 h-4" />
-                          <span>Report</span>
-                        </button>
-                      )}
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-            
-            <p className="text-sm text-gray-900 dark:text-gray-100 leading-relaxed">
-              {comment.content}
-            </p>
-          </div>
-
-          {/* Comment Actions */}
-          <div className="flex items-center space-x-4 mt-2 ml-4">
-            <span className="text-xs text-gray-500 dark:text-gray-400">
+        <div className="flex-1 space-y-2">
+          {/* User info */}
+          <div className="flex items-center space-x-2">
+            <span className="font-semibold text-gray-900 dark:text-gray-100">
+              {comment.user.name}
+            </span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              @{comment.user.username}
+            </span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">
               {comment.timestamp}
             </span>
-            
+          </div>
+
+          {/* Comment text */}
+          <p className="text-gray-900 dark:text-gray-100 leading-relaxed">
+            {comment.content}
+          </p>
+
+          {/* Actions */}
+          <div className="flex items-center space-x-4">
+            {/* Like */}
             <button
               onClick={handleLike}
-              className={`flex items-center space-x-1 text-xs transition-colors ${
-                comment.isLiked 
-                  ? 'text-red-500' 
-                  : 'text-gray-500 dark:text-gray-400 hover:text-red-500'
-              }`}
+              className={`
+                flex items-center space-x-1 text-sm transition-all duration-200 hover:scale-105
+                ${isLiked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'}
+              `}
             >
-              <Heart className={`w-4 h-4 ${comment.isLiked ? 'fill-current' : ''}`} />
-              <span>{comment.likes}</span>
+              <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
+              <span>{likesCount}</span>
             </button>
-            
+
+            {/* Reply */}
             <button
-              onClick={() => setShowReplyBox(!showReplyBox)}
-              className="flex items-center space-x-1 text-xs text-gray-500 dark:text-gray-400 hover:text-blue-500 transition-colors"
+              onClick={() => setShowReplyInput(!showReplyInput)}
+              className="flex items-center space-x-1 text-sm text-gray-500 hover:text-blue-500 transition-colors"
             >
               <Reply className="w-4 h-4" />
               <span>Reply</span>
             </button>
+
+            {/* Delete (if own comment) */}
+            {isOwnComment && (
+              <button
+                onClick={handleDelete}
+                className="flex items-center space-x-1 text-sm text-gray-500 hover:text-red-500 transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Delete</span>
+              </button>
+            )}
           </div>
 
-          {/* Reply Box */}
-          {showReplyBox && (
-            <div className="mt-3 ml-4">
-              <div className="flex space-x-2">
-                <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-teal-500 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-white font-semibold text-xs">You</span>
-                </div>
-                <div className="flex-1">
-                  <textarea
-                    value={replyText}
-                    onChange={(e) => setReplyText(e.target.value)}
-                    placeholder={`Reply to ${comment.user.name}...`}
-                    className="w-full p-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-gray-100"
-                    rows={2}
-                  />
-                  <div className="flex justify-end space-x-2 mt-2">
-                    <button
-                      onClick={() => setShowReplyBox(false)}
-                      className="text-xs py-1 px-3 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleReplySubmit}
-                      disabled={!replyText.trim()}
-                      className="text-xs py-1 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded disabled:bg-gray-300 disabled:cursor-not-allowed"
-                    >
-                      Reply
-                    </button>
-                  </div>
-                </div>
+          {/* Reply Input */}
+          {showReplyInput && (
+            <div className="animate-slideDown">
+              <div className="flex space-x-2 mt-3">
+                <input
+                  type="text"
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  placeholder="Write a reply..."
+                  className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-500"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleReplySubmit();
+                    }
+                  }}
+                />
+                <button
+                  onClick={handleReplySubmit}
+                  disabled={!replyText.trim()}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                >
+                  Reply
+                </button>
               </div>
+            </div>
+          )}
+
+          {/* Render Replies */}
+          {comment.replies && comment.replies.length > 0 && (
+            <div className="ml-4 space-y-2 border-l-2 border-gray-200 dark:border-gray-700 pl-4">
+              {comment.replies.map((reply) => (
+                <CommentItem
+                  key={reply.id}
+                  comment={reply}
+                  onLike={onLike}
+                  onReply={onReply}
+                  onDelete={onDelete}
+                  isOwnComment={reply.user.username === 'you'}
+                />
+              ))}
             </div>
           )}
         </div>
       </div>
-
-      {/* Render Replies */}
-      {comment.replies && comment.replies.length > 0 && (
-        <div className="mt-2">
-          {comment.replies.map((reply) => (
-            <CommentItem
-              key={reply.id}
-              comment={reply}
-              onLike={onLike}
-              onReply={onReply}
-              onDelete={onDelete}
-              isOwnComment={reply.user.username === 'you'}
-              level={level + 1}
-            />
-          ))}
-        </div>
-      )}
     </div>
   );
 };
 
-// ✅ Main Comments Modal Component
-function CommentsModal({ isOpen, onClose, post }) {
-  const [comments, setComments] = useState(mockComments);
+// ✅ Enhanced Comments Modal with Instant Feedback
+function CommentsModal({ isOpen, onClose, postId }) {
+  const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const textareaRef = useRef(null);
 
-  // Auto-focus textarea when modal opens
+  // ✅ Load comments when modal opens
+  useEffect(() => {
+    if (isOpen && postId) {
+      loadComments();
+    }
+  }, [isOpen, postId]);
+
+  // ✅ Auto-focus textarea when modal opens
   useEffect(() => {
     if (isOpen && textareaRef.current) {
-      setTimeout(() => {
-        textareaRef.current.focus();
-      }, 100);
+      setTimeout(() => textareaRef.current?.focus(), 100);
     }
   }, [isOpen]);
 
-  // Handle new comment submission
-  const handleSubmitComment = async () => {
-    console.log('🚀 Submit comment clicked!', newComment);
-    
-    if (!newComment.trim() || isSubmitting) {
-      console.log('❌ Cannot submit - empty or already submitting');
-      return;
-    }
-
-    setIsSubmitting(true);
-    console.log('✅ Submitting comment...');
-    
+  // ✅ Load comments from API
+  const loadComments = async () => {
+    setIsLoading(true);
     try {
-      // TODO: Replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-      
-      const newCommentObj = {
-        id: Date.now().toString(),
-        user: {
-          name: 'You',
-          username: 'you',
-          avatar: null
-        },
-        content: newComment,
-        timestamp: 'just now',
-        likes: 0,
-        isLiked: false,
-        replies: []
-      };
-
-      setComments(prev => [newCommentObj, ...prev]);
-      setNewComment('');
-      console.log('✅ Comment added successfully');
-      
+      const data = await commentsAPI.getComments(postId);
+      setComments(data);
     } catch (error) {
-      console.error('❌ Failed to post comment:', error);
-      alert('Failed to post comment. Please try again.');
+      setError('Failed to load comments');
+      console.error('Error loading comments:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ✅ INSTANT comment submission with optimistic UI
+  const handleSubmitComment = async () => {
+    if (!newComment.trim() || isSubmitting) return;
+
+    // Create optimistic comment for instant UI feedback
+    const optimisticComment = {
+      id: `temp-${Date.now()}`, // Temporary ID
+      user: {
+        name: 'You',
+        username: 'you',
+        avatar: null
+      },
+      content: newComment.trim(),
+      timestamp: 'just now',
+      likes: 0,
+      isLiked: false,
+      isNew: true, // Flag for animation
+      isOptimistic: true // Flag to identify optimistic updates
+    };
+
+    // ✅ INSTANT UI UPDATE - Add comment immediately
+    setComments(prev => [optimisticComment, ...prev]);
+    setNewComment(''); // Clear input immediately
+    setError(''); // Clear any previous errors
+    setIsSubmitting(true);
+
+    try {
+      // Make API call in background
+      const response = await commentsAPI.addComment(postId, newComment.trim());
+      
+      // ✅ Replace optimistic comment with real data
+      setComments(prev => prev.map(comment => 
+        comment.id === optimisticComment.id 
+          ? { ...response, isNew: true } // Keep animation flag
+          : comment
+      ));
+
+      // Success feedback (subtle)
+      console.log('✅ Comment posted successfully');
+
+    } catch (error) {
+      // ✅ Remove optimistic comment and show error
+      setComments(prev => prev.filter(comment => comment.id !== optimisticComment.id));
+      setError('Failed to post comment. Please try again.');
+      setNewComment(optimisticComment.content); // Restore the text
+      console.error('Error posting comment:', error);
+      
+      // Auto-clear error after 3 seconds
+      setTimeout(() => setError(''), 3000);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Handle like/unlike comment
-  const handleLikeComment = (commentId, isLiked) => {
-    setComments(prev => prev.map(comment => {
-      if (comment.id === commentId) {
-        return {
-          ...comment,
-          isLiked,
-          likes: isLiked ? comment.likes + 1 : comment.likes - 1
-        };
-      }
-      
-      // Check replies
-      if (comment.replies) {
-        const updatedReplies = comment.replies.map(reply => 
-          reply.id === commentId 
-            ? { 
-                ...reply, 
-                isLiked, 
-                likes: isLiked ? reply.likes + 1 : reply.likes - 1 
-              }
-            : reply
-        );
-        return { ...comment, replies: updatedReplies };
-      }
-      
-      return comment;
-    }));
+  // ✅ Handle like with optimistic UI
+  const handleLikeComment = async (commentId, isLiked) => {
+    // API call can happen in background
+    try {
+      // Add your like API call here
+      console.log(`${isLiked ? 'Liked' : 'Unliked'} comment ${commentId}`);
+    } catch (error) {
+      console.error('Error liking comment:', error);
+      // Could revert the UI change here if needed
+    }
   };
 
-  // Handle reply to comment
-  const handleReplyToComment = (parentId, replyText) => {
-    const newReply = {
-      id: `${parentId}-${Date.now()}`,
+  // ✅ Handle reply with instant feedback
+  const handleReplyToComment = async (parentId, replyText) => {
+    const optimisticReply = {
+      id: `temp-reply-${Date.now()}`,
       user: {
         name: 'You',
         username: 'you',
@@ -336,26 +277,65 @@ function CommentsModal({ isOpen, onClose, post }) {
       likes: 0,
       isLiked: false,
       isReply: true,
-      parentId
+      parentId,
+      isNew: true,
+      isOptimistic: true
     };
 
+    // ✅ Instant UI update
     setComments(prev => prev.map(comment => 
       comment.id === parentId 
-        ? { ...comment, replies: [...(comment.replies || []), newReply] }
+        ? { ...comment, replies: [optimisticReply, ...(comment.replies || [])] }
         : comment
     ));
+
+    try {
+      // API call in background
+      const response = await commentsAPI.addComment(postId, replyText, parentId);
+      
+      // Replace optimistic reply with real data
+      setComments(prev => prev.map(comment => 
+        comment.id === parentId 
+          ? { 
+              ...comment, 
+              replies: comment.replies.map(reply => 
+                reply.id === optimisticReply.id ? response : reply
+              )
+            }
+          : comment
+      ));
+    } catch (error) {
+      // Remove optimistic reply on error
+      setComments(prev => prev.map(comment => 
+        comment.id === parentId 
+          ? { 
+              ...comment, 
+              replies: comment.replies.filter(reply => reply.id !== optimisticReply.id)
+            }
+          : comment
+      ));
+      console.error('Error posting reply:', error);
+    }
   };
 
-  // Handle delete comment
-  const handleDeleteComment = (commentId) => {
-    if (window.confirm('Are you sure you want to delete this comment?')) {
-      setComments(prev => prev.filter(comment => {
-        if (comment.id === commentId) return false;
-        if (comment.replies) {
-          comment.replies = comment.replies.filter(reply => reply.id !== commentId);
-        }
-        return true;
-      }));
+  // ✅ Handle delete with smooth animation
+  const handleDeleteComment = async (commentId) => {
+    // The CommentItem handles the UI animation
+    try {
+      await commentsAPI.deleteComment(commentId);
+      // Remove from state after animation
+      setTimeout(() => {
+        setComments(prev => prev.filter(comment => {
+          if (comment.id === commentId) return false;
+          if (comment.replies) {
+            comment.replies = comment.replies.filter(reply => reply.id !== commentId);
+          }
+          return true;
+        }));
+      }, 300);
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      // Could show error feedback here
     }
   };
 
@@ -372,25 +352,32 @@ function CommentsModal({ isOpen, onClose, post }) {
           </h2>
           <button
             onClick={onClose}
-            className="h-8 w-8 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center"
+            className="h-8 w-8 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Comments List */}
-        <div className="flex-1 overflow-y-auto max-h-[50vh] px-6">
-          {comments.length > 0 ? (
-            comments.map((comment) => (
-              <CommentItem
-                key={comment.id}
-                comment={comment}
-                onLike={handleLikeComment}
-                onReply={handleReplyToComment}
-                onDelete={handleDeleteComment}
-                isOwnComment={comment.user.username === 'you'}
-              />
-            ))
+        <div className="flex-1 overflow-y-auto max-h-[50vh]">
+          {isLoading ? (
+            <div className="p-8 text-center">
+              <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto"></div>
+              <p className="text-gray-500 mt-2">Loading comments...</p>
+            </div>
+          ) : comments.length > 0 ? (
+            <div className="space-y-1">
+              {comments.map((comment) => (
+                <CommentItem
+                  key={comment.id}
+                  comment={comment}
+                  onLike={handleLikeComment}
+                  onReply={handleReplyToComment}
+                  onDelete={handleDeleteComment}
+                  isOwnComment={comment.user.username === 'you'}
+                />
+              ))}
+            </div>
           ) : (
             <div className="py-12 text-center">
               <MessageCircle className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
@@ -404,8 +391,16 @@ function CommentsModal({ isOpen, onClose, post }) {
           )}
         </div>
 
-        {/* 🚨 GUARANTEED WORKING COMMENT INPUT WITH SEND BUTTON */}
+        {/* ✅ Enhanced Comment Input with Instant Feedback */}
         <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+          
+          {/* Error Message */}
+          {error && (
+            <div className="mb-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg animate-slideDown">
+              <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
+            </div>
+          )}
+
           <div className="flex space-x-3">
             {/* User Avatar */}
             <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-teal-500 rounded-full flex items-center justify-center flex-shrink-0">
@@ -420,7 +415,7 @@ function CommentsModal({ isOpen, onClose, post }) {
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 placeholder="Write a comment..."
-                className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 resize-none focus:outline-none focus:border-blue-500 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
+                className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 resize-none focus:outline-none focus:border-blue-500 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-colors"
                 rows={3}
                 disabled={isSubmitting}
                 onKeyDown={(e) => {
@@ -437,26 +432,23 @@ function CommentsModal({ isOpen, onClose, post }) {
                   Press Cmd+Enter to post quickly
                 </span>
                 
-                {/* 🎯 GUARANTEED VISIBLE SEND BUTTON */}
+                {/* ✅ Instant Feedback Send Button */}
                 <button
                   onClick={handleSubmitComment}
                   disabled={!newComment.trim() || isSubmitting}
                   className={`
-                    flex items-center space-x-2 px-6 py-2 rounded-lg font-semibold text-sm transition-all duration-200 min-w-[80px] justify-center
-                    ${!newComment.trim() || isSubmitting 
-                      ? 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed' 
-                      : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white cursor-pointer shadow-md hover:shadow-lg'
+                    flex items-center space-x-2 px-6 py-2 rounded-lg font-semibold text-sm transition-all duration-200 min-w-[100px] justify-center
+                    ${!newComment.trim() 
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                      : isSubmitting
+                        ? 'bg-blue-400 text-white cursor-wait'
+                        : 'bg-blue-500 hover:bg-blue-600 text-white hover:scale-105 active:scale-95'
                     }
                   `}
-                  style={{ 
-                    minHeight: '40px',
-                    border: 'none',
-                    outline: 'none'
-                  }}
                 >
                   {isSubmitting ? (
                     <>
-                      <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                      <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
                       <span>Posting...</span>
                     </>
                   ) : (
@@ -471,6 +463,42 @@ function CommentsModal({ isOpen, onClose, post }) {
           </div>
         </div>
       </div>
+
+      {/* ✅ Custom Animations */}
+      <style jsx>{`
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            max-height: 0;
+            transform: translateY(-5px);
+          }
+          to {
+            opacity: 1;
+            max-height: 200px;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-slideIn {
+          animation: slideIn 0.3s ease-out;
+        }
+
+        .animate-slideDown {
+          animation: slideDown 0.3s ease-out;
+          overflow: hidden;
+        }
+      `}</style>
     </div>
   );
 }
