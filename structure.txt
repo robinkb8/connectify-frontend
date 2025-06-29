@@ -266,6 +266,7 @@ C:.
 |   |   |       0d010f9bb62b0d3ebab5007c48acd4a6882454fef311ba92125b18bf0aa404f0.json
 |   |   |       0d0e26bfcfcc130389e4ef26814f8a108f47a61708102554ae3e03b50c1055cc.json
 |   |   |       0d3c54d7b28fb9d950c9af5b9998c3c622c49b745c6d0b2943a4ea187ef9fe30.json
+|   |   |       0d451d35e29504500444264c2887ef5a90c03a20d8bf73572a2d4c112191e321.json
 |   |   |       0d4d014238e84daf97727b37225f4fbbe898f46f3b074c2cf71971820b69884d.json
 |   |   |       0d80c2c5291ed1816d64250fdf557c178d8a560b8dfbe8b7f1d1d02d66e80ab3.json
 |   |   |       0d821f9d68260dd06d949366215df68e6cb9059ec085feeeca7c6a2ac3c2c537.json
@@ -658,6 +659,7 @@ C:.
 |   |   |       3b010e44fa1969ed8f6bea4d6588d8c86ba8f65aeb4646907555120e146d61f7.json
 |   |   |       3b0c826929bae8de5fb8d4ec47f40a3d6d123e170dd0a051adb2f9664e034ac4.json
 |   |   |       3b48640b33db5865ed5cacd432b55b0442f41f0d64021e9e789eb6c390327cb6.json
+|   |   |       3b64b9a454d4159ec0a84c3452c6c87baf3258d4f572c815d78a27c70c4be770.json
 |   |   |       3b70c2f2a4a399c972891835043a6d48477e9928c5c65a1ad09ca89efdf6c5f6.json
 |   |   |       3b88febdc5c5d62699149bb368934f1d008c4b6d4407ae4a46d3fec7cfa973a8.json
 |   |   |       3bc850911d68ef6585270c03ac8b4dab409403f7b14119ab6f707823dc5abb44.json
@@ -1080,6 +1082,7 @@ C:.
 |   |   |       72cc6e63e30301bac49393d9254d2e568e58fd160f025ce4faacff17dfebae3b.json
 |   |   |       73117ed7051dcb387e40a78f9298168a3bedb827998bd970d1b9c0bf58bf0ebe.json
 |   |   |       733777b05644155d773bd405f924cf5c5b411f9a862bd7031177df436b8afeea.json
+|   |   |       73538b55438e180f49ca84e85aa2ba7fcb3077a6be07c4503dfa1f469eecc794.json
 |   |   |       73b26b67d6ffda52a27e75ec7fd28fdf44e05e5af14db3587d934822a5c44d55.json
 |   |   |       740e52915ca4e069fef88e3cd301a43730f2425d3d42bea25bb0d7cbc8c55706.json
 |   |   |       742d0fbf236cd066723004597266254341cb331a66d2e7ce9a53b1d8f4118455.json
@@ -1384,6 +1387,7 @@ C:.
 |   |   |       993517c7b82c5d47cbd4f274f4a8dcaa2fca96061c1b2fd81e62d772a1b984a7.json
 |   |   |       9948eca0809237f61db7f2503673ee4609c9878c70df98f0f207c8cf1cf7e54f.json
 |   |   |       995f0913a7af0653a6877b0ccc351ee69fbe9cdd5277daf46bcfc415ef7d8bdf.json
+|   |   |       995f53e6fff14191321f6672bfaf684fc65cabd1ea796e0441872e91a6c4cf86.json
 |   |   |       99b94c001d84c0db1547efd2a8e7d3eb93a424004f2f0a4e91d1b73dd3777a5f.json
 |   |   |       99c32d46a7a031bf49550d5492897e7fcb853fd2081f11f689da1c95f4103f0c.json
 |   |   |       99c8e3600823ca220aad575862742f90bb386365ace277716b635fcc6092f409.json
@@ -1486,6 +1490,7 @@ C:.
 |   |   |       a7264995a17ab041712c2e14ca8c31a62817c128fa2ddc35a52e490f8dd78797.json
 |   |   |       a728bc14357904bc915a4ff825a07294eed6e2f3b125f329450e9f9abd872336.json
 |   |   |       a755b4ee77ed6c761ff54082a3788c73c6884839cfab75578d28cd00afbf0110.json
+|   |   |       a77c48e9c518abddbcf3b4de195836da9dda31a25c98ba1bb91b855819f9d754.json
 |   |   |       a793c19140057b2b78fd487ccbdc817bf560a85f024e72605993e0ca4fdb6047.json
 |   |   |       a7c42782c01ce784cc6d98b8f38df24154553c79dcb4ea2c8122407ae4b90436.json
 |   |   |       a81a12c7a5c57011d30bf62057f3ca93812f9390c97b4c088eeb3e2bc8274a35.json
@@ -1747,6 +1752,7 @@ C:.
 |   |   |       c9a9e774c5a3bcf9c87485f9a9851774f062aa9f19715cf818b31a34df27cc85.json
 |   |   |       c9faf44a5d40d3a83b1f252011240fc06d320b7482acf230ba8b330b3504539a.json
 |   |   |       ca030294302365b763adbbb019f5708a05bab443c67fdac7989b88d086e6bf6b.json
+|   |   |       ca159f37cfac65d7852b1d593cc017bc56f558548391a6721c9c481c3aaff523.json
 |   |   |       ca3b5fdf13af6470c2cedaa1538cacfe777be4f604b5e08f98667a8ba4aaeeba.json
 |   |   |       ca412f9cce3bfa2866a8221b58a9e5eef3867be7aca030b9af43715cbd7e73e2.json
 |   |   |       ca4c8640c35d739ede6f16ffdd5b38cf928d8ea087979e89e065a17ca6926f18.json
@@ -1895,6 +1901,7 @@ C:.
 |   |   |       dc295b3e3083b4fd3181ddd514e536bc86a39230b38309a9bab241f1b9a876a5.json
 |   |   |       dc3462d892e567672b7df0ad56b7dea60e2519e9dd5cb19fe93b648efdc66e2c.json
 |   |   |       dc39ddc5c096fbe7cfc20e01f643fefb5693669ca18f5729616b18c7ee426b0c.json
+|   |   |       dc4d76f66b54e8b371d4c913b17ea66b70baee1dcae2ff9bf813cf95b35b5c6a.json
 |   |   |       dc5c4f00840c690bdeb9a710430926062ad7695cfa325c9cbeb42ece11c36e1e.json
 |   |   |       dc780834f235429b1f7e047f21097ba181972cde4fe49cd204c66a5c546b9201.json
 |   |   |       dc780cd84f237b497931a47ac25219a93f1b6d110c5ab96e479ba6b036f2a930.json
@@ -2123,6 +2130,7 @@ C:.
 |   |   |       f865dd8af84f148401bf1f8c32f907e00b1dc297bdae84518e3fd9353d59699f.json
 |   |   |       f87492621098ad41d2fb4ea5363539ea9be039e07842fe7d4c4922f612b4987c.json
 |   |   |       f8777999f1a28aa9a2c9dd64cfcaa8676d032cfa9ad39281cc218b4652a0714e.json
+|   |   |       f87d840745ee05948a200197d178e858df185b5370b5eeac62acb2974a112026.json
 |   |   |       f8a804f10a915be1ef33a54c02dfcfd23f8020bc98ec4b045c403ee9f1df9588.json
 |   |   |       f8b8f71a483d40d6cb35cabae8aa178207332ccf6341ea57ec02d219ab9f323c.json
 |   |   |       f8d4dba0f6667ea9063e6e5edd28e924104a20943041fd3701b10c5d03d05e1d.json
@@ -2159,6 +2167,7 @@ C:.
 |   |   |       fc296031615a171cca7de551820d5e62f8a8552bd49c18b0d7415adea6d810ac.json
 |   |   |       fc5dfd9f2ce2cee683868751ae619b066eb2adf16c1154f8fd013603db233540.json
 |   |   |       fc9e1220cc9392fc95933f6162b638e78d2f1b45165e814c42e89af07fae54bb.json
+|   |   |       fca3db378613c4903e1e4d23c1b0c2e02acbb93e3b7e75e8471bc634a711351a.json
 |   |   |       fcb9b7bf2e660ad8b6fb8045f7b118b39ca5aa3cb170812987a2200b2a90bade.json
 |   |   |       fcc114aa0b8cc0af914817f2f4de968dc86fb3e5c70f1922d4f0a42e628a67be.json
 |   |   |       fd0e6fbf60f8ff312be3f940ed97846f1dff69ad7e5963078c7cbd72630136b5.json
@@ -2205,6 +2214,8 @@ C:.
 |   |           25.pack
 |   |           26.pack
 |   |           27.pack
+|   |           28.pack
+|   |           29.pack
 |   |           3.pack
 |   |           4.pack
 |   |           5.pack
@@ -52929,10 +52940,6 @@ C:.
     |       \---slides
     +---components
     |   +---forms
-    |   |   +---CreatePostModal
-    |   |   |       CreatePostModal.jsx
-    |   |   |       index.js
-    |   |   |       
     |   |   +---LoginForm
     |   |   |       index copy.js
     |   |   |       index.js
@@ -52943,15 +52950,19 @@ C:.
     |   |           PasswordStrength.jsx
     |   |           SignUpForm.jsx
     |   |           
+    |   +---layout
+    |   |       DesktopSidebar.jsx
+    |   |       index.js
+    |   |       MobileBottomNav.jsx
+    |   |       MobileHeader.jsx
+    |   |       ResponsiveLayout.jsx
+    |   |       
     |   +---modals
-    |   |   |   PostCreationModal.jsx
-    |   |   |   PostOptionsMenu.jsx
-    |   |   |   ShareModal.jsx
-    |   |   |   
-    |   |   \---CommentsModal
-    |   |           CommentsModal.jsx
-    |   |           index.js
-    |   |           
+    |   |       EnhancedCommentsModal.jsx
+    |   |       EnhancedPostCreationModal.jsx
+    |   |       PostOptionsMenu.jsx
+    |   |       ShareModal.jsx
+    |   |       
     |   +---pages
     |   |   +---HomeFeed
     |   |   |   |   HomeFeed.jsx
@@ -52959,24 +52970,11 @@ C:.
     |   |   |   |   
     |   |   |   \---components
     |   |   |       |   NotificationCenter.jsx
-    |   |   |       |   Sidebar.jsx
     |   |   |       |   SimpleCreatePost.jsx
     |   |   |       |   
-    |   |   |       +---BottomNavbar
-    |   |   |       |       BottomNavbar.jsx
-    |   |   |       |       index.js
-    |   |   |       |       
-    |   |   |       +---CreatePostFAB
-    |   |   |       |       CreatePostFAB.jsx
-    |   |   |       |       index.js
-    |   |   |       |       
-    |   |   |       +---PostCard
-    |   |   |       |       index.js
-    |   |   |       |       PostCard.jsx
-    |   |   |       |       
-    |   |   |       \---TopNavbar
+    |   |   |       \---PostCard
     |   |   |               index.js
-    |   |   |               TopNavbar.jsx
+    |   |   |               PostCard.jsx
     |   |   |               
     |   |   +---LandingPage
     |   |   |       index.js
@@ -52992,9 +52990,12 @@ C:.
     |   |   |       UserProfile.jsx
     |   |   |       
     |   |   +---Search
-    |   |   |       index.js
-    |   |   |       SearchPage.jsx
-    |   |   |       
+    |   |   |   |   index.js
+    |   |   |   |   SearchPage.jsx
+    |   |   |   |   
+    |   |   |   \---components
+    |   |   |           SearchDiscoveryPage.jsx
+    |   |   |           
     |   |   +---Settings
     |   |   |       index.js
     |   |   |       SettingsPage.jsx
@@ -53014,6 +53015,10 @@ C:.
     |       |       
     |       +---EmptyState
     |       |       EmptyState.jsx
+    |       |       index.js
+    |       |       
+    |       +---FollowButton
+    |       |       FollowButton.jsx
     |       |       index.js
     |       |       
     |       +---Input
@@ -53052,6 +53057,10 @@ C:.
         |       index.js
         |       posts.js
         |       
-        \---constants
-                validation.js
+        +---constants
+        |       validation.js
+        |       
+        \---responsive
+                hooks.js
+                index.js
                 
