@@ -1,4 +1,4 @@
-// ===== src/components/layout/ResponsiveLayout.jsx - FULLY FIXED =====
+// ===== src/components/layout/ResponsiveLayout.jsx - SMOOTH NAVIGATION FIXED =====
 import React, { useState, useEffect } from 'react';
 import MobileBottomNav from './MobileBottomNav';
 import MobileHeader from './MobileHeader';
@@ -47,7 +47,7 @@ const useSimpleTheme = () => {
   return { theme, toggleTheme };
 };
 
-// ✅ Main Responsive Layout Component - COMPLETELY FIXED
+// ✅ Main Responsive Layout Component - SMOOTH NAVIGATION FIXED
 const ResponsiveLayout = ({ 
   children, 
   activeTab, 
@@ -163,44 +163,15 @@ const ResponsiveLayout = ({
           </div>
         )}
 
-        {/* ✅ Main Content with proper overflow handling */}
+        {/* ✅ FIXED: Main Content with consistent containers */}
         <div className={getMainContentClasses()}>
-          <div className={`h-full w-full ${isNavigating ? 'opacity-70 pointer-events-none' : ''} transition-opacity duration-200`}>
-            {/* ✅ Different containers for different page types */}
-            {activeTab === 'messages' ? (
-              // Messages needs full height container
-              <div className="h-full flex flex-col">
+          <div className={`h-full w-full route-container ${isNavigating ? 'loading' : ''}`}>
+            {/* ✅ FIXED: Consistent container for ALL pages - no more layout shifts */}
+            <div className="h-full overflow-y-auto">
+              <div className="min-h-full px-4 py-4 max-w-2xl mx-auto lg:max-w-3xl">
                 {children}
               </div>
-            ) : activeTab === 'search' ? (
-              // Search needs scrollable container
-              <div className="h-full overflow-y-auto">
-                <div className="min-h-full">
-                  {children}
-                </div>
-              </div>
-            ) : activeTab === 'profile' ? (
-              // Profile needs scrollable with proper padding
-              <div className="h-full overflow-y-auto">
-                <div className="min-h-full px-4 py-4 max-w-4xl mx-auto">
-                  {children}
-                </div>
-              </div>
-            ) : activeTab === 'settings' ? (
-              // Settings needs contained width
-              <div className="h-full overflow-y-auto">
-                <div className="min-h-full px-4 py-4 max-w-2xl mx-auto">
-                  {children}
-                </div>
-              </div>
-            ) : (
-              // Default layout for home feed and others
-              <div className="h-full overflow-y-auto">
-                <div className="min-h-full px-4 py-4 max-w-2xl mx-auto lg:max-w-3xl">
-                  {children}
-                </div>
-              </div>
-            )}
+            </div>
           </div>
         </div>
 
@@ -273,6 +244,17 @@ const ResponsiveLayout = ({
           </div>
         </div>
       )}
+
+      {/* ✅ FIXED: CSS for smooth transitions */}
+      <style jsx>{`
+        .route-container {
+          transition: opacity 0.12s ease-out;
+        }
+        
+        .route-container.loading {
+          opacity: 0.98;
+        }
+      `}</style>
     </div>
   );
 };

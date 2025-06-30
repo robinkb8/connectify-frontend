@@ -1,8 +1,9 @@
-// ===== src/App.js - WITH ANIMATIONS & LOADING STATES =====
+// ===== src/App.js - WITH SMOOTH NAVIGATION FIXES =====
 import React, { useState, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { ThemeProvider } from './components/providers/ThemeProvider';
 import { ToastProvider } from './components/ui/Toast';
+import ChatView from './components/pages/Messages/ChatView';
 
 // ✅ Animation Components
 import PageTransition from './components/ui/PageTransition/PageTransition';
@@ -23,6 +24,8 @@ const MessagesPage = React.lazy(() => import('./components/pages/Messages'));
 const UserProfile = React.lazy(() => import('./components/pages/Profile'));
 const SettingsPage = React.lazy(() => import('./components/pages/Settings'));
 const UpgradePage = React.lazy(() => import('./components/pages/UpgradePage'));
+
+
 
 // ✅ Enhanced Loading Component with skeleton
 const PageLoadingFallback = ({ type = "feed" }) => (
@@ -92,7 +95,6 @@ function AppLayout() {
   // ✅ Determine active tab from current route with animation
   React.useEffect(() => {
     const path = location.pathname;
-    setIsNavigating(true);
     
     // Update active tab based on route
     if (path === '/home' || path === '/') setActiveTab('home');
@@ -101,25 +103,27 @@ function AppLayout() {
     else if (path.startsWith('/profile')) setActiveTab('profile');
     else if (path.startsWith('/settings')) setActiveTab('settings');
     else if (path.startsWith('/upgrade')) setActiveTab('upgrade');
-    
-    // Reset navigation loading after transition
-    const timer = setTimeout(() => setIsNavigating(false), 300);
-    return () => clearTimeout(timer);
   }, [location.pathname]);
 
-  // ✅ Enhanced Tab Change with smooth navigation
+  // ✅ FIXED: Fast Tab Change with smooth navigation
   const handleTabChange = (tab) => {
     if (tab === activeTab) return; // Prevent unnecessary navigation
     
-    setIsNavigating(true);
+    // ✅ Immediate state updates for smooth feel
     setActiveTab(tab);
+    
+    // ✅ Very brief loading state (50ms only)
+    setIsNavigating(true);
+    setTimeout(() => setIsNavigating(false), 50);
     
     // Navigate based on tab
     const routes = {
       home: '/home',
       search: '/search',
       messages: '/messages',
-      profile: '/profile'
+      profile: '/profile',
+      settings: '/settings',    
+      upgrade: '/upgrade',
     };
     
     if (routes[tab]) {
@@ -154,7 +158,7 @@ function AppLayout() {
       <SkeletonStyles />
       <ButtonAnimationStyles />
       
-      {/* ✅ Main Layout with Page Transitions */}
+      {/* ✅ FIXED: Simplified Layout without conflicting animations */}
       <ResponsiveLayout
         activeTab={activeTab}
         onTabChange={handleTabChange}
@@ -163,68 +167,19 @@ function AppLayout() {
         title="Connectify"
         isNavigating={isNavigating}
       >
-        {/* ✅ Page Content with Smooth Transitions */}
-        <PageTransition 
-          type={currentRoute.transition}
-          direction={currentRoute.direction}
-          duration={300}
-        >
-          <Suspense fallback={<PageLoadingFallback type={currentRoute.skeleton} />}>
-            <Routes>
-              <Route 
-                path="/home" 
-                element={
-                  <div className="animate-fadeIn">
-                    <HomeFeed />
-                  </div>
-                } 
-              />
-              <Route 
-                path="/search" 
-                element={
-                  <div className="animate-slideIn">
-                    <SearchPage />
-                  </div>
-                } 
-              />
-              <Route 
-                path="/messages" 
-                element={
-                  <div className="animate-slideIn">
-                    <MessagesPage />
-                  </div>
-                } 
-              />
-              <Route 
-                path="/profile" 
-                element={
-                  <div className="animate-scaleIn">
-                    <UserProfile />
-                  </div>
-                } 
-              />
-              <Route 
-                path="/settings" 
-                element={
-                  <div className="animate-fadeIn">
-                    <SettingsPage />
-                  </div>
-                } 
-              />
-              <Route 
-                path="/upgrade" 
-                element={
-                  <div className="animate-blurIn">
-                    <UpgradePage />
-                  </div>
-                } 
-              />
-              
-              {/* Redirect root to home for authenticated users */}
-              <Route path="*" element={<HomeFeed />} />
-            </Routes>
-          </Suspense>
-        </PageTransition>
+        {/* ✅ FIXED: Simple Suspense without extra animations */}
+        <Suspense fallback={<PageLoadingFallback type={currentRoute.skeleton} />}>
+  <Routes>
+    <Route path="/home" element={<HomeFeed />} />
+    <Route path="/search" element={<SearchPage />} />
+    <Route path="/messages" element={<MessagesPage />} />
+    <Route path="/messages/:userId" element={<ChatView />} />  {/* ✅ MOVED BEFORE WILDCARD */}
+    <Route path="/profile" element={<UserProfile />} />
+    <Route path="/settings" element={<SettingsPage />} />
+    <Route path="/upgrade" element={<UpgradePage />} />
+    <Route path="*" element={<HomeFeed />} />  {/* ✅ WILDCARD ROUTE LAST */}
+  </Routes>
+</Suspense>
       </ResponsiveLayout>
 
       {/* ✅ Enhanced Post Creation Modal with Animations */}
@@ -234,70 +189,17 @@ function AppLayout() {
         onPostCreate={handlePostCreated}
       />
 
-      {/* ✅ Enhanced Animation Styles */}
+      {/* ✅ FIXED: Simplified, faster animations */}
       <style jsx global>{`
-        /* Page transition animations */
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
+        /* Fast smooth transitions - 120ms only */
+        .page-transition {
+          transition: all 0.12s ease-out;
         }
         
-        @keyframes slideIn {
-          from { 
-            opacity: 0; 
-            transform: translateX(20px);
-          }
-          to { 
-            opacity: 1; 
-            transform: translateX(0);
-          }
-        }
-        
-        @keyframes scaleIn {
-          from { 
-            opacity: 0; 
-            transform: scale(0.95);
-          }
-          to { 
-            opacity: 1; 
-            transform: scale(1);
-          }
-        }
-        
-        @keyframes blurIn {
-          from { 
-            opacity: 0; 
-            filter: blur(10px);
-            transform: scale(1.02);
-          }
-          to { 
-            opacity: 1; 
-            filter: blur(0);
-            transform: scale(1);
-          }
-        }
-        
-        .animate-fadeIn {
-          animation: fadeIn 0.3s ease-out;
-        }
-        
-        .animate-slideIn {
-          animation: slideIn 0.3s ease-out;
-        }
-        
-        .animate-scaleIn {
-          animation: scaleIn 0.3s ease-out;
-        }
-        
-        .animate-blurIn {
-          animation: blurIn 0.3s ease-out;
-        }
-        
-        /* Loading state for navigation */
+        /* Smooth navigation loading */
         .navigation-loading {
-          pointer-events: none;
-          opacity: 0.7;
-          transition: opacity 0.2s ease;
+          opacity: 0.98;
+          transition: opacity 0.05s ease;
         }
         
         /* Enhanced focus styles for accessibility */
@@ -325,6 +227,7 @@ function AppLayout() {
         ::-webkit-scrollbar-thumb {
           background-color: rgba(156, 163, 175, 0.5);
           border-radius: 3px;
+          transition: background-color 0.2s ease;
         }
         
         ::-webkit-scrollbar-thumb:hover {
