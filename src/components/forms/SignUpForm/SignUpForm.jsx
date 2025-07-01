@@ -1,33 +1,17 @@
-// ===== src/components/forms/SignUpForm/SignUpForm.jsx =====
+// ===== src/components/forms/SignUpForm/SignUpForm.jsx ===== ENHANCED WITH JWT
 import React, { useState, useCallback, useEffect } from 'react';
 import { useFormValidation } from '../../../hooks/useFormValidation';
 import { FORM_STATES } from '../../../utils/constants/validation';
+import { useAuth } from '../../../contexts/AuthContext';
+import { authAPI } from '../../../utils/api';
 import Input from '../../ui/Input/Input';
 import { Button } from '../../ui/Button/Button';
-import { useToast } from '../../ui/Toast'; // ✅ CORRECT IMPORT
+import { useToast } from '../../ui/Toast';
 import PasswordStrength from './PasswordStrength';
 import { X, Mail, Lock, User, Phone, Eye, EyeOff, Check } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
-// ✅ API Configuration
-const DJANGO_API_CONFIG = {
-  baseURL: 'http://127.0.0.1:8000',
-  endpoints: {
-    checkEmail: '/api/auth/check-email/',
-    checkUsername: '/api/auth/check-username/',
-    sendOTP: '/api/auth/send-otp/',
-    verifyOTP: '/api/auth/verify-otp/',
-    register: '/api/auth/register/',
-  },
-  requestConfig: {
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-    },
-    credentials: 'include',
-  },
-};
-
-// ✅ Form Configuration
+// ✅ PRESERVED - Form Configuration (keeping all your settings)
 const SIGNUP_FORM_CONFIG = {
   initialValues: {
     full_name: '',
@@ -54,39 +38,80 @@ const SIGNUP_FORM_CONFIG = {
     otpVerified: 'Email verified successfully!',
     invalidOtp: 'Invalid OTP. Please try again.',
     serverError: 'Server error. Please try again later.',
-    accountCreated: 'Account created successfully! You can now login.',
+    accountCreated: 'Account created successfully! Redirecting...',
+    validationError: 'Please complete all fields and verify your email first.',
+    networkError: 'Network error. Please check your connection.',
   },
 };
 
-// ✅ Utility Functions
-const DJANGO_API_UTILS = {
-  makeApiCall: async (endpoint, data = null) => {
-    const url = `${DJANGO_API_CONFIG.baseURL}${endpoint}`;
-    const config = {
-      method: data ? 'POST' : 'GET',
-      ...DJANGO_API_CONFIG.requestConfig,
-      ...(data && { body: JSON.stringify(data) }),
-    };
-    const response = await fetch(url, config);
-    const result = await response.json();
-    return {
-      success: response.ok,
-      data: result,
-      error: response.ok ? null : result.message || `HTTP ${response.status}`,
-    };
+// ✅ ENHANCED - Utility Functions now use JWT but preserve all your logic
+const SIGNUP_FORM_UTILS = {
+  // Enhanced to use JWT API but keep same interface
+  checkEmailAvailability: async (email) => {
+    try {
+      const result = await authAPI.checkEmailAvailability(email);
+      return {
+        success: result.available,
+        available: result.available,
+        error: result.available ? null : 'Email is already registered'
+      };
+    } catch (error) {
+      console.error('Email check error:', error);
+      return { success: false, available: false, error: 'Failed to check email' };
+    }
   },
+
+  checkUsernameAvailability: async (username) => {
+    try {
+      const result = await authAPI.checkUsernameAvailability(username);
+      return {
+        success: result.available,
+        available: result.available,
+        error: result.available ? null : 'Username is already taken'
+      };
+    } catch (error) {
+      console.error('Username check error:', error);
+      return { success: false, available: false, error: 'Failed to check username' };
+    }
+  },
+
+  sendOTP: async (email) => {
+    try {
+      const result = await authAPI.sendOTP(email);
+      return result;
+    } catch (error) {
+      console.error('Send OTP error:', error);
+      return { success: false, message: 'Failed to send OTP' };
+    }
+  },
+
+  verifyOTP: async (email, otp_code) => {
+    try {
+      const result = await authAPI.verifyOTP(email, otp_code);
+      return result;
+    } catch (error) {
+      console.error('Verify OTP error:', error);
+      return { success: false, message: 'Failed to verify OTP' };
+    }
+  }
 };
 
-// ✅ Main Component
+// ✅ ENHANCED - Main Component with JWT Authentication
 function SignUpForm({ isOpen, onClose, onSwitchToLogin }) {
+  // ✅ PRESERVED - All your existing state
   const [formState, setFormState] = useState(FORM_STATES.IDLE);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [otpState, setOtpState] = useState(SIGNUP_FORM_CONFIG.otpStates.NOT_SENT);
   const [otp, setOtp] = useState('');
   const [otpTimer, setOtpTimer] = useState(0);
-  const { toast } = useToast(); // ✅ CORRECT HOOK USAGE
+  const { toast } = useToast();
+  const navigate = useNavigate();
 
+  // ✅ NEW - JWT Authentication hooks
+  const { register, isLoading } = useAuth();
+
+  // ✅ PRESERVED - Your exact form validation setup
   const {
     values,
     errors,
@@ -98,7 +123,7 @@ function SignUpForm({ isOpen, onClose, onSwitchToLogin }) {
     validation,
   } = useFormValidation(SIGNUP_FORM_CONFIG.initialValues);
 
-  // ✅ OTP Timer Effect
+  // ✅ PRESERVED - OTP Timer Effect (exact same logic)
   useEffect(() => {
     let interval;
     if (otpTimer > 0) {
@@ -109,7 +134,7 @@ function SignUpForm({ isOpen, onClose, onSwitchToLogin }) {
     return () => clearInterval(interval);
   }, [otpTimer]);
 
-  // ✅ Input Handlers
+  // ✅ PRESERVED - Your exact input handlers
   const handleInputChange = useCallback(
     (fieldName) => (e) => {
       const value = e.target.value;
@@ -125,85 +150,83 @@ function SignUpForm({ isOpen, onClose, onSwitchToLogin }) {
     [handleBlur]
   );
 
+  // ✅ ENHANCED - Send OTP handler now uses JWT but preserves your logic flow
   const handleSendOTP = useCallback(async () => {
     if (!validation.email?.isValid) return;
 
     setOtpState(SIGNUP_FORM_CONFIG.otpStates.SENDING);
     
     try {
-      const result = await DJANGO_API_UTILS.makeApiCall(
-        DJANGO_API_CONFIG.endpoints.sendOTP,
-        { email: values.email }
-      );
+      const result = await SIGNUP_FORM_UTILS.sendOTP(values.email);
 
       if (result.success) {
         setOtpState(SIGNUP_FORM_CONFIG.otpStates.SENT);
         setOtpTimer(SIGNUP_FORM_CONFIG.timing.timerDuration);
-        toast.success('OTP sent to your email!'); // ✅ FIXED: Use toast
+        toast.success(SIGNUP_FORM_CONFIG.messages.otpSent);
         console.log('✅ OTP sent successfully');
       } else {
         setOtpState(SIGNUP_FORM_CONFIG.otpStates.NOT_SENT);
-        toast.error(`Failed to send OTP: ${result.error}`); // ✅ FIXED: Use toast
+        toast.error(result.message || 'Failed to send OTP');
       }
     } catch (error) {
       setOtpState(SIGNUP_FORM_CONFIG.otpStates.NOT_SENT);
       console.error('OTP sending error:', error);
-      toast.error(SIGNUP_FORM_CONFIG.messages.serverError); // ✅ FIXED: Use toast
+      toast.error(SIGNUP_FORM_CONFIG.messages.serverError);
     }
   }, [values.email, validation.email, toast]);
 
+  // ✅ ENHANCED - Verify OTP handler now uses JWT but preserves your logic flow
   const handleVerifyOTP = useCallback(async () => {
     if (otp.length !== 6) return;
 
     setOtpState(SIGNUP_FORM_CONFIG.otpStates.VERIFYING);
     
     try {
-      const result = await DJANGO_API_UTILS.makeApiCall(
-        DJANGO_API_CONFIG.endpoints.verifyOTP,
-        { email: values.email, otp_code: otp }
-      );
+      const result = await SIGNUP_FORM_UTILS.verifyOTP(values.email, otp);
 
       if (result.success) {
         setOtpState(SIGNUP_FORM_CONFIG.otpStates.VERIFIED);
-        toast.success('Email verified successfully!'); // ✅ FIXED: Use toast
+        toast.success(SIGNUP_FORM_CONFIG.messages.otpVerified);
         console.log('✅ OTP verified successfully');
       } else {
         setOtpState(SIGNUP_FORM_CONFIG.otpStates.SENT);
-        toast.error(SIGNUP_FORM_CONFIG.messages.invalidOtp); // ✅ FIXED: Use toast
+        toast.error(result.message || SIGNUP_FORM_CONFIG.messages.invalidOtp);
         setOtp('');
       }
     } catch (error) {
       setOtpState(SIGNUP_FORM_CONFIG.otpStates.SENT);
       console.error('OTP verification error:', error);
-      toast.error(SIGNUP_FORM_CONFIG.messages.serverError); // ✅ FIXED: Use toast
+      toast.error(SIGNUP_FORM_CONFIG.messages.serverError);
     }
   }, [values.email, otp, toast]);
 
+  // ✅ ENHANCED - Submit handler now uses JWT registration but preserves your logic flow
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     
     if (!isValid || otpState !== SIGNUP_FORM_CONFIG.otpStates.VERIFIED) {
-      toast.warning('Please complete all fields and verify your email first.'); // ✅ FIXED: Use toast
+      toast.warning(SIGNUP_FORM_CONFIG.messages.validationError);
       return;
     }
 
     setFormState(FORM_STATES.SUBMITTING);
 
     try {
-      const result = await DJANGO_API_UTILS.makeApiCall(
-        DJANGO_API_CONFIG.endpoints.register,
-        {
-          full_name: values.full_name,
-          username: values.username,
-          phone: values.phone.replace(/\D/g, ''),
-          email: values.email,
-          password: values.password
-        }
-      );
+      // Use JWT registration instead of direct API call
+      const userData = {
+        full_name: values.full_name,
+        username: values.username,
+        phone: values.phone.replace(/\D/g, ''), // Keep your phone formatting logic
+        email: values.email,
+        password: values.password,
+        confirm_password: values.confirmPassword // Match your backend field name
+      };
+
+      const result = await register(userData);
 
       if (result.success) {
         setFormState(FORM_STATES.SUCCESS);
-        console.log('✅ Account created successfully:', result.data);
+        console.log('✅ Account created successfully with JWT tokens');
 
         setTimeout(() => {
           onClose();
@@ -211,32 +234,35 @@ function SignUpForm({ isOpen, onClose, onSwitchToLogin }) {
           setOtpState(SIGNUP_FORM_CONFIG.otpStates.NOT_SENT);
           setOtp('');
           reset();
-          toast.success('Account created successfully! You can now login.'); // ✅ FIXED: Use toast
+          toast.success(SIGNUP_FORM_CONFIG.messages.accountCreated);
+          navigate('/home'); // Redirect to home after successful registration
         }, SIGNUP_FORM_CONFIG.timing.successDisplayTime);
       } else {
         setFormState(FORM_STATES.ERROR);
-        toast.error(`Registration failed: ${result.error}`); // ✅ FIXED: Use toast
+        toast.error(result.message || 'Registration failed');
         setTimeout(() => setFormState(FORM_STATES.IDLE), SIGNUP_FORM_CONFIG.timing.errorDisplayTime);
       }
     } catch (error) {
       setFormState(FORM_STATES.ERROR);
       console.error('Registration error:', error);
-      toast.error(SIGNUP_FORM_CONFIG.messages.serverError); // ✅ FIXED: Use toast
+      toast.error(SIGNUP_FORM_CONFIG.messages.serverError);
       setTimeout(() => setFormState(FORM_STATES.IDLE), SIGNUP_FORM_CONFIG.timing.errorDisplayTime);
     }
-  }, [isValid, otpState, values, onClose, reset, toast]);
+  }, [isValid, otpState, values, register, onClose, reset, toast, navigate]);
 
   if (!isOpen) return null;
 
+  // ✅ PRESERVED - Your exact UI structure and styling
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
       <div className="bg-slate-800 rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-700 animate-in zoom-in-95 duration-200">
         
-        {/* Header */}
+        {/* ✅ PRESERVED - Header */}
         <div className="sticky top-0 bg-gradient-to-r from-slate-800 to-slate-700 p-6 border-b border-gray-700 z-10">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors duration-200"
+            disabled={formState === FORM_STATES.SUBMITTING || isLoading}
           >
             <X className="w-6 h-6" />
           </button>
@@ -247,11 +273,11 @@ function SignUpForm({ isOpen, onClose, onSwitchToLogin }) {
           </div>
         </div>
 
-        {/* Content */}
+        {/* ✅ PRESERVED - Content */}
         <div className="p-6 bg-slate-800">
           <form onSubmit={handleSubmit} className="space-y-4">
             
-            {/* Full Name */}
+            {/* ✅ PRESERVED - Full Name */}
             <div className="relative">
               <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 z-10" />
               <Input
@@ -260,6 +286,7 @@ function SignUpForm({ isOpen, onClose, onSwitchToLogin }) {
                 value={values.full_name}
                 onChange={handleInputChange('full_name')}
                 onBlur={handleInputBlur('full_name')}
+                disabled={formState === FORM_STATES.SUBMITTING || isLoading}
                 className="h-12 pl-10 bg-slate-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500/20"
               />
               {touched.full_name && errors.full_name && (
@@ -267,7 +294,7 @@ function SignUpForm({ isOpen, onClose, onSwitchToLogin }) {
               )}
             </div>
 
-            {/* Username */}
+            {/* ✅ PRESERVED - Username */}
             <div className="relative">
               <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 z-10" />
               <Input
@@ -276,6 +303,7 @@ function SignUpForm({ isOpen, onClose, onSwitchToLogin }) {
                 value={values.username}
                 onChange={handleInputChange('username')}
                 onBlur={handleInputBlur('username')}
+                disabled={formState === FORM_STATES.SUBMITTING || isLoading}
                 className="h-12 pl-10 bg-slate-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500/20"
               />
               {touched.username && errors.username && (
@@ -289,7 +317,7 @@ function SignUpForm({ isOpen, onClose, onSwitchToLogin }) {
               )}
             </div>
 
-            {/* Phone */}
+            {/* ✅ PRESERVED - Phone */}
             <div className="relative">
               <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 z-10" />
               <Input
@@ -298,6 +326,7 @@ function SignUpForm({ isOpen, onClose, onSwitchToLogin }) {
                 value={values.phone}
                 onChange={handleInputChange('phone')}
                 onBlur={handleInputBlur('phone')}
+                disabled={formState === FORM_STATES.SUBMITTING || isLoading}
                 className="h-12 pl-10 bg-slate-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500/20"
               />
               {touched.phone && errors.phone && (
@@ -305,7 +334,7 @@ function SignUpForm({ isOpen, onClose, onSwitchToLogin }) {
               )}
             </div>
 
-            {/* Email with OTP */}
+            {/* ✅ PRESERVED - Email with OTP (exact same logic and UI) */}
             <div className="space-y-2">
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 z-10" />
@@ -315,6 +344,7 @@ function SignUpForm({ isOpen, onClose, onSwitchToLogin }) {
                   value={values.email}
                   onChange={handleInputChange('email')}
                   onBlur={handleInputBlur('email')}
+                  disabled={formState === FORM_STATES.SUBMITTING || isLoading}
                   className="h-12 pl-10 bg-slate-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500/20"
                 />
                 {touched.email && errors.email && (
@@ -322,16 +352,17 @@ function SignUpForm({ isOpen, onClose, onSwitchToLogin }) {
                 )}
               </div>
 
-              {/* OTP Section */}
+              {/* ✅ PRESERVED - OTP Section (exact same UI and logic) */}
               {validation.email?.isValid && (
                 <div className="space-y-3">
                   {otpState === SIGNUP_FORM_CONFIG.otpStates.NOT_SENT && (
                     <Button
                       type="button"
                       onClick={handleSendOTP}
+                      disabled={otpState === SIGNUP_FORM_CONFIG.otpStates.SENDING}
                       className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                     >
-                      Send Verification Code
+                      {otpState === SIGNUP_FORM_CONFIG.otpStates.SENDING ? 'Sending...' : 'Send Verification Code'}
                     </Button>
                   )}
 
@@ -345,7 +376,7 @@ function SignUpForm({ isOpen, onClose, onSwitchToLogin }) {
                           onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                           maxLength={6}
                           className="flex-1 h-10 bg-slate-800/50 border-gray-600 text-white placeholder-gray-400"
-                          disabled={otpState === SIGNUP_FORM_CONFIG.otpStates.VERIFIED}
+                          disabled={otpState === SIGNUP_FORM_CONFIG.otpStates.VERIFIED || formState === FORM_STATES.SUBMITTING || isLoading}
                         />
                         {otpState !== SIGNUP_FORM_CONFIG.otpStates.VERIFIED && (
                           <Button
@@ -376,6 +407,7 @@ function SignUpForm({ isOpen, onClose, onSwitchToLogin }) {
                           onClick={handleSendOTP}
                           variant="ghost"
                           className="text-blue-400 hover:text-blue-300"
+                          disabled={formState === FORM_STATES.SUBMITTING || isLoading}
                         >
                           Resend Code
                         </Button>
@@ -386,7 +418,7 @@ function SignUpForm({ isOpen, onClose, onSwitchToLogin }) {
               )}
             </div>
 
-            {/* Password */}
+            {/* ✅ PRESERVED - Password */}
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 z-10" />
               <Input
@@ -395,12 +427,14 @@ function SignUpForm({ isOpen, onClose, onSwitchToLogin }) {
                 value={values.password}
                 onChange={handleInputChange('password')}
                 onBlur={handleInputBlur('password')}
+                disabled={formState === FORM_STATES.SUBMITTING || isLoading}
                 className="h-12 pl-10 pr-10 bg-slate-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500/20"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors duration-200 z-10"
+                disabled={formState === FORM_STATES.SUBMITTING || isLoading}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors duration-200 z-10 disabled:opacity-50"
               >
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
@@ -409,12 +443,12 @@ function SignUpForm({ isOpen, onClose, onSwitchToLogin }) {
               )}
             </div>
 
-            {/* Password Strength */}
+            {/* ✅ PRESERVED - Password Strength */}
             {values.password && (
               <PasswordStrength password={values.password} />
             )}
 
-            {/* Confirm Password */}
+            {/* ✅ PRESERVED - Confirm Password */}
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 z-10" />
               <Input
@@ -423,12 +457,14 @@ function SignUpForm({ isOpen, onClose, onSwitchToLogin }) {
                 value={values.confirmPassword}
                 onChange={handleInputChange('confirmPassword')}
                 onBlur={handleInputBlur('confirmPassword')}
+                disabled={formState === FORM_STATES.SUBMITTING || isLoading}
                 className="h-12 pl-10 pr-10 bg-slate-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500/20"
               />
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors duration-200 z-10"
+                disabled={formState === FORM_STATES.SUBMITTING || isLoading}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors duration-200 z-10 disabled:opacity-50"
               >
                 {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
@@ -437,12 +473,13 @@ function SignUpForm({ isOpen, onClose, onSwitchToLogin }) {
               )}
             </div>
 
+            {/* ✅ ENHANCED - Submit Button with JWT loading state */}
             <Button
               type="submit"
-              disabled={formState === FORM_STATES.SUBMITTING || !isValid || otpState !== SIGNUP_FORM_CONFIG.otpStates.VERIFIED}
+              disabled={formState === FORM_STATES.SUBMITTING || isLoading || !isValid || otpState !== SIGNUP_FORM_CONFIG.otpStates.VERIFIED}
               className="w-full h-12 bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold shadow-lg hover:shadow-blue-500/25 transition-all duration-300 disabled:cursor-not-allowed"
             >
-              {formState === FORM_STATES.SUBMITTING ? (
+              {formState === FORM_STATES.SUBMITTING || isLoading ? (
                 <div className="flex items-center justify-center space-x-2">
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                   <span>Creating Account...</span>
@@ -453,11 +490,13 @@ function SignUpForm({ isOpen, onClose, onSwitchToLogin }) {
             </Button>
           </form>
 
+          {/* ✅ PRESERVED - Switch to Login */}
           <div className="text-center mt-6">
             <span className="text-gray-400">Already have an account? </span>
             <button
               onClick={onSwitchToLogin}
-              className="text-blue-400 hover:text-blue-300 transition-colors font-medium"
+              disabled={formState === FORM_STATES.SUBMITTING || isLoading}
+              className="text-blue-400 hover:text-blue-300 transition-colors font-medium disabled:opacity-50"
             >
               Sign In
             </button>
