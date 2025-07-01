@@ -1,6 +1,8 @@
-// src/App.js - OPTIMIZED
+// src/App.js - ENHANCED WITH JWT AUTHENTICATION
 import React, { useState, Suspense, useCallback, useMemo } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
 import { ThemeProvider } from './components/providers/ThemeProvider';
 import { ToastProvider } from './components/ui/Toast';
 import ChatView from './components/pages/Messages/ChatView';
@@ -16,7 +18,7 @@ import ResponsiveLayout from './components/layout/ResponsiveLayout';
 // Import Enhanced Post Creation Modal
 import EnhancedPostCreationModal from './components/modals/EnhancedPostCreationModal';
 
-// Lazy-loaded Pages for better performance
+// ✅ PRESERVED - Lazy-loaded Pages for better performance
 const LandingPage = React.lazy(() => import('./components/pages/LandingPage'));
 const HomeFeed = React.lazy(() => import('./components/pages/HomeFeed'));
 const SearchPage = React.lazy(() => import('./components/pages/Search'));
@@ -25,7 +27,7 @@ const UserProfile = React.lazy(() => import('./components/pages/Profile'));
 const SettingsPage = React.lazy(() => import('./components/pages/Settings'));
 const UpgradePage = React.lazy(() => import('./components/pages/UpgradePage'));
 
-// Move static data outside component to prevent recreation on every render
+// ✅ PRESERVED - Move static data outside component to prevent recreation on every render
 const ROUTE_CONFIG = [
   { 
     path: '/home', 
@@ -67,7 +69,7 @@ const ROUTE_CONFIG = [
   }
 ];
 
-// Move route mapping outside component to prevent recreation
+// ✅ PRESERVED - Move route mapping outside component to prevent recreation
 const TAB_ROUTES = {
   home: '/home',
   search: '/search',
@@ -77,7 +79,7 @@ const TAB_ROUTES = {
   upgrade: '/upgrade',
 };
 
-// Enhanced Loading Component with skeleton
+// ✅ PRESERVED - Enhanced Loading Component with skeleton
 const PageLoadingFallback = React.memo(({ type = "feed" }) => (
   <div className="h-full w-full">
     <PageSkeleton type={type} />
@@ -86,30 +88,58 @@ const PageLoadingFallback = React.memo(({ type = "feed" }) => (
 
 PageLoadingFallback.displayName = 'PageLoadingFallback';
 
-// Main App Layout Component with performance optimizations
+// ✅ ENHANCED - Authentication-aware Landing Page wrapper
+const LandingPageWrapper = React.memo(() => {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  // Show loading while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  // If user is already authenticated, redirect to home
+  if (isAuthenticated) {
+    return <Navigate to="/home" replace />;
+  }
+
+  // Show landing page for non-authenticated users
+  return <LandingPage />;
+});
+
+LandingPageWrapper.displayName = 'LandingPageWrapper';
+
+// ✅ ENHANCED - Main App Layout Component with JWT integration
 const AppLayout = React.memo(() => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, logout } = useAuth(); // Get user data from JWT context
   
-  // State Management with loading states
+  // ✅ PRESERVED - State Management with loading states
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [activeTab, setActiveTab] = useState('home');
   const [isNavigating, setIsNavigating] = useState(false);
   
-  // Memoize user data to prevent recreation on every render
-  const user = useMemo(() => ({
-    name: 'Your Name',
-    username: 'yourusername'
-  }), []);
+  // ✅ ENHANCED - Memoize user data from JWT context instead of hardcoded
+  const userData = useMemo(() => ({
+    name: user?.full_name || 'User',
+    username: user?.username || 'username',
+    email: user?.email || '',
+    avatar: user?.profile?.avatar || null,
+    profile: user?.profile || {}
+  }), [user]);
 
-  // Memoize current route config calculation
+  // ✅ PRESERVED - Memoize current route config calculation
   const currentRoute = useMemo(() => {
     return ROUTE_CONFIG.find(route => 
       location.pathname.startsWith(route.path)
     ) || { transition: 'fade', skeleton: 'feed' };
   }, [location.pathname]);
 
-  // Determine active tab from current route with memoized calculation
+  // ✅ PRESERVED - Determine active tab from current route with memoized calculation
   React.useEffect(() => {
     const path = location.pathname;
     
@@ -122,7 +152,7 @@ const AppLayout = React.memo(() => {
     else if (path.startsWith('/upgrade')) setActiveTab('upgrade');
   }, [location.pathname]);
 
-  // Memoize tab change handler to prevent recreation
+  // ✅ PRESERVED - Memoize tab change handler to prevent recreation
   const handleTabChange = useCallback((tab) => {
     if (tab === activeTab) return; // Prevent unnecessary navigation
     
@@ -139,38 +169,45 @@ const AppLayout = React.memo(() => {
     }
   }, [activeTab, navigate]);
 
-  // Memoize create post handler to prevent recreation
+  // ✅ PRESERVED - Memoize create post handler to prevent recreation
   const handleCreatePost = useCallback(() => {
     setShowCreatePost(true);
   }, []);
 
-  // Memoize post created handler to prevent recreation
+  // ✅ PRESERVED - Memoize post created handler to prevent recreation
   const handlePostCreated = useCallback(() => {
     setShowCreatePost(false);
     console.log('Post created successfully!');
   }, []);
 
-  // Memoize modal close handler to prevent recreation
+  // ✅ PRESERVED - Memoize modal close handler to prevent recreation
   const handleModalClose = useCallback(() => {
     setShowCreatePost(false);
   }, []);
 
+  // ✅ NEW - Handle logout
+  const handleLogout = useCallback(async () => {
+    await logout();
+    navigate('/');
+  }, [logout, navigate]);
+
   return (
     <>
-      {/* Global Animation Styles */}
+      {/* ✅ PRESERVED - Global Animation Styles */}
       <SkeletonStyles />
       <ButtonAnimationStyles />
       
-      {/* Simplified Layout without conflicting animations */}
+      {/* ✅ ENHANCED - Layout with real user data and logout function */}
       <ResponsiveLayout
         activeTab={activeTab}
         onTabChange={handleTabChange}
         onCreatePost={handleCreatePost}
-        user={user}
+        user={userData}
+        onLogout={handleLogout} // Add logout handler if your ResponsiveLayout supports it
         title="Connectify"
         isNavigating={isNavigating}
       >
-        {/* Simple Suspense without extra animations */}
+        {/* ✅ PRESERVED - Simple Suspense without extra animations */}
         <Suspense fallback={<PageLoadingFallback type={currentRoute.skeleton} />}>
           <Routes>
             <Route path="/home" element={<HomeFeed />} />
@@ -180,19 +217,19 @@ const AppLayout = React.memo(() => {
             <Route path="/profile" element={<UserProfile />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/upgrade" element={<UpgradePage />} />
-            <Route path="*" element={<HomeFeed />} />
+            <Route path="*" element={<Navigate to="/home" replace />} />
           </Routes>
         </Suspense>
       </ResponsiveLayout>
 
-      {/* Enhanced Post Creation Modal with Animations */}
+      {/* ✅ PRESERVED - Enhanced Post Creation Modal with Animations */}
       <EnhancedPostCreationModal
         isOpen={showCreatePost}
         onClose={handleModalClose}
         onPostCreate={handlePostCreated}
       />
 
-      {/* Simplified, faster animations */}
+      {/* ✅ PRESERVED - Simplified, faster animations */}
       <style jsx global>{`
         /* Fast smooth transitions - 120ms only */
         .page-transition {
@@ -254,9 +291,9 @@ const AppLayout = React.memo(() => {
 
 AppLayout.displayName = 'AppLayout';
 
-// Main App Component with Enhanced Performance
-const App = React.memo(() => {
-  // Memoize landing page fallback to prevent recreation
+// ✅ ENHANCED - Authentication-aware App Routes Component
+const AppRoutes = React.memo(() => {
+  // ✅ PRESERVED - Memoize landing page fallback to prevent recreation
   const landingPageFallback = useMemo(() => (
     <div className="min-h-screen flex items-center justify-center">
       <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
@@ -264,28 +301,46 @@ const App = React.memo(() => {
   ), []);
 
   return (
-    <ThemeProvider defaultTheme="light" storageKey="connectify-theme">
-      <ToastProvider>
-        <Router>
-          <div className="App">
-            <Routes>
-              {/* Landing page with its own animations */}
-              <Route 
-                path="/" 
-                element={
-                  <Suspense fallback={landingPageFallback}>
-                    <LandingPage />
-                  </Suspense>
-                } 
-              />
-              
-              {/* All other routes use the animated layout */}
-              <Route path="/*" element={<AppLayout />} />
-            </Routes>
-          </div>
-        </Router>
-      </ToastProvider>
-    </ThemeProvider>
+    <Routes>
+      {/* ✅ PUBLIC ROUTE - Landing page (redirects to /home if authenticated) */}
+      <Route 
+        path="/" 
+        element={
+          <Suspense fallback={landingPageFallback}>
+            <LandingPageWrapper />
+          </Suspense>
+        } 
+      />
+      
+      {/* ✅ PROTECTED ROUTES - All app routes require authentication */}
+      <Route 
+        path="/*" 
+        element={
+          <ProtectedRoute requireAuth={true}>
+            <AppLayout />
+          </ProtectedRoute>
+        } 
+      />
+    </Routes>
+  );
+});
+
+AppRoutes.displayName = 'AppRoutes';
+
+// ✅ ENHANCED - Main App Component with JWT Authentication Provider
+const App = React.memo(() => {
+  return (
+    <AuthProvider>
+      <ThemeProvider defaultTheme="light" storageKey="connectify-theme">
+        <ToastProvider>
+          <Router>
+            <div className="App">
+              <AppRoutes />
+            </div>
+          </Router>
+        </ToastProvider>
+      </ThemeProvider>
+    </AuthProvider>
   );
 });
 
