@@ -1,22 +1,22 @@
-// ===== src/App.js - WITH SMOOTH NAVIGATION FIXES =====
-import React, { useState, Suspense } from 'react';
+// src/App.js - OPTIMIZED
+import React, { useState, Suspense, useCallback, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { ThemeProvider } from './components/providers/ThemeProvider';
 import { ToastProvider } from './components/ui/Toast';
 import ChatView from './components/pages/Messages/ChatView';
 
-// ✅ Animation Components
+// Animation Components
 import PageTransition from './components/ui/PageTransition/PageTransition';
 import { PageSkeleton, SkeletonStyles } from './components/ui/Skeleton/Skeleton';
 import { ButtonAnimationStyles } from './components/ui/AnimatedButton/AnimatedButton';
 
-// ✅ Import ResponsiveLayout (Your Original System)
+// Import ResponsiveLayout
 import ResponsiveLayout from './components/layout/ResponsiveLayout';
 
-// ✅ Import Enhanced Post Creation Modal
+// Import Enhanced Post Creation Modal
 import EnhancedPostCreationModal from './components/modals/EnhancedPostCreationModal';
 
-// ✅ Lazy-loaded Pages for better performance
+// Lazy-loaded Pages for better performance
 const LandingPage = React.lazy(() => import('./components/pages/LandingPage'));
 const HomeFeed = React.lazy(() => import('./components/pages/HomeFeed'));
 const SearchPage = React.lazy(() => import('./components/pages/Search'));
@@ -25,17 +25,8 @@ const UserProfile = React.lazy(() => import('./components/pages/Profile'));
 const SettingsPage = React.lazy(() => import('./components/pages/Settings'));
 const UpgradePage = React.lazy(() => import('./components/pages/UpgradePage'));
 
-
-
-// ✅ Enhanced Loading Component with skeleton
-const PageLoadingFallback = ({ type = "feed" }) => (
-  <div className="h-full w-full">
-    <PageSkeleton type={type} />
-  </div>
-);
-
-// ✅ Route Configuration with loading states
-const routeConfig = [
+// Move static data outside component to prevent recreation on every render
+const ROUTE_CONFIG = [
   { 
     path: '/home', 
     component: HomeFeed, 
@@ -76,23 +67,49 @@ const routeConfig = [
   }
 ];
 
-// ✅ Main App Layout Component with Enhanced Animations
-function AppLayout() {
+// Move route mapping outside component to prevent recreation
+const TAB_ROUTES = {
+  home: '/home',
+  search: '/search',
+  messages: '/messages',
+  profile: '/profile',
+  settings: '/settings',    
+  upgrade: '/upgrade',
+};
+
+// Enhanced Loading Component with skeleton
+const PageLoadingFallback = React.memo(({ type = "feed" }) => (
+  <div className="h-full w-full">
+    <PageSkeleton type={type} />
+  </div>
+));
+
+PageLoadingFallback.displayName = 'PageLoadingFallback';
+
+// Main App Layout Component with performance optimizations
+const AppLayout = React.memo(() => {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // ✅ State Management with loading states
+  // State Management with loading states
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [activeTab, setActiveTab] = useState('home');
   const [isNavigating, setIsNavigating] = useState(false);
   
-  // ✅ Mock User Data (replace with real auth)
-  const user = {
+  // Memoize user data to prevent recreation on every render
+  const user = useMemo(() => ({
     name: 'Your Name',
     username: 'yourusername'
-  };
+  }), []);
 
-  // ✅ Determine active tab from current route with animation
+  // Memoize current route config calculation
+  const currentRoute = useMemo(() => {
+    return ROUTE_CONFIG.find(route => 
+      location.pathname.startsWith(route.path)
+    ) || { transition: 'fade', skeleton: 'feed' };
+  }, [location.pathname]);
+
+  // Determine active tab from current route with memoized calculation
   React.useEffect(() => {
     const path = location.pathname;
     
@@ -105,60 +122,46 @@ function AppLayout() {
     else if (path.startsWith('/upgrade')) setActiveTab('upgrade');
   }, [location.pathname]);
 
-  // ✅ FIXED: Fast Tab Change with smooth navigation
-  const handleTabChange = (tab) => {
+  // Memoize tab change handler to prevent recreation
+  const handleTabChange = useCallback((tab) => {
     if (tab === activeTab) return; // Prevent unnecessary navigation
     
-    // ✅ Immediate state updates for smooth feel
+    // Immediate state updates for smooth feel
     setActiveTab(tab);
     
-    // ✅ Very brief loading state (50ms only)
+    // Very brief loading state for visual feedback
     setIsNavigating(true);
     setTimeout(() => setIsNavigating(false), 50);
     
-    // Navigate based on tab
-    const routes = {
-      home: '/home',
-      search: '/search',
-      messages: '/messages',
-      profile: '/profile',
-      settings: '/settings',    
-      upgrade: '/upgrade',
-    };
-    
-    if (routes[tab]) {
-      navigate(routes[tab]);
+    // Navigate using pre-defined routes
+    if (TAB_ROUTES[tab]) {
+      navigate(TAB_ROUTES[tab]);
     }
-  };
+  }, [activeTab, navigate]);
 
-  // ✅ Enhanced Create Post with loading feedback
-  const handleCreatePost = () => {
+  // Memoize create post handler to prevent recreation
+  const handleCreatePost = useCallback(() => {
     setShowCreatePost(true);
-  };
+  }, []);
 
-  // ✅ Handle Post Created with smooth feedback
-  const handlePostCreated = () => {
+  // Memoize post created handler to prevent recreation
+  const handlePostCreated = useCallback(() => {
     setShowCreatePost(false);
-    // Optional: refresh feed or show success animation
-    console.log('✅ Post created successfully!');
-  };
+    console.log('Post created successfully!');
+  }, []);
 
-  // ✅ Get current route config for transition type
-  const getCurrentRouteConfig = () => {
-    return routeConfig.find(route => 
-      location.pathname.startsWith(route.path)
-    ) || { transition: 'fade', skeleton: 'feed' };
-  };
-
-  const currentRoute = getCurrentRouteConfig();
+  // Memoize modal close handler to prevent recreation
+  const handleModalClose = useCallback(() => {
+    setShowCreatePost(false);
+  }, []);
 
   return (
     <>
-      {/* ✅ Global Animation Styles */}
+      {/* Global Animation Styles */}
       <SkeletonStyles />
       <ButtonAnimationStyles />
       
-      {/* ✅ FIXED: Simplified Layout without conflicting animations */}
+      {/* Simplified Layout without conflicting animations */}
       <ResponsiveLayout
         activeTab={activeTab}
         onTabChange={handleTabChange}
@@ -167,29 +170,29 @@ function AppLayout() {
         title="Connectify"
         isNavigating={isNavigating}
       >
-        {/* ✅ FIXED: Simple Suspense without extra animations */}
+        {/* Simple Suspense without extra animations */}
         <Suspense fallback={<PageLoadingFallback type={currentRoute.skeleton} />}>
-  <Routes>
-    <Route path="/home" element={<HomeFeed />} />
-    <Route path="/search" element={<SearchPage />} />
-    <Route path="/messages" element={<MessagesPage />} />
-    <Route path="/messages/:userId" element={<ChatView />} />  {/* ✅ MOVED BEFORE WILDCARD */}
-    <Route path="/profile" element={<UserProfile />} />
-    <Route path="/settings" element={<SettingsPage />} />
-    <Route path="/upgrade" element={<UpgradePage />} />
-    <Route path="*" element={<HomeFeed />} />  {/* ✅ WILDCARD ROUTE LAST */}
-  </Routes>
-</Suspense>
+          <Routes>
+            <Route path="/home" element={<HomeFeed />} />
+            <Route path="/search" element={<SearchPage />} />
+            <Route path="/messages" element={<MessagesPage />} />
+            <Route path="/messages/:userId" element={<ChatView />} />
+            <Route path="/profile" element={<UserProfile />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/upgrade" element={<UpgradePage />} />
+            <Route path="*" element={<HomeFeed />} />
+          </Routes>
+        </Suspense>
       </ResponsiveLayout>
 
-      {/* ✅ Enhanced Post Creation Modal with Animations */}
+      {/* Enhanced Post Creation Modal with Animations */}
       <EnhancedPostCreationModal
         isOpen={showCreatePost}
-        onClose={() => setShowCreatePost(false)}
+        onClose={handleModalClose}
         onPostCreate={handlePostCreated}
       />
 
-      {/* ✅ FIXED: Simplified, faster animations */}
+      {/* Simplified, faster animations */}
       <style jsx global>{`
         /* Fast smooth transitions - 120ms only */
         .page-transition {
@@ -244,25 +247,33 @@ function AppLayout() {
       `}</style>
     </>
   );
-}
+}, (prevProps, nextProps) => {
+  // AppLayout has no props, so it should never re-render unless forced
+  return true;
+});
 
-// ✅ Main App Component with Enhanced Performance
-function App() {
+AppLayout.displayName = 'AppLayout';
+
+// Main App Component with Enhanced Performance
+const App = React.memo(() => {
+  // Memoize landing page fallback to prevent recreation
+  const landingPageFallback = useMemo(() => (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  ), []);
+
   return (
     <ThemeProvider defaultTheme="light" storageKey="connectify-theme">
       <ToastProvider>
         <Router>
           <div className="App">
             <Routes>
-              {/* Landing page (no layout, with its own animations) */}
+              {/* Landing page with its own animations */}
               <Route 
                 path="/" 
                 element={
-                  <Suspense fallback={
-                    <div className="min-h-screen flex items-center justify-center">
-                      <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                    </div>
-                  }>
+                  <Suspense fallback={landingPageFallback}>
                     <LandingPage />
                   </Suspense>
                 } 
@@ -276,6 +287,8 @@ function App() {
       </ToastProvider>
     </ThemeProvider>
   );
-}
+});
+
+App.displayName = 'App';
 
 export default App;

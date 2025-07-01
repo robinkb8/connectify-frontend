@@ -1,10 +1,69 @@
- 
-// ===== src/components/modals/EnhancedCommentsModal.jsx =====
-import React, { useState, useEffect, useRef } from 'react';
+// ===== src/components/modals/EnhancedCommentsModal.jsx - OPTIMIZED =====
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { X, MessageCircle, Heart, Reply, Trash2, Send, MoreHorizontal } from 'lucide-react';
 
-// ✅ Individual Comment Component with Smooth Animations
-const CommentItem = ({ comment, onLike, onReply, onDelete, isOwnComment, level = 0 }) => {
+// ✅ OPTIMIZED: Move mock data outside component to prevent recreation
+const MOCK_COMMENTS = [
+  {
+    id: '1',
+    user: {
+      name: 'Sarah Wilson',
+      username: 'sarahw',
+      avatar: null
+    },
+    content: 'This looks amazing! Great work on the design. The color scheme is really well thought out.',
+    timestamp: '2h ago',
+    likes: 12,
+    isLiked: false,
+    isNew: false,
+    replies: [
+      {
+        id: '1-1',
+        user: {
+          name: 'Alex Chen',
+          username: 'alexchen',
+          avatar: null
+        },
+        content: 'I totally agree! The gradient effects are stunning.',
+        timestamp: '1h ago',
+        likes: 3,
+        isLiked: true,
+        isNew: false,
+      }
+    ]
+  },
+  {
+    id: '2',
+    user: {
+      name: 'Mike Johnson',
+      username: 'mikej',
+      avatar: null
+    },
+    content: 'Could you share some insights about your design process? I\'m particularly interested in how you approached the user research phase and what tools you used for prototyping.',
+    timestamp: '3h ago',
+    likes: 8,
+    isLiked: false,
+    isNew: false,
+    replies: []
+  },
+  {
+    id: '3',
+    user: {
+      name: 'Emma Davis',
+      username: 'emmad',
+      avatar: null
+    },
+    content: 'Beautiful work! 🎨✨',
+    timestamp: '4h ago',
+    likes: 5,
+    isLiked: true,
+    isNew: false,
+    replies: []
+  }
+];
+
+// ✅ OPTIMIZED: Memoized Individual Comment Component
+const CommentItem = React.memo(({ comment, onLike, onReply, onDelete, isOwnComment, level = 0 }) => {
   const [isLiked, setIsLiked] = useState(comment.isLiked || false);
   const [likesCount, setLikesCount] = useState(comment.likes || 0);
   const [showReplyInput, setShowReplyInput] = useState(false);
@@ -12,44 +71,45 @@ const CommentItem = ({ comment, onLike, onReply, onDelete, isOwnComment, level =
   const [isDeleting, setIsDeleting] = useState(false);
   const [showMore, setShowMore] = useState(false);
 
-  // ✅ Instant like feedback
-  const handleLike = () => {
+  // ✅ OPTIMIZED: Memoized event handlers
+  const handleLike = useCallback(() => {
     const newLikedState = !isLiked;
     const newCount = newLikedState ? likesCount + 1 : likesCount - 1;
     
-    // Immediate UI update
     setIsLiked(newLikedState);
     setLikesCount(newCount);
-    
-    // Call parent handler (can handle API in background)
     onLike(comment.id, newLikedState);
-  };
+  }, [isLiked, likesCount, onLike, comment.id]);
 
-  // ✅ Smooth reply submission
-  const handleReplySubmit = () => {
+  const handleReplySubmit = useCallback(() => {
     if (!replyText.trim()) return;
     
     onReply(comment.id, replyText.trim());
     setReplyText('');
     setShowReplyInput(false);
-  };
+  }, [replyText, onReply, comment.id]);
 
-  // ✅ Smooth delete with animation
-  const handleDelete = () => {
+  const handleDelete = useCallback(() => {
     if (window.confirm('Delete this comment?')) {
       setIsDeleting(true);
-      // Small delay for smooth animation before removal
       setTimeout(() => onDelete(comment.id), 300);
     }
-  };
+  }, [onDelete, comment.id]);
 
-  // ✅ Handle key press in reply input
-  const handleKeyPress = (e) => {
+  const handleKeyPress = useCallback((e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleReplySubmit();
     }
-  };
+  }, [handleReplySubmit]);
+
+  const handleToggleReply = useCallback(() => {
+    setShowReplyInput(!showReplyInput);
+  }, [showReplyInput]);
+
+  const handleShowMore = useCallback(() => {
+    setShowMore(!showMore);
+  }, [showMore]);
 
   // Determine if content should be truncated
   const shouldTruncate = comment.content && comment.content.length > 200;
@@ -95,7 +155,7 @@ const CommentItem = ({ comment, onLike, onReply, onDelete, isOwnComment, level =
             <p>{displayContent}</p>
             {shouldTruncate && (
               <button
-                onClick={() => setShowMore(!showMore)}
+                onClick={handleShowMore}
                 className="text-blue-500 hover:text-blue-600 text-sm font-medium mt-1"
               >
                 {showMore ? 'Show less' : 'Show more'}
@@ -119,7 +179,7 @@ const CommentItem = ({ comment, onLike, onReply, onDelete, isOwnComment, level =
 
             {/* Reply */}
             <button
-              onClick={() => setShowReplyInput(!showReplyInput)}
+              onClick={handleToggleReply}
               className="flex items-center space-x-1 text-xs text-gray-500 hover:text-blue-500 transition-colors"
             >
               <Reply className="w-3 h-3" />
@@ -161,7 +221,7 @@ const CommentItem = ({ comment, onLike, onReply, onDelete, isOwnComment, level =
                   />
                   <div className="flex justify-end space-x-2 mt-2">
                     <button
-                      onClick={() => setShowReplyInput(false)}
+                      onClick={handleToggleReply}
                       className="px-3 py-1 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                     >
                       Cancel
@@ -199,85 +259,52 @@ const CommentItem = ({ comment, onLike, onReply, onDelete, isOwnComment, level =
       </div>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // ✅ OPTIMIZED: Custom comparison to prevent unnecessary re-renders
+  return (
+    prevProps.comment.id === nextProps.comment.id &&
+    prevProps.comment.likes === nextProps.comment.likes &&
+    prevProps.comment.isLiked === nextProps.comment.isLiked &&
+    prevProps.comment.content === nextProps.comment.content &&
+    prevProps.isOwnComment === nextProps.isOwnComment &&
+    prevProps.level === nextProps.level
+  );
+});
 
-// ✅ Enhanced Comments Modal with Instant Feedback
-function EnhancedCommentsModal({ isOpen, onClose, postId, postAuthor }) {
+CommentItem.displayName = 'CommentItem';
+
+// ✅ OPTIMIZED: Enhanced Comments Modal with performance improvements
+const EnhancedCommentsModal = React.memo(({ isOpen, onClose, postId, postAuthor }) => {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [sortBy, setSortBy] = useState('newest'); // newest, oldest, popular
+  const [sortBy, setSortBy] = useState('newest');
   
   const textareaRef = useRef(null);
 
-  // ✅ Mock comments data
-  const mockComments = [
-    {
-      id: '1',
-      user: {
-        name: 'Sarah Wilson',
-        username: 'sarahw',
-        avatar: null
-      },
-      content: 'This looks amazing! Great work on the design. The color scheme is really well thought out.',
-      timestamp: '2h ago',
-      likes: 12,
-      isLiked: false,
-      isNew: false,
-      replies: [
-        {
-          id: '1-1',
-          user: {
-            name: 'Alex Chen',
-            username: 'alexchen',
-            avatar: null
-          },
-          content: 'I totally agree! The gradient effects are stunning.',
-          timestamp: '1h ago',
-          likes: 3,
-          isLiked: true,
-          isNew: false,
-        }
-      ]
-    },
-    {
-      id: '2',
-      user: {
-        name: 'Mike Johnson',
-        username: 'mikej',
-        avatar: null
-      },
-      content: 'Could you share some insights about your design process? I\'m particularly interested in how you approached the user research phase and what tools you used for prototyping.',
-      timestamp: '3h ago',
-      likes: 8,
-      isLiked: false,
-      isNew: false,
-      replies: []
-    },
-    {
-      id: '3',
-      user: {
-        name: 'Emma Davis',
-        username: 'emmad',
-        avatar: null
-      },
-      content: 'Beautiful work! 🎨✨',
-      timestamp: '4h ago',
-      likes: 5,
-      isLiked: true,
-      isNew: false,
-      replies: []
+  // ✅ OPTIMIZED: Memoized load comments function
+  const loadComments = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500));
+      setComments(MOCK_COMMENTS);
+    } catch (error) {
+      setError('Failed to load comments');
+      console.error('Error loading comments:', error);
+    } finally {
+      setIsLoading(false);
     }
-  ];
+  }, []);
 
   // ✅ Load comments when modal opens
   useEffect(() => {
     if (isOpen && postId) {
       loadComments();
     }
-  }, [isOpen, postId]);
+  }, [isOpen, postId, loadComments]);
 
   // ✅ Auto-focus textarea when modal opens
   useEffect(() => {
@@ -294,28 +321,13 @@ function EnhancedCommentsModal({ isOpen, onClose, postId, postAuthor }) {
     }
   }, [newComment]);
 
-  // ✅ Load comments from API (simulated)
-  const loadComments = async () => {
-    setIsLoading(true);
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setComments(mockComments);
-    } catch (error) {
-      setError('Failed to load comments');
-      console.error('Error loading comments:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // ✅ INSTANT comment submission with optimistic UI
-  const handleSubmitComment = async () => {
+  // ✅ OPTIMIZED: Memoized comment submission handler
+  const handleSubmitComment = useCallback(async () => {
     if (!newComment.trim() || isSubmitting) return;
 
     // Create optimistic comment for instant UI feedback
     const optimisticComment = {
-      id: `temp-${Date.now()}`, // Temporary ID
+      id: `temp-${Date.now()}`,
       user: {
         name: 'You',
         username: 'you',
@@ -325,27 +337,27 @@ function EnhancedCommentsModal({ isOpen, onClose, postId, postAuthor }) {
       timestamp: 'just now',
       likes: 0,
       isLiked: false,
-      isNew: true, // Flag for animation
-      isOptimistic: true, // Flag to identify optimistic updates
+      isNew: true,
+      isOptimistic: true,
       replies: []
     };
 
-    // ✅ INSTANT UI UPDATE - Add comment immediately
+    // ✅ INSTANT UI UPDATE
     setComments(prev => [optimisticComment, ...prev]);
-    setNewComment(''); // Clear input immediately
-    setError(''); // Clear any previous errors
+    setNewComment('');
+    setError('');
     setIsSubmitting(true);
 
     try {
-      // Simulate API call in background
+      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // ✅ Replace optimistic comment with real data
+      // Replace optimistic comment with real data
       const realComment = {
         ...optimisticComment,
-        id: `comment-${Date.now()}`, // Real ID from server
+        id: `comment-${Date.now()}`,
         isOptimistic: false,
-        isNew: true // Keep animation flag
+        isNew: true
       };
 
       setComments(prev => prev.map(comment => 
@@ -355,32 +367,30 @@ function EnhancedCommentsModal({ isOpen, onClose, postId, postAuthor }) {
       console.log('✅ Comment posted successfully');
 
     } catch (error) {
-      // ✅ Remove optimistic comment and show error
+      // Remove optimistic comment and show error
       setComments(prev => prev.filter(comment => comment.id !== optimisticComment.id));
       setError('Failed to post comment. Please try again.');
-      setNewComment(optimisticComment.content); // Restore the text
+      setNewComment(optimisticComment.content);
       console.error('Error posting comment:', error);
       
-      // Auto-clear error after 3 seconds
       setTimeout(() => setError(''), 3000);
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [newComment, isSubmitting]);
 
-  // ✅ Handle like with optimistic UI
-  const handleLikeComment = async (commentId, isLiked) => {
+  // ✅ OPTIMIZED: Memoized like handler
+  const handleLikeComment = useCallback(async (commentId, isLiked) => {
     try {
-      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 200));
       console.log(`${isLiked ? 'Liked' : 'Unliked'} comment ${commentId}`);
     } catch (error) {
       console.error('Error liking comment:', error);
     }
-  };
+  }, []);
 
-  // ✅ Handle reply with instant feedback
-  const handleReplyToComment = async (parentId, replyText) => {
+  // ✅ OPTIMIZED: Memoized reply handler
+  const handleReplyToComment = useCallback(async (parentId, replyText) => {
     const optimisticReply = {
       id: `temp-reply-${Date.now()}`,
       user: {
@@ -396,7 +406,7 @@ function EnhancedCommentsModal({ isOpen, onClose, postId, postAuthor }) {
       isOptimistic: true
     };
 
-    // ✅ Instant UI update
+    // Instant UI update
     setComments(prev => prev.map(comment => 
       comment.id === parentId 
         ? { ...comment, replies: [optimisticReply, ...(comment.replies || [])] }
@@ -404,10 +414,8 @@ function EnhancedCommentsModal({ isOpen, onClose, postId, postAuthor }) {
     ));
 
     try {
-      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 800));
       
-      // Replace optimistic reply with real data
       const realReply = {
         ...optimisticReply,
         id: `reply-${Date.now()}`,
@@ -425,7 +433,6 @@ function EnhancedCommentsModal({ isOpen, onClose, postId, postAuthor }) {
           : comment
       ));
     } catch (error) {
-      // Remove optimistic reply on error
       setComments(prev => prev.map(comment => 
         comment.id === parentId 
           ? { 
@@ -436,15 +443,13 @@ function EnhancedCommentsModal({ isOpen, onClose, postId, postAuthor }) {
       ));
       console.error('Error posting reply:', error);
     }
-  };
+  }, []);
 
-  // ✅ Handle delete with smooth animation
-  const handleDeleteComment = async (commentId) => {
+  // ✅ OPTIMIZED: Memoized delete handler
+  const handleDeleteComment = useCallback(async (commentId) => {
     try {
-      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Remove from state after animation
       setTimeout(() => {
         setComments(prev => prev.filter(comment => {
           if (comment.id === commentId) return false;
@@ -457,12 +462,11 @@ function EnhancedCommentsModal({ isOpen, onClose, postId, postAuthor }) {
     } catch (error) {
       console.error('Error deleting comment:', error);
     }
-  };
+  }, []);
 
-  // ✅ Handle sort change
-  const handleSortChange = (newSortBy) => {
+  // ✅ OPTIMIZED: Memoized sort handler
+  const handleSortChange = useCallback((newSortBy) => {
     setSortBy(newSortBy);
-    // Apply sorting logic here
     let sortedComments = [...comments];
     switch (newSortBy) {
       case 'popular':
@@ -475,15 +479,15 @@ function EnhancedCommentsModal({ isOpen, onClose, postId, postAuthor }) {
         sortedComments.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     }
     setComments(sortedComments);
-  };
+  }, [comments]);
 
-  // ✅ Handle key press
-  const handleKeyPress = (e) => {
+  // ✅ OPTIMIZED: Memoized key press handler
+  const handleKeyPress = useCallback((e) => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
       handleSubmitComment();
     }
-  };
+  }, [handleSubmitComment]);
 
   if (!isOpen) return null;
 
@@ -556,7 +560,7 @@ function EnhancedCommentsModal({ isOpen, onClose, postId, postAuthor }) {
           )}
         </div>
 
-        {/* ✅ Enhanced Comment Input with Instant Feedback */}
+        {/* Comment Input */}
         <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
           
           {/* Error Message */}
@@ -592,7 +596,7 @@ function EnhancedCommentsModal({ isOpen, onClose, postId, postAuthor }) {
                   Press Cmd+Enter to post quickly
                 </span>
                 
-                {/* ✅ Instant Feedback Send Button */}
+                {/* Send Button */}
                 <button
                   onClick={handleSubmitComment}
                   disabled={!newComment.trim() || isSubmitting}
@@ -624,7 +628,7 @@ function EnhancedCommentsModal({ isOpen, onClose, postId, postAuthor }) {
         </div>
       </div>
 
-      {/* ✅ Custom Animations */}
+      {/* Custom Animations */}
       <style jsx>{`
         @keyframes slideIn {
           from {
@@ -661,6 +665,15 @@ function EnhancedCommentsModal({ isOpen, onClose, postId, postAuthor }) {
       `}</style>
     </div>
   );
-}
+}, (prevProps, nextProps) => {
+  // ✅ OPTIMIZED: Custom comparison for modal
+  return (
+    prevProps.isOpen === nextProps.isOpen &&
+    prevProps.postId === nextProps.postId &&
+    prevProps.postAuthor === nextProps.postAuthor
+  );
+});
+
+EnhancedCommentsModal.displayName = 'EnhancedCommentsModal';
 
 export default EnhancedCommentsModal;

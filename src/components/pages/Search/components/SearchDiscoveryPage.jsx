@@ -1,158 +1,40 @@
- 
-// ===== src/components/pages/Search/components/SearchDiscoveryPage.jsx =====
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+// src/components/pages/Search/components/SearchDiscoveryPage.jsx - OPTIMIZED
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Search, TrendingUp, Hash, Users, MessageCircle, Heart, X, Filter } from 'lucide-react';
 import { Button } from '../../../ui/Button/Button';
 import Input from '../../../ui/Input';
 import FollowButton, { FOLLOW_STATES, UserCard } from '../../../ui/FollowButton';
 
-// ✅ Search Categories
-const SEARCH_CATEGORIES = {
-  ALL: 'all',
-  USERS: 'users',
-  POSTS: 'posts',
-  HASHTAGS: 'hashtags',
-  MEDIA: 'media'
-};
+// Import mock data from separate file for better performance
+import { 
+  MOCK_USERS, 
+  MOCK_POSTS, 
+  MOCK_HASHTAGS, 
+  TRENDING_TOPICS, 
+  SEARCH_CATEGORIES 
+} from '../../../../utils/mockData';
 
-// ✅ Mock Data
-const mockUsers = [
-  {
-    id: '1',
-    name: 'Sarah Wilson',
-    username: 'sarahw',
-    bio: 'UX Designer at Tech Corp. Love creating beautiful interfaces!',
-    avatar: '',
-    followers: 2340,
-    verified: true,
-    isFollowing: false,
-    isPrivate: false
-  },
-  {
-    id: '2',
-    name: 'Alex Chen',
-    username: 'alexchen',
-    bio: 'Full-stack developer | React enthusiast | Coffee addict ☕',
-    avatar: '',
-    followers: 1890,
-    verified: false,
-    isFollowing: true,
-    isPrivate: false
-  },
-  {
-    id: '3',
-    name: 'Maria Garcia',
-    username: 'maria_g',
-    bio: 'Digital artist and photographer 📸',
-    avatar: '',
-    followers: 5670,
-    verified: true,
-    isFollowing: false,
-    isPrivate: true
-  },
-  {
-    id: '4',
-    name: 'David Kim',
-    username: 'davidk',
-    bio: 'Product Manager | Tech enthusiast',
-    avatar: '',
-    followers: 890,
-    verified: false,
-    isFollowing: false,
-    isPrivate: false
-  },
-  {
-    id: '5',
-    name: 'Robin Kumar',
-    username: 'robinkb',
-    bio: 'Full-stack developer passionate about creating amazing user experiences!',
-    avatar: '',
-    followers: 1234,
-    verified: true,
-    isFollowing: false,
-    isPrivate: false
-  }
-];
-
-const mockPosts = [
-  {
-    id: '1',
-    author: mockUsers[0],
-    content: 'Just finished designing a new mobile app interface! What do you think? #UIDesign #MobileApp',
-    timestamp: '2h ago',
-    likes: 234,
-    comments: 45,
-    shares: 12,
-    hasMedia: true
-  },
-  {
-    id: '2',
-    author: mockUsers[1],
-    content: 'Loving the new React 18 features! The concurrent rendering is a game changer. #React #WebDev',
-    timestamp: '4h ago',
-    likes: 189,
-    comments: 32,
-    shares: 8,
-    hasMedia: false
-  },
-  {
-    id: '3',
-    author: mockUsers[2],
-    content: 'Golden hour photography from yesterday\'s shoot 🌅 #Photography #GoldenHour #NaturePhotography',
-    timestamp: '1d ago',
-    likes: 567,
-    comments: 89,
-    shares: 34,
-    hasMedia: true
-  },
-  {
-    id: '4',
-    author: mockUsers[4],
-    content: 'Working on some exciting new features. Can\'t wait to show you all! 💻✨ #Development #React',
-    timestamp: '3h ago',
-    likes: 156,
-    comments: 23,
-    shares: 7,
-    hasMedia: false
-  }
-];
-
-const mockHashtags = [
-  { tag: 'react', count: 12340, trending: true },
-  { tag: 'javascript', count: 8920, trending: true },
-  { tag: 'design', count: 6780, trending: false },
-  { tag: 'photography', count: 15600, trending: true },
-  { tag: 'webdev', count: 4560, trending: false },
-  { tag: 'ui', count: 3440, trending: false },
-  { tag: 'ux', count: 2890, trending: false },
-  { tag: 'frontend', count: 5670, trending: true },
-  { tag: 'development', count: 7890, trending: false },
-  { tag: 'mobile', count: 4321, trending: false }
-];
-
-const trendingTopics = [
-  { tag: 'TechNews', count: 45600 },
-  { tag: 'AI', count: 32400 },
-  { tag: 'WebDevelopment', count: 28900 },
-  { tag: 'Design', count: 21300 },
-  { tag: 'React', count: 18700 }
-];
-
-// ✅ Post Card Component
-const PostCard = ({ post, onPostClick }) => {
+// Post Card Component with performance optimizations
+const PostCard = React.memo(({ post, onPostClick }) => {
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(post.likes);
 
-  const handleLike = (e) => {
+  // Memoize like handler to prevent recreation
+  const handleLike = useCallback((e) => {
     e.stopPropagation();
     setIsLiked(!isLiked);
     setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
-  };
+  }, [isLiked]);
+
+  // Memoize post click handler to prevent recreation
+  const handlePostClick = useCallback(() => {
+    onPostClick?.(post);
+  }, [onPostClick, post]);
 
   return (
     <div 
       className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 cursor-pointer hover:border-blue-200 dark:hover:border-blue-800"
-      onClick={() => onPostClick?.(post)}
+      onClick={handlePostClick}
     >
       {/* Author */}
       <div className="flex items-center space-x-3 mb-3">
@@ -214,14 +96,30 @@ const PostCard = ({ post, onPostClick }) => {
       </div>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison to prevent unnecessary re-renders
+  return (
+    prevProps.post.id === nextProps.post.id &&
+    prevProps.post.likes === nextProps.post.likes &&
+    prevProps.post.comments === nextProps.post.comments &&
+    prevProps.post.shares === nextProps.post.shares &&
+    prevProps.onPostClick === nextProps.onPostClick
+  );
+});
 
-// ✅ Hashtag Card Component
-const HashtagCard = ({ hashtag, onHashtagClick }) => {
+PostCard.displayName = 'PostCard';
+
+// Hashtag Card Component with performance optimizations
+const HashtagCard = React.memo(({ hashtag, onHashtagClick }) => {
+  // Memoize click handler to prevent recreation
+  const handleClick = useCallback(() => {
+    onHashtagClick?.(hashtag);
+  }, [onHashtagClick, hashtag]);
+
   return (
     <div 
       className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 cursor-pointer hover:border-blue-200 dark:hover:border-blue-800"
-      onClick={() => onHashtagClick?.(hashtag)}
+      onClick={handleClick}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
@@ -245,10 +143,30 @@ const HashtagCard = ({ hashtag, onHashtagClick }) => {
       </div>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison for hashtag component
+  return (
+    prevProps.hashtag.tag === nextProps.hashtag.tag &&
+    prevProps.hashtag.count === nextProps.hashtag.count &&
+    prevProps.hashtag.trending === nextProps.hashtag.trending &&
+    prevProps.onHashtagClick === nextProps.onHashtagClick
+  );
+});
 
-// ✅ Recent Searches Component
-const RecentSearches = ({ searches, onClearSearch, onSearchClick }) => {
+HashtagCard.displayName = 'HashtagCard';
+
+// Recent Searches Component with performance optimizations
+const RecentSearches = React.memo(({ searches, onClearSearch, onSearchClick }) => {
+  // Memoize clear all handler
+  const handleClearAll = useCallback(() => {
+    onClearSearch();
+  }, [onClearSearch]);
+
+  // Memoize search item handlers
+  const createSearchClickHandler = useCallback((search) => () => {
+    onSearchClick(search);
+  }, [onSearchClick]);
+
   if (searches.length === 0) return null;
 
   return (
@@ -256,7 +174,7 @@ const RecentSearches = ({ searches, onClearSearch, onSearchClick }) => {
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-semibold text-gray-900 dark:text-gray-100">Recent Searches</h3>
         <button
-          onClick={() => onClearSearch()}
+          onClick={handleClearAll}
           className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
         >
           Clear all
@@ -266,7 +184,7 @@ const RecentSearches = ({ searches, onClearSearch, onSearchClick }) => {
         {searches.map((search, index) => (
           <button
             key={index}
-            onClick={() => onSearchClick(search)}
+            onClick={createSearchClickHandler(search)}
             className="flex items-center justify-between w-full p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left"
           >
             <div className="flex items-center space-x-2">
@@ -279,10 +197,19 @@ const RecentSearches = ({ searches, onClearSearch, onSearchClick }) => {
       </div>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison for recent searches
+  return (
+    JSON.stringify(prevProps.searches) === JSON.stringify(nextProps.searches) &&
+    prevProps.onClearSearch === nextProps.onClearSearch &&
+    prevProps.onSearchClick === nextProps.onSearchClick
+  );
+});
 
-// ✅ Main Search & Discovery Component
-function SearchDiscoveryPage() {
+RecentSearches.displayName = 'RecentSearches';
+
+// Main Search & Discovery Component with performance optimizations
+const SearchDiscoveryPage = React.memo(() => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState(SEARCH_CATEGORIES.ALL);
   const [isSearching, setIsSearching] = useState(false);
@@ -292,7 +219,39 @@ function SearchDiscoveryPage() {
 
   const searchInputRef = useRef(null);
 
-  // ✅ Perform search with debouncing
+  // Memoize search function to prevent recreation
+  const performSearch = useCallback((query) => {
+    const lowerQuery = query.toLowerCase();
+    
+    // Filter users
+    const filteredUsers = MOCK_USERS.filter(user =>
+      user.name.toLowerCase().includes(lowerQuery) ||
+      user.username.toLowerCase().includes(lowerQuery) ||
+      user.bio?.toLowerCase().includes(lowerQuery)
+    );
+
+    // Filter posts
+    const filteredPosts = MOCK_POSTS.filter(post =>
+      post.content.toLowerCase().includes(lowerQuery) ||
+      post.author.name.toLowerCase().includes(lowerQuery) ||
+      post.author.username.toLowerCase().includes(lowerQuery)
+    );
+
+    // Filter hashtags
+    const filteredHashtags = MOCK_HASHTAGS.filter(hashtag =>
+      hashtag.tag.toLowerCase().includes(lowerQuery)
+    );
+
+    setSearchResults({
+      users: filteredUsers,
+      posts: filteredPosts,
+      hashtags: filteredHashtags
+    });
+
+    setIsSearching(false);
+  }, []);
+
+  // Perform search with debouncing
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSearchResults({ users: [], posts: [], hashtags: [] });
@@ -307,71 +266,57 @@ function SearchDiscoveryPage() {
     }, 300); // 300ms debounce
 
     return () => clearTimeout(searchTimeout);
-  }, [searchQuery]);
+  }, [searchQuery, performSearch]);
 
-  // ✅ Search function with instant results
-  const performSearch = (query) => {
-    const lowerQuery = query.toLowerCase();
-    
-    // Filter users
-    const filteredUsers = mockUsers.filter(user =>
-      user.name.toLowerCase().includes(lowerQuery) ||
-      user.username.toLowerCase().includes(lowerQuery) ||
-      user.bio?.toLowerCase().includes(lowerQuery)
-    );
-
-    // Filter posts
-    const filteredPosts = mockPosts.filter(post =>
-      post.content.toLowerCase().includes(lowerQuery) ||
-      post.author.name.toLowerCase().includes(lowerQuery) ||
-      post.author.username.toLowerCase().includes(lowerQuery)
-    );
-
-    // Filter hashtags
-    const filteredHashtags = mockHashtags.filter(hashtag =>
-      hashtag.tag.toLowerCase().includes(lowerQuery)
-    );
-
-    setSearchResults({
-      users: filteredUsers,
-      posts: filteredPosts,
-      hashtags: filteredHashtags
-    });
-
-    setIsSearching(false);
-  };
-
-  // ✅ Handle search input
-  const handleSearchChange = (e) => {
+  // Memoize event handlers to prevent recreation
+  const handleSearchChange = useCallback((e) => {
     setSearchQuery(e.target.value);
-  };
+  }, []);
 
-  // ✅ Handle search submit
-  const handleSearchSubmit = (e) => {
+  const handleSearchSubmit = useCallback((e) => {
     e.preventDefault();
     if (searchQuery.trim() && !recentSearches.includes(searchQuery.trim())) {
       setRecentSearches(prev => [searchQuery.trim(), ...prev.slice(0, 4)]);
     }
-  };
+  }, [searchQuery, recentSearches]);
 
-  // ✅ Clear search
-  const clearSearch = () => {
+  const clearSearch = useCallback(() => {
     setSearchQuery('');
     setSearchResults({ users: [], posts: [], hashtags: [] });
     searchInputRef.current?.focus();
-  };
+  }, []);
 
-  // ✅ Handle recent search click
-  const handleRecentSearchClick = (search) => {
+  const handleRecentSearchClick = useCallback((search) => {
     setSearchQuery(search);
-  };
+  }, []);
 
-  // ✅ Clear recent searches
-  const clearRecentSearches = () => {
+  const clearRecentSearches = useCallback(() => {
     setRecentSearches([]);
-  };
+  }, []);
 
-  // ✅ Filter results by category
+  const toggleFilters = useCallback(() => {
+    setShowFilters(!showFilters);
+  }, [showFilters]);
+
+  // Memoize category change handler
+  const handleCategoryChange = useCallback((category) => {
+    setActiveCategory(category);
+  }, []);
+
+  // Memoize click handlers for hashtags and posts
+  const handleHashtagClick = useCallback((hashtag) => {
+    setSearchQuery(`#${hashtag.tag}`);
+  }, []);
+
+  const handlePostClick = useCallback((post) => {
+    console.log('Post clicked:', post);
+  }, []);
+
+  const handleUserClick = useCallback((user) => {
+    console.log('User clicked:', user);
+  }, []);
+
+  // Memoize filtered results calculation
   const filteredResults = useMemo(() => {
     switch (activeCategory) {
       case SEARCH_CATEGORIES.USERS:
@@ -385,13 +330,27 @@ function SearchDiscoveryPage() {
     }
   }, [searchResults, activeCategory]);
 
-  const hasResults = filteredResults.users.length > 0 || filteredResults.posts.length > 0 || filteredResults.hashtags.length > 0;
-  const isSearchActive = searchQuery.trim().length > 0;
+  // Memoize computed values
+  const hasResults = useMemo(() => {
+    return filteredResults.users.length > 0 || filteredResults.posts.length > 0 || filteredResults.hashtags.length > 0;
+  }, [filteredResults]);
+
+  const isSearchActive = useMemo(() => {
+    return searchQuery.trim().length > 0;
+  }, [searchQuery]);
+
+  const totalResults = useMemo(() => {
+    return searchResults.users.length + searchResults.posts.length + searchResults.hashtags.length;
+  }, [searchResults]);
+
+  const currentResultsCount = useMemo(() => {
+    return filteredResults.users.length + filteredResults.posts.length + filteredResults.hashtags.length;
+  }, [filteredResults]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       
-      {/* ✅ Search Header */}
+      {/* Search Header */}
       <div className="sticky top-0 z-40 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center space-x-4">
@@ -431,7 +390,7 @@ function SearchDiscoveryPage() {
             {/* Filters Button */}
             <Button
               variant="outline"
-              onClick={() => setShowFilters(!showFilters)}
+              onClick={toggleFilters}
               className="px-4 py-3"
             >
               <Filter className="w-4 h-4" />
@@ -444,7 +403,7 @@ function SearchDiscoveryPage() {
               {Object.entries(SEARCH_CATEGORIES).map(([key, value]) => (
                 <button
                   key={key}
-                  onClick={() => setActiveCategory(value)}
+                  onClick={() => handleCategoryChange(value)}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap ${
                     activeCategory === value
                       ? 'bg-blue-500 text-white'
@@ -454,7 +413,7 @@ function SearchDiscoveryPage() {
                   {key.charAt(0) + key.slice(1).toLowerCase()}
                   {value === SEARCH_CATEGORIES.ALL && hasResults && (
                     <span className="ml-2 bg-blue-600 text-white rounded-full px-2 py-0.5 text-xs">
-                      {searchResults.users.length + searchResults.posts.length + searchResults.hashtags.length}
+                      {totalResults}
                     </span>
                   )}
                 </button>
@@ -464,11 +423,11 @@ function SearchDiscoveryPage() {
         </div>
       </div>
 
-      {/* ✅ Content */}
+      {/* Content */}
       <div className="max-w-6xl mx-auto px-4 py-6">
         
         {!isSearchActive ? (
-          // ✅ DISCOVERY VIEW (when not searching)
+          // DISCOVERY VIEW (when not searching)
           <div className="space-y-6">
             
             {/* Recent Searches */}
@@ -485,11 +444,11 @@ function SearchDiscoveryPage() {
                 Trending Now
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {trendingTopics.map((topic, index) => (
+                {TRENDING_TOPICS.map((topic, index) => (
                   <HashtagCard
                     key={index}
                     hashtag={{ tag: topic.tag, count: topic.count, trending: true }}
-                    onHashtagClick={(hashtag) => setSearchQuery(`#${hashtag.tag}`)}
+                    onHashtagClick={handleHashtagClick}
                   />
                 ))}
               </div>
@@ -502,18 +461,18 @@ function SearchDiscoveryPage() {
                 People You Might Know
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {mockUsers.slice(0, 4).map((user) => (
+                {MOCK_USERS.slice(0, 4).map((user) => (
                   <UserCard
                     key={user.id}
                     user={user}
-                    onUserClick={(user) => console.log('User clicked:', user)}
+                    onUserClick={handleUserClick}
                   />
                 ))}
               </div>
             </div>
           </div>
         ) : (
-          // ✅ SEARCH RESULTS VIEW
+          // SEARCH RESULTS VIEW
           <div className="space-y-6">
             
             {/* Search Results Header */}
@@ -527,7 +486,7 @@ function SearchDiscoveryPage() {
               </h2>
               {hasResults && (
                 <span className="text-gray-500 dark:text-gray-400">
-                  {filteredResults.users.length + filteredResults.posts.length + filteredResults.hashtags.length} results
+                  {currentResultsCount} results
                 </span>
               )}
             </div>
@@ -547,7 +506,7 @@ function SearchDiscoveryPage() {
                         <UserCard
                           key={user.id}
                           user={user}
-                          onUserClick={(user) => console.log('User clicked:', user)}
+                          onUserClick={handleUserClick}
                         />
                       ))}
                     </div>
@@ -566,7 +525,7 @@ function SearchDiscoveryPage() {
                         <PostCard
                           key={post.id}
                           post={post}
-                          onPostClick={(post) => console.log('Post clicked:', post)}
+                          onPostClick={handlePostClick}
                         />
                       ))}
                     </div>
@@ -585,7 +544,7 @@ function SearchDiscoveryPage() {
                         <HashtagCard
                           key={index}
                           hashtag={hashtag}
-                          onHashtagClick={(hashtag) => console.log('Hashtag clicked:', hashtag)}
+                          onHashtagClick={handleHashtagClick}
                         />
                       ))}
                     </div>
@@ -593,7 +552,7 @@ function SearchDiscoveryPage() {
                 )}
               </div>
             ) : (
-              // ✅ No Results State
+              // No Results State
               <div className="text-center py-12">
                 <Search className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
@@ -612,6 +571,8 @@ function SearchDiscoveryPage() {
       </div>
     </div>
   );
-}
+});
+
+SearchDiscoveryPage.displayName = 'SearchDiscoveryPage';
 
 export default SearchDiscoveryPage;

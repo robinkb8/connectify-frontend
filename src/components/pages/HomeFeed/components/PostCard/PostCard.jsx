@@ -1,5 +1,5 @@
-// ===== src/components/pages/HomeFeed/components/PostCard/PostCard.jsx - WITH ANIMATIONS =====
-import React, { useState } from 'react';
+// ===== src/components/pages/HomeFeed/components/PostCard/PostCard.jsx - OPTIMIZED =====
+import React, { useState, useCallback, useMemo } from 'react';
 import { 
   MessageCircle, 
   Share2, 
@@ -9,26 +9,26 @@ import {
 import AnimatedHeart from '../../../../ui/AnimatedHeart/AnimatedHeart';
 import AnimatedButton from '../../../../ui/AnimatedButton/AnimatedButton';
 
-// ✅ Enhanced PostCard with ALL animations integrated
-function PostCard({ post, onCommentClick, onPostClick, onStatsUpdate }) {
-  // ✅ Map your Django API data to the new design
-  const user = {
+// ✅ OPTIMIZED: Enhanced PostCard with performance improvements
+const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate }) => {
+  // ✅ OPTIMIZED: Memoize mapped data to prevent recreation on every render
+  const user = useMemo(() => ({
     name: post.author?.name || post.author?.username || 'Unknown User',
     username: post.author?.username || 'unknown',
     avatar: post.author?.avatar || null,
     verified: post.author?.verified || false
-  };
+  }), [post.author]);
 
-  const content = {
+  const content = useMemo(() => ({
     text: post.content || '',
     images: post.image_url ? [post.image_url] : []
-  };
+  }), [post.content, post.image_url]);
 
-  const stats = {
+  const stats = useMemo(() => ({
     likes: post.total_likes || 0,
     comments: post.total_comments || 0,
     shares: post.total_shares || 0
-  };
+  }), [post.total_likes, post.total_comments, post.total_shares]);
 
   const timestamp = post.time_since_posted || 'Unknown time';
 
@@ -40,8 +40,8 @@ function PostCard({ post, onCommentClick, onPostClick, onStatsUpdate }) {
   const [showOptions, setShowOptions] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
 
-  // ✅ Handle Like with instant feedback + parent update
-  const handleLike = async () => {
+  // ✅ OPTIMIZED: Memoized event handlers to prevent recreation
+  const handleLike = useCallback(async () => {
     const newLikedState = !isLiked;
     const newCount = newLikedState ? likesCount + 1 : likesCount - 1;
     
@@ -74,15 +74,15 @@ function PostCard({ post, onCommentClick, onPostClick, onStatsUpdate }) {
       setIsLiked(!newLikedState);
       setLikesCount(newLikedState ? newCount - 1 : newCount + 1);
     }
-  };
+  }, [isLiked, likesCount, onStatsUpdate, post.id]);
 
-  // ✅ Handle Comment with smooth animation
-  const handleComment = () => {
+  // ✅ OPTIMIZED: Memoized comment handler
+  const handleComment = useCallback(() => {
     onCommentClick?.(post);
-  };
+  }, [onCommentClick, post]);
 
-  // ✅ Handle Share with loading state
-  const handleShare = async () => {
+  // ✅ OPTIMIZED: Memoized share handler
+  const handleShare = useCallback(async () => {
     setIsSharing(true);
     try {
       // Simulate share API call
@@ -91,26 +91,30 @@ function PostCard({ post, onCommentClick, onPostClick, onStatsUpdate }) {
     } finally {
       setIsSharing(false);
     }
-  };
+  }, []);
 
-  // ✅ Handle Save with instant feedback
-  const handleSave = () => {
+  // ✅ OPTIMIZED: Memoized save handler
+  const handleSave = useCallback(() => {
     setIsSaved(!isSaved);
-  };
+  }, [isSaved]);
 
-  // ✅ Handle Post Click
-  const handlePostClick = () => {
+  // ✅ OPTIMIZED: Memoized post click handler
+  const handlePostClick = useCallback(() => {
     onPostClick?.(post);
-  };
+  }, [onPostClick, post]);
 
-  // ✅ Handle Options Menu
-  const handleOptionsBlur = (e) => {
+  // ✅ OPTIMIZED: Memoized options handlers
+  const handleOptionsToggle = useCallback(() => {
+    setShowOptions(!showOptions);
+  }, [showOptions]);
+
+  const handleOptionsBlur = useCallback(() => {
     // Close menu when clicking outside
     setTimeout(() => setShowOptions(false), 100);
-  };
+  }, []);
 
-  // ✅ Render Images with hover effects
-  const renderImages = () => {
+  // ✅ OPTIMIZED: Memoized image rendering to prevent recreation
+  const renderImages = useCallback(() => {
     if (!content.images.length) return null;
 
     const imageCount = content.images.length;
@@ -147,7 +151,7 @@ function PostCard({ post, onCommentClick, onPostClick, onStatsUpdate }) {
         )}
       </div>
     );
-  };
+  }, [content.images, handlePostClick]);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200 group">
@@ -188,7 +192,7 @@ function PostCard({ post, onCommentClick, onPostClick, onStatsUpdate }) {
           <AnimatedButton
             variant="ghost"
             size="sm"
-            onClick={() => setShowOptions(!showOptions)}
+            onClick={handleOptionsToggle}
             onBlur={handleOptionsBlur}
             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 w-8 h-8 rounded-full"
             pressScale={0.9}
@@ -307,6 +311,20 @@ function PostCard({ post, onCommentClick, onPostClick, onStatsUpdate }) {
       `}</style>
     </div>
   );
-}
+}, (prevProps, nextProps) => {
+  // ✅ OPTIMIZED: Custom comparison function to prevent unnecessary re-renders
+  return (
+    prevProps.post.id === nextProps.post.id &&
+    prevProps.post.total_likes === nextProps.post.total_likes &&
+    prevProps.post.total_comments === nextProps.post.total_comments &&
+    prevProps.post.total_shares === nextProps.post.total_shares &&
+    prevProps.post.is_liked === nextProps.post.is_liked &&
+    prevProps.post.content === nextProps.post.content &&
+    prevProps.post.image_url === nextProps.post.image_url &&
+    prevProps.post.time_since_posted === nextProps.post.time_since_posted
+  );
+});
+
+PostCard.displayName = 'PostCard';
 
 export default PostCard;

@@ -1,15 +1,22 @@
-// ===== src/components/layout/ResponsiveLayout.jsx - SMOOTH NAVIGATION FIXED =====
-import React, { useState, useEffect } from 'react';
+// src/components/layout/ResponsiveLayout.jsx - OPTIMIZED
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import MobileBottomNav from './MobileBottomNav';
 import MobileHeader from './MobileHeader';
 import DesktopSidebar from './DesktopSidebar';
 
-// ✅ Simple theme detection that works with existing theme system
+// Move static data outside component to prevent recreation on every render
+const SIDEBAR_ACTIONS = {
+  settings: (onTabChange) => onTabChange?.('settings'),
+  upgrade: (onTabChange) => onTabChange?.('upgrade'),
+  help: () => console.log('Help & Support clicked'),
+  logout: () => console.log('Logout clicked'),
+};
+
+// Simple theme detection hook - moved outside for reusability
 const useSimpleTheme = () => {
   const [theme, setTheme] = useState('light');
   
   useEffect(() => {
-    // Check initial theme from DOM
     const checkTheme = () => {
       const isDark = document.documentElement.classList.contains('dark');
       setTheme(isDark ? 'dark' : 'light');
@@ -17,7 +24,6 @@ const useSimpleTheme = () => {
     
     checkTheme();
     
-    // Watch for theme changes
     const observer = new MutationObserver(checkTheme);
     observer.observe(document.documentElement, {
       attributes: true,
@@ -27,7 +33,7 @@ const useSimpleTheme = () => {
     return () => observer.disconnect();
   }, []);
   
-  const toggleTheme = () => {
+  const toggleTheme = useCallback(() => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
     
     if (newTheme === 'dark') {
@@ -36,19 +42,18 @@ const useSimpleTheme = () => {
       document.documentElement.classList.remove('dark');
     }
     
-    // Also try to trigger the same method used by settings
     if (window.toggleTheme) {
       window.toggleTheme();
     }
     
     setTheme(newTheme);
-  };
+  }, [theme]);
   
   return { theme, toggleTheme };
 };
 
-// ✅ Main Responsive Layout Component - SMOOTH NAVIGATION FIXED
-const ResponsiveLayout = ({ 
+// Main responsive layout component with performance optimizations
+const ResponsiveLayout = React.memo(({ 
   children, 
   activeTab, 
   onTabChange, 
@@ -64,74 +69,80 @@ const ResponsiveLayout = ({
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
   
-  // ✅ Use simple theme detection
   const { theme, toggleTheme } = useSimpleTheme();
 
-  // ✅ Enhanced responsive detection
+  // Memoize viewport detection to prevent unnecessary recalculations
+  const viewportConfig = useMemo(() => ({
+    isMobile,
+    isTablet,
+    isDesktop: !isMobile && !isTablet
+  }), [isMobile, isTablet]);
+
+  // Enhanced responsive detection with useCallback to prevent recreation
+  const checkViewport = useCallback(() => {
+    const width = window.innerWidth;
+    setIsMobile(width < 768);
+    setIsTablet(width >= 768 && width < 1024);
+  }, []);
+
   useEffect(() => {
-    const checkViewport = () => {
-      const width = window.innerWidth;
-      setIsMobile(width < 768);
-      setIsTablet(width >= 768 && width < 1024);
-    };
-    
     checkViewport();
     window.addEventListener('resize', checkViewport);
     return () => window.removeEventListener('resize', checkViewport);
+  }, [checkViewport]);
+
+  // Memoize sidebar navigation handler to prevent recreation
+  const handleSidebarNavigation = useCallback((action) => {
+    const handler = SIDEBAR_ACTIONS[action];
+    if (handler) {
+      handler(onTabChange);
+    } else {
+      console.log('Unknown action:', action);
+    }
+  }, [onTabChange]);
+
+  // Memoize menu toggle handlers to prevent recreation
+  const handleMenuToggle = useCallback(() => {
+    setShowMobileMenu(!showMobileMenu);
+  }, [showMobileMenu]);
+
+  const handleMenuClose = useCallback(() => {
+    setShowMobileMenu(false);
   }, []);
 
-  // ✅ Handle sidebar navigation
-  const handleSidebarNavigation = (action) => {
-    switch (action) {
-      case 'settings':
-        onTabChange?.('settings');
-        break;
-      case 'upgrade':
-        onTabChange?.('upgrade');
-        break;
-      case 'help':
-        console.log('Help & Support clicked');
-        // Add help functionality
-        break;
-      case 'logout':
-        console.log('Logout clicked');
-        // Add logout functionality
-        break;
-      default:
-        console.log('Unknown action:', action);
-    }
-  };
+  // Memoize class calculations to prevent recreation on every render
+  const contentClasses = useMemo(() => {
+    const baseClasses = "flex-1 flex flex-col min-w-0 relative h-screen";
+    return baseClasses;
+  }, []);
 
-  // ✅ Get dynamic classes based on viewport
-  const getContentClasses = () => {
-    const baseClasses = "flex-1 flex flex-col min-w-0 relative";
-    
-    if (isMobile) {
-      return `${baseClasses} h-screen`;
-    } else if (isTablet) {
-      return `${baseClasses} h-screen`;
-    } else {
-      return `${baseClasses} h-screen`;
-    }
-  };
-
-  const getMainContentClasses = () => {
+  const mainContentClasses = useMemo(() => {
     const baseClasses = "flex-1 min-h-0 relative";
     
-    if (isMobile) {
-      return `${baseClasses} pb-16`; // Space for bottom nav
-    } else if (isTablet) {
-      return `${baseClasses} pb-16`; // Space for bottom nav
-    } else {
-      return `${baseClasses} pb-20`; // Space for bottom nav on desktop too
+    if (viewportConfig.isMobile || viewportConfig.isTablet) {
+      return `${baseClasses} pb-16`;
     }
-  };
+    return `${baseClasses} pb-20`;
+  }, [viewportConfig.isMobile, viewportConfig.isTablet]);
+
+  // Memoize mobile menu handlers to prevent recreation
+  const createMenuHandler = useCallback((action) => () => {
+    handleSidebarNavigation(action);
+    handleMenuClose();
+  }, [handleSidebarNavigation, handleMenuClose]);
+
+  const menuHandlers = useMemo(() => ({
+    settings: createMenuHandler('settings'),
+    upgrade: createMenuHandler('upgrade'),
+    help: createMenuHandler('help'),
+    logout: createMenuHandler('logout')
+  }), [createMenuHandler]);
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
       
-      {/* ✅ Desktop Sidebar - Only show on desktop */}
-      {!isMobile && !isTablet && (
+      {/* Desktop Sidebar - Only show on desktop */}
+      {viewportConfig.isDesktop && (
         <DesktopSidebar 
           activeTab={activeTab}
           onTabChange={onTabChange}
@@ -142,18 +153,18 @@ const ResponsiveLayout = ({
         />
       )}
 
-      {/* ✅ Main Content Area */}
-      <div className={getContentClasses()}>
+      {/* Main Content Area */}
+      <div className={contentClasses}>
         
-        {/* ✅ Mobile Header - Only on mobile and tablet */}
-        {(isMobile || isTablet) && (
+        {/* Mobile Header - Only on mobile and tablet */}
+        {(viewportConfig.isMobile || viewportConfig.isTablet) && (
           <div className="flex-shrink-0 border-b border-gray-200 dark:border-gray-700">
             <MobileHeader
               title={title}
               showBack={showBack}
               onBack={onBack}
               showMenu={true}
-              onMenuToggle={() => setShowMobileMenu(!showMobileMenu)}
+              onMenuToggle={handleMenuToggle}
               actions={headerActions}
               onTabChange={onTabChange}
               user={user}
@@ -163,10 +174,9 @@ const ResponsiveLayout = ({
           </div>
         )}
 
-        {/* ✅ FIXED: Main Content with consistent containers */}
-        <div className={getMainContentClasses()}>
+        {/* Main Content with consistent containers */}
+        <div className={mainContentClasses}>
           <div className={`h-full w-full route-container ${isNavigating ? 'loading' : ''}`}>
-            {/* ✅ FIXED: Consistent container for ALL pages - no more layout shifts */}
             <div className="h-full overflow-y-auto">
               <div className="min-h-full px-4 py-4 max-w-2xl mx-auto lg:max-w-3xl">
                 {children}
@@ -175,7 +185,7 @@ const ResponsiveLayout = ({
           </div>
         </div>
 
-        {/* ✅ Bottom Navigation - ALWAYS VISIBLE on all screen sizes */}
+        {/* Bottom Navigation - Always visible on all screen sizes */}
         <div className="flex-shrink-0">
           <MobileBottomNav
             activeTab={activeTab}
@@ -185,56 +195,44 @@ const ResponsiveLayout = ({
         </div>
       </div>
 
-      {/* ✅ Mobile Menu Overlay */}
-      {showMobileMenu && (isMobile || isTablet) && (
+      {/* Mobile Menu Overlay */}
+      {showMobileMenu && (viewportConfig.isMobile || viewportConfig.isTablet) && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div 
             className="absolute inset-0 bg-black/50 backdrop-blur-sm" 
-            onClick={() => setShowMobileMenu(false)}
+            onClick={handleMenuClose}
           />
           <div className="absolute right-0 top-0 h-full w-80 bg-white dark:bg-gray-900 shadow-xl">
             <div className="p-6">
               <button 
-                onClick={() => setShowMobileMenu(false)}
+                onClick={handleMenuClose}
                 className="mb-6 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
               >
                 ✕
               </button>
               
-              {/* Mobile menu content */}
+              {/* Mobile menu content with memoized handlers */}
               <div className="space-y-4">
                 <button 
-                  onClick={() => {
-                    handleSidebarNavigation('settings');
-                    setShowMobileMenu(false);
-                  }}
+                  onClick={menuHandlers.settings}
                   className="w-full text-left p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
                 >
                   Settings
                 </button>
                 <button 
-                  onClick={() => {
-                    handleSidebarNavigation('upgrade');
-                    setShowMobileMenu(false);
-                  }}
+                  onClick={menuHandlers.upgrade}
                   className="w-full text-left p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
                 >
                   Upgrade to Pro
                 </button>
                 <button 
-                  onClick={() => {
-                    handleSidebarNavigation('help');
-                    setShowMobileMenu(false);
-                  }}
+                  onClick={menuHandlers.help}
                   className="w-full text-left p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
                 >
                   Help & Support
                 </button>
                 <button 
-                  onClick={() => {
-                    handleSidebarNavigation('logout');
-                    setShowMobileMenu(false);
-                  }}
+                  onClick={menuHandlers.logout}
                   className="w-full text-left p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-red-600"
                 >
                   Logout
@@ -245,7 +243,7 @@ const ResponsiveLayout = ({
         </div>
       )}
 
-      {/* ✅ FIXED: CSS for smooth transitions */}
+      {/* CSS for smooth transitions */}
       <style jsx>{`
         .route-container {
           transition: opacity 0.12s ease-out;
@@ -257,9 +255,23 @@ const ResponsiveLayout = ({
       `}</style>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison to prevent unnecessary re-renders
+  // Only re-render if essential props have changed
+  return (
+    prevProps.activeTab === nextProps.activeTab &&
+    prevProps.title === nextProps.title &&
+    prevProps.showBack === nextProps.showBack &&
+    prevProps.isNavigating === nextProps.isNavigating &&
+    prevProps.user?.id === nextProps.user?.id &&
+    prevProps.children === nextProps.children
+  );
+});
 
-// ✅ Export additional responsive components
+// Set display name for debugging
+ResponsiveLayout.displayName = 'ResponsiveLayout';
+
+// Export additional responsive components (unchanged for functionality)
 export const ResponsiveContainer = ({ children, className = "", maxWidth = "2xl" }) => {
   const maxWidthClasses = {
     sm: "max-w-sm",
