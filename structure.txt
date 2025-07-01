@@ -220,6 +220,7 @@ C:.
 |   |   |       0696e7834f415095429373dd870b3da68e9733e354496ca09ac33c67ee2dc35e.json
 |   |   |       06c325208fda4d2e2f8f93accf583ccefca7a6f14af411b34a50b3ed4aac34bd.json
 |   |   |       06ee340ef7fd1eb8e3d5b085e3548515d9ea137cfebef718214371bc077c37d7.json
+|   |   |       06ee5600d465f31906a5e97c79644b1d7a1e8557d79edf1697168cb1273f963a.json
 |   |   |       07045fc7ff812481f7db9907baaed896530810fd157644758f58ec51dc65a1d2.json
 |   |   |       0704fd5d9f0888b802a7b58478740a726e2a673af82317a095be1beff267f79b.json
 |   |   |       07063c9e372d9b47fe1a0e9ea0639c35efbc7bd231e5ab96cb9993450968b50f.json
@@ -354,6 +355,7 @@ C:.
 |   |   |       1754eeda7bbd6f29dcc5270c44fa055757ebd08043e42d45aae163a70f061294.json
 |   |   |       176c1b813620f2ee0e4a588fe59e07e97304298ef5646ed13dce468c468b3695.json
 |   |   |       178b9f2537594b2828a7fba23b418cad673600dcaef2c4ff42ccf7e9342e2892.json
+|   |   |       178e80811bb3dc157019f38e6a14b20587956dc21883e3c1e44a49fdeea18cc4.json
 |   |   |       179779fb6049cc62e20424d20b7ce23650d46b18a13ccae3c4de30b8716ebe87.json
 |   |   |       17c929ad1f5a99bddfa5f327c7ad3dcb3ca18c23c91d7a5f533667e159c2619d.json
 |   |   |       17cd57cbd3dcd6ec5e23acfc7de39ac0867d5951e66bf09aeef05f0124e8b20a.json
@@ -439,6 +441,7 @@ C:.
 |   |   |       1f372e81cecf8d7798dbcebef33601b062a6dd9ac96eee4023b630dacd0c0d91.json
 |   |   |       1f5008bd1ddd790cebdc4cd52dc6dec071db4d3dbbb5341f79f0becf9b5501be.json
 |   |   |       1f627979d34249c363dfe85641e85eacbe8558dbbbe462b6f7f59e3f55a16897.json
+|   |   |       1f6610a41072151f837befd59a0501bb43391e8c8058b328dcf80870858cfe6d.json
 |   |   |       1f73c9eb2d6e73785bbf4bf9fbf1f28b957b7c569c32cafba41ebf6dc1e9a2ab.json
 |   |   |       1f7b4bd9cbfe2f192914d9fb79f54ea165cba3182fc3882a1a61db07356ed165.json
 |   |   |       1f81b29f854d8698430d3f0ddc59ac36e4fd36024283230b21d48c0cd52de3bb.json
@@ -621,6 +624,7 @@ C:.
 |   |   |       331ed4db39080c61e60ae563c6a21112a804ef5cba4b9728c15f1b601bcd1eb4.json
 |   |   |       3338167247e9f5b986226e0303699cf5f31d40a90f656edd00fafb73bc77e303.json
 |   |   |       3370d09de6766b56b447d47839fef6130fdb227890d792591e884e396fdcd40f.json
+|   |   |       337d6ed50c505fc58ae40dbe57a474076419530c8a9554fbc15ff03b0d9c37ac.json
 |   |   |       33d004a8ac1aef09add56bb33fd75b328b5c8925c7c941aeb8c3092b2d7c131c.json
 |   |   |       33e562148a4b5652859dbd9702fc4039caab65f5959056cd1405d965c7e82241.json
 |   |   |       33e87664a6956dc8c2f77cbaf2e2415337c37db7c73f1851cb4d28ffd64c794a.json
@@ -1506,6 +1510,7 @@ C:.
 |   |   |       a2c4bdd937e91a35539835edf24e937fd6c7f05d936c4528d57f5e939d01d087.json
 |   |   |       a2e10226614a9afb8dedaa6d66657d68d57a2278cf7eee0a779a471262c23b8e.json
 |   |   |       a3171fc44a46967264c0d02b3ecbca4614b4f7f7c083c5f0f8f27f4762159917.json
+|   |   |       a3714b5992a80c62b8e5b522169863477b1c3c11b2c255a111a1441f5cd8d188.json
 |   |   |       a395d8cddc06c1d9ee9b035a5345c43453f8dc41f0ff685312dbf9827006a93c.json
 |   |   |       a39f90909d5f385ed34758e47ebd4dcacdeb2bb8c5d70c4f6b6d44cf75053471.json
 |   |   |       a3b9afb757356c556d552f2b7cc656c08100e229fe96d43c5e82d0c290ca16fa.json
@@ -1884,6 +1889,7 @@ C:.
 |   |   |       d183aaec15c7c852a73144cb9f8d6efdfdfff11ad725f346941bfe1247bfc58a.json
 |   |   |       d18e1476f7fbe830f60351ec71f5e554b4f25e684e8c022fdadf8af2dd785253.json
 |   |   |       d1badca938fa74606827842c09d60dbceaeca87ada8cba0a93b14c001f33d8ca.json
+|   |   |       d1c35037317e6a07d1ef1bd424ababd6d6af427f0a254b3279577e9c7e7f6417.json
 |   |   |       d1d73395528e267941c2c305c8014af6cd49a7731b3ff4014a95bf37dff24e3d.json
 |   |   |       d2023eeb4883179d799f5bd79fd261445cf42559542f52276fffbf84896f37c1.json
 |   |   |       d20f412f1d73f4251cdf46d98c773ef522cfe6c3952879c4a53f25c48f73453e.json
@@ -2238,11 +2244,13 @@ C:.
 |   |   |       fb7a8e65cdd156d8af70d08ea466292542063b22152471304fd9e33c6dc69f4b.json
 |   |   |       fb7cef924321fcb9949be9df9ad0d502a329988dd82dedc0f8adec20c7b516ca.json
 |   |   |       fb98a59a857f945879574d65ca6e1b47daf2b49c460f1151aba31b9367a7baa5.json
+|   |   |       fba1e1fb22f61cd8e9da50388c4b233502284c7d2af57dd8d03e08778d467073.json
 |   |   |       fba8eae69a8ba35b03990141d93b1f6a03119cff7b4589f1fd403e0988e6cdfe.json
 |   |   |       fbbc4796f38e4f964b148bace78ae32e148dcc92350588bf25eb95d35765df0e.json
 |   |   |       fbd4e772f73cb96c4265494b546d463f7ec60829ae641cd93c0e4e0087902e23.json
 |   |   |       fbd5bea9c382e25d3b0306cd356bd54754c620e3c3dfbeb19a7f1babfb36c46e.json
 |   |   |       fc10cc06b98727c8929f76c11436588e661abd1b019acf84521553cded030449.json
+|   |   |       fc10f823dcafb4930995e2e46106919c136d888528e0ff3abd2db5d22259ee19.json
 |   |   |       fc1dbcf534229f9629bb596527d3f040cc8bde8dbd7e58ce63287c00a1c94927.json
 |   |   |       fc296031615a171cca7de551820d5e62f8a8552bd49c18b0d7415adea6d810ac.json
 |   |   |       fc5dfd9f2ce2cee683868751ae619b066eb2adf16c1154f8fd013603db233540.json
@@ -2313,6 +2321,7 @@ C:.
 |   |           40.pack
 |   |           41.pack
 |   |           42.pack
+|   |           43.pack
 |   |           5.pack
 |   |           6.pack
 |   |           7.pack
@@ -53033,6 +53042,8 @@ C:.
     |   \---images
     |       \---slides
     +---components
+    |   |   ProtectedRoute.jsx
+    |   |   
     |   +---forms
     |   |   +---LoginForm
     |   |   |       index copy.js
@@ -53156,6 +53167,9 @@ C:.
     |               index.js
     |               ToastProvider.jsx
     |               
+    +---contexts
+    |       AuthContext.js
+    |       
     +---hooks
     |       useFormValidation.js
     |       

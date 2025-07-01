@@ -1,8 +1,7 @@
-  
-// src/contexts/AuthContext.js - Authentication Context Provider
+// src/contexts/AuthContext.js - Fixed to match Django response structure
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authService } from '../utils/api';
+import { authAPI } from '../utils/api';
 
 const AuthContext = createContext();
 
@@ -23,23 +22,27 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        if (authService.isAuthenticated()) {
+        if (authAPI.isAuthenticated()) {
           // Try to get current user info with stored token
-          const response = await authService.getCurrentUser();
+          const response = await authAPI.getCurrentUser();
           
           if (response.success) {
-            setUser(response.data.user);
+            // Django returns response.user, not response.data.user
+            setUser(response.user);
             setIsAuthenticated(true);
           } else {
             // Token invalid, clear it
-            authService.clearTokens();
+            authAPI.clearTokens();
             setUser(null);
             setIsAuthenticated(false);
           }
+        } else {
+          setUser(null);
+          setIsAuthenticated(false);
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
-        authService.clearTokens();
+        authAPI.clearTokens();
         setUser(null);
         setIsAuthenticated(false);
       } finally {
@@ -53,10 +56,11 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       setIsLoading(true);
-      const response = await authService.login(email, password);
+      const response = await authAPI.login(email, password);
       
       if (response.success) {
-        setUser(response.data.user);
+        // Django returns response.user, not response.data.user
+        setUser(response.user);
         setIsAuthenticated(true);
         return { success: true, message: response.message };
       } else {
@@ -73,14 +77,16 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     try {
       setIsLoading(true);
-      const response = await authService.register(userData);
+      const response = await authAPI.register(userData);
       
       if (response.success) {
-        setUser(response.data.user);
+        // Django returns response.user, not response.data.user
+        setUser(response.user);
         setIsAuthenticated(true);
         return { success: true, message: response.message };
       } else {
-        return { success: false, message: response.message, errors: response.data.errors };
+        // Django returns response.errors, not response.data.errors
+        return { success: false, message: response.message, errors: response.errors };
       }
     } catch (error) {
       console.error('Registration error:', error);
@@ -92,7 +98,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await authService.logout();
+      await authAPI.logout();
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
@@ -107,9 +113,10 @@ export const AuthProvider = ({ children }) => {
 
   const refreshUserData = async () => {
     try {
-      const response = await authService.getCurrentUser();
+      const response = await authAPI.getCurrentUser();
       if (response.success) {
-        setUser(response.data.user);
+        // Django returns response.user, not response.data.user
+        setUser(response.user);
         return true;
       }
       return false;
@@ -119,24 +126,66 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // All existing helper methods with proper error handling
+  const checkEmailAvailability = async (email) => {
+    try {
+      const response = await authAPI.checkEmailAvailability(email);
+      return response;
+    } catch (error) {
+      console.error('Email check error:', error);
+      return { success: false, message: 'Failed to check email availability' };
+    }
+  };
+
+  const checkUsernameAvailability = async (username) => {
+    try {
+      const response = await authAPI.checkUsernameAvailability(username);
+      return response;
+    } catch (error) {
+      console.error('Username check error:', error);
+      return { success: false, message: 'Failed to check username availability' };
+    }
+  };
+
+  const sendOTP = async (email) => {
+    try {
+      const response = await authAPI.sendOTP(email);
+      return response;
+    } catch (error) {
+      console.error('Send OTP error:', error);
+      return { success: false, message: 'Failed to send OTP' };
+    }
+  };
+
+  const verifyOTP = async (email, otpCode) => {
+    try {
+      const response = await authAPI.verifyOTP(email, otpCode);
+      return response;
+    } catch (error) {
+      console.error('Verify OTP error:', error);
+      return { success: false, message: 'Failed to verify OTP' };
+    }
+  };
+
+  // Complete value object with all methods
   const value = {
     // State
     user,
     isLoading,
     isAuthenticated,
     
-    // Methods
+    // Core authentication methods
     login,
     register,
     logout,
     updateUser,
     refreshUserData,
     
-    // Helper methods
-    checkEmailAvailability: authService.checkEmailAvailability.bind(authService),
-    checkUsernameAvailability: authService.checkUsernameAvailability.bind(authService),
-    sendOTP: authService.sendOTP.bind(authService),
-    verifyOTP: authService.verifyOTP.bind(authService),
+    // Helper methods for forms
+    checkEmailAvailability,
+    checkUsernameAvailability,
+    sendOTP,
+    verifyOTP,
   };
 
   return (
