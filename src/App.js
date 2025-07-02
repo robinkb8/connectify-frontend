@@ -1,4 +1,4 @@
-// src/App.js - ENHANCED WITH JWT AUTHENTICATION
+// src/App.js - ENHANCED WITH DYNAMIC PROFILE ROUTING + ALL EXISTING FUNCTIONALITY PRESERVED
 import React, { useState, Suspense, useCallback, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -7,15 +7,15 @@ import { ThemeProvider } from './components/providers/ThemeProvider';
 import { ToastProvider } from './components/ui/Toast';
 import ChatView from './components/pages/Messages/ChatView';
 
-// Animation Components
+// Animation Components - PRESERVED
 import PageTransition from './components/ui/PageTransition/PageTransition';
 import { PageSkeleton, SkeletonStyles } from './components/ui/Skeleton/Skeleton';
 import { ButtonAnimationStyles } from './components/ui/AnimatedButton/AnimatedButton';
 
-// Import ResponsiveLayout
+// Import ResponsiveLayout - PRESERVED
 import ResponsiveLayout from './components/layout/ResponsiveLayout';
 
-// Import Enhanced Post Creation Modal
+// Import Enhanced Post Creation Modal - PRESERVED
 import EnhancedPostCreationModal from './components/modals/EnhancedPostCreationModal';
 
 // ✅ PRESERVED - Lazy-loaded Pages for better performance
@@ -27,7 +27,7 @@ const UserProfile = React.lazy(() => import('./components/pages/Profile'));
 const SettingsPage = React.lazy(() => import('./components/pages/Settings'));
 const UpgradePage = React.lazy(() => import('./components/pages/UpgradePage'));
 
-// ✅ PRESERVED - Move static data outside component to prevent recreation on every render
+// ✅ ENHANCED - Route config with new profile routing
 const ROUTE_CONFIG = [
   { 
     path: '/home', 
@@ -74,7 +74,7 @@ const TAB_ROUTES = {
   home: '/home',
   search: '/search',
   messages: '/messages',
-  profile: '/profile',
+  profile: '/profile', // This will redirect to current user's profile
   settings: '/settings',    
   upgrade: '/upgrade',
 };
@@ -88,7 +88,7 @@ const PageLoadingFallback = React.memo(({ type = "feed" }) => (
 
 PageLoadingFallback.displayName = 'PageLoadingFallback';
 
-// ✅ ENHANCED - Authentication-aware Landing Page wrapper
+// ✅ PRESERVED - Authentication-aware Landing Page wrapper
 const LandingPageWrapper = React.memo(() => {
   const { isAuthenticated, isLoading } = useAuth();
 
@@ -112,7 +112,7 @@ const LandingPageWrapper = React.memo(() => {
 
 LandingPageWrapper.displayName = 'LandingPageWrapper';
 
-// ✅ ENHANCED - Main App Layout Component with JWT integration
+// ✅ ENHANCED - Main App Layout Component with profile routing support
 const AppLayout = React.memo(() => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -123,7 +123,7 @@ const AppLayout = React.memo(() => {
   const [activeTab, setActiveTab] = useState('home');
   const [isNavigating, setIsNavigating] = useState(false);
   
-  // ✅ ENHANCED - Memoize user data from JWT context instead of hardcoded
+  // ✅ PRESERVED - Memoize user data from JWT context
   const userData = useMemo(() => ({
     name: user?.full_name || 'User',
     username: user?.username || 'username',
@@ -132,14 +132,19 @@ const AppLayout = React.memo(() => {
     profile: user?.profile || {}
   }), [user]);
 
-  // ✅ PRESERVED - Memoize current route config calculation
+  // ✅ ENHANCED - Route config calculation with profile support
   const currentRoute = useMemo(() => {
+    // Handle dynamic profile routes
+    if (location.pathname.startsWith('/profile/')) {
+      return { transition: 'scale', skeleton: 'profile' };
+    }
+    
     return ROUTE_CONFIG.find(route => 
       location.pathname.startsWith(route.path)
     ) || { transition: 'fade', skeleton: 'feed' };
   }, [location.pathname]);
 
-  // ✅ PRESERVED - Determine active tab from current route with memoized calculation
+  // ✅ ENHANCED - Active tab detection with profile support
   React.useEffect(() => {
     const path = location.pathname;
     
@@ -147,12 +152,12 @@ const AppLayout = React.memo(() => {
     if (path === '/home' || path === '/') setActiveTab('home');
     else if (path.startsWith('/search')) setActiveTab('search');
     else if (path.startsWith('/messages')) setActiveTab('messages');
-    else if (path.startsWith('/profile')) setActiveTab('profile');
+    else if (path.startsWith('/profile')) setActiveTab('profile'); // Handles both /profile and /profile/username
     else if (path.startsWith('/settings')) setActiveTab('settings');
     else if (path.startsWith('/upgrade')) setActiveTab('upgrade');
   }, [location.pathname]);
 
-  // ✅ PRESERVED - Memoize tab change handler to prevent recreation
+  // ✅ ENHANCED - Tab change handler with profile redirect
   const handleTabChange = useCallback((tab) => {
     if (tab === activeTab) return; // Prevent unnecessary navigation
     
@@ -163,11 +168,13 @@ const AppLayout = React.memo(() => {
     setIsNavigating(true);
     setTimeout(() => setIsNavigating(false), 50);
     
-    // Navigate using pre-defined routes
-    if (TAB_ROUTES[tab]) {
+    // Handle profile tab specially - redirect to current user's profile
+    if (tab === 'profile' && user?.username) {
+      navigate(`/profile/${user.username}`);
+    } else if (TAB_ROUTES[tab]) {
       navigate(TAB_ROUTES[tab]);
     }
-  }, [activeTab, navigate]);
+  }, [activeTab, navigate, user?.username]);
 
   // ✅ PRESERVED - Memoize create post handler to prevent recreation
   const handleCreatePost = useCallback(() => {
@@ -185,7 +192,7 @@ const AppLayout = React.memo(() => {
     setShowCreatePost(false);
   }, []);
 
-  // ✅ NEW - Handle logout
+  // ✅ PRESERVED - Handle logout
   const handleLogout = useCallback(async () => {
     await logout();
     navigate('/');
@@ -197,24 +204,36 @@ const AppLayout = React.memo(() => {
       <SkeletonStyles />
       <ButtonAnimationStyles />
       
-      {/* ✅ ENHANCED - Layout with real user data and logout function */}
+      {/* ✅ PRESERVED - Layout with real user data and logout function */}
       <ResponsiveLayout
         activeTab={activeTab}
         onTabChange={handleTabChange}
         onCreatePost={handleCreatePost}
         user={userData}
-        onLogout={handleLogout} // Add logout handler if your ResponsiveLayout supports it
+        onLogout={handleLogout}
         title="Connectify"
         isNavigating={isNavigating}
       >
-        {/* ✅ PRESERVED - Simple Suspense without extra animations */}
+        {/* ✅ ENHANCED - Suspense with profile routing support */}
         <Suspense fallback={<PageLoadingFallback type={currentRoute.skeleton} />}>
           <Routes>
             <Route path="/home" element={<HomeFeed />} />
             <Route path="/search" element={<SearchPage />} />
             <Route path="/messages" element={<MessagesPage />} />
             <Route path="/messages/:userId" element={<ChatView />} />
-            <Route path="/profile" element={<UserProfile />} />
+            
+            {/* ✅ NEW - Dynamic Profile Routing */}
+            <Route path="/profile/:username" element={<UserProfile />} />
+            <Route 
+              path="/profile" 
+              element={
+                user?.username ? 
+                <Navigate to={`/profile/${user.username}`} replace /> : 
+                <Navigate to="/home" replace />
+              } 
+            />
+            
+            {/* ✅ PRESERVED - Other routes */}
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/upgrade" element={<UpgradePage />} />
             <Route path="*" element={<Navigate to="/home" replace />} />
@@ -291,7 +310,7 @@ const AppLayout = React.memo(() => {
 
 AppLayout.displayName = 'AppLayout';
 
-// ✅ ENHANCED - Authentication-aware App Routes Component
+// ✅ PRESERVED - Authentication-aware App Routes Component
 const AppRoutes = React.memo(() => {
   // ✅ PRESERVED - Memoize landing page fallback to prevent recreation
   const landingPageFallback = useMemo(() => (
@@ -302,7 +321,7 @@ const AppRoutes = React.memo(() => {
 
   return (
     <Routes>
-      {/* ✅ PUBLIC ROUTE - Landing page (redirects to /home if authenticated) */}
+      {/* ✅ PRESERVED - PUBLIC ROUTE - Landing page (redirects to /home if authenticated) */}
       <Route 
         path="/" 
         element={
@@ -312,7 +331,7 @@ const AppRoutes = React.memo(() => {
         } 
       />
       
-      {/* ✅ PROTECTED ROUTES - All app routes require authentication */}
+      {/* ✅ PRESERVED - PROTECTED ROUTES - All app routes require authentication */}
       <Route 
         path="/*" 
         element={
@@ -327,7 +346,7 @@ const AppRoutes = React.memo(() => {
 
 AppRoutes.displayName = 'AppRoutes';
 
-// ✅ ENHANCED - Main App Component with JWT Authentication Provider
+// ✅ PRESERVED - Main App Component with JWT Authentication Provider
 const App = React.memo(() => {
   return (
     <AuthProvider>

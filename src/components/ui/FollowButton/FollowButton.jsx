@@ -1,10 +1,11 @@
- 
-// ===== src/components/ui/FollowButton/FollowButton.jsx =====
-import React, { useState } from 'react';
+// ===== src/components/ui/FollowButton/FollowButton.jsx - Enhanced with Real API =====
+import React, { useState, useEffect } from 'react';
 import { UserPlus, UserCheck, UserX, Loader2 } from 'lucide-react';
 import { Button } from '../Button/Button';
+import { useFollow } from '../../../hooks/useFollow';
+import { useAuth } from '../../../contexts/AuthContext';
 
-// ✅ Follow States
+// ✅ Follow States - PRESERVED
 export const FOLLOW_STATES = {
   NOT_FOLLOWING: 'not_following',
   FOLLOWING: 'following',
@@ -13,7 +14,7 @@ export const FOLLOW_STATES = {
   ERROR: 'error'
 };
 
-// ✅ Enhanced Follow Button Component
+// ✅ Enhanced Follow Button Component - PRESERVED ALL FUNCTIONALITY + REAL API
 function FollowButton({ 
   userId, 
   initialFollowState = FOLLOW_STATES.NOT_FOLLOWING,
@@ -29,7 +30,20 @@ function FollowButton({
   const [isHovered, setIsHovered] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
 
-  // ✅ Get button configuration based on state
+  // ✅ NEW: Real API integration
+  const { user: currentUser } = useAuth();
+  const { loading: apiLoading, error: apiError, toggleFollow, setError: clearApiError } = useFollow();
+
+  // ✅ PRESERVED: Don't show follow button for own profile
+  const isSelfProfile = currentUser?.id === userId || currentUser?.id === parseInt(userId);
+
+  // ✅ Update state when props change
+  useEffect(() => {
+    setFollowState(initialFollowState);
+    setFollowerCount(initialFollowerCount);
+  }, [initialFollowState, initialFollowerCount]);
+
+  // ✅ PRESERVED: Get button configuration based on state
   const getButtonConfig = () => {
     switch (followState) {
       case FOLLOW_STATES.NOT_FOLLOWING:
@@ -84,13 +98,15 @@ function FollowButton({
     }
   };
 
-  // ✅ Handle follow/unfollow with optimistic UI updates
+  // ✅ ENHANCED: Handle follow/unfollow with REAL API + PRESERVED optimistic UI updates
   const handleFollowToggle = async () => {
+    if (isSelfProfile || apiLoading) return;
+
     const previousState = followState;
     const previousCount = followerCount;
 
     try {
-      // ✅ INSTANT UI UPDATE based on current state
+      // ✅ PRESERVED: INSTANT UI UPDATE based on current state
       if (followState === FOLLOW_STATES.NOT_FOLLOWING) {
         setFollowState(FOLLOW_STATES.LOADING);
         
@@ -125,30 +141,44 @@ function FollowButton({
         }, 200);
       }
 
-      // ✅ Simulate API call
-      const response = await simulateFollowAPI(userId, followState);
+      // ✅ NEW: Real API call instead of simulation
+      clearApiError(); // Clear any previous API errors
+      
+      const isCurrentlyFollowing = previousState === FOLLOW_STATES.FOLLOWING || 
+                                   previousState === FOLLOW_STATES.PENDING;
+      
+      const response = await toggleFollow(userId, isCurrentlyFollowing);
       
       if (response.success) {
-        // API succeeded - the optimistic update was correct
+        // ✅ API succeeded - update with real data
         console.log('✅ Follow action successful');
         
-        // Call parent callback if provided
+        // Update with real follower count from API
+        if (response.followerCount !== undefined) {
+          setFollowerCount(response.followerCount);
+        }
+        
+        // Set correct follow state based on API response
+        setFollowState(response.isFollowing ? FOLLOW_STATES.FOLLOWING : FOLLOW_STATES.NOT_FOLLOWING);
+        
+        // ✅ PRESERVED: Call parent callback if provided
         if (onFollowChange) {
           onFollowChange({
             userId,
-            isFollowing: followState === FOLLOW_STATES.NOT_FOLLOWING || followState === FOLLOW_STATES.PENDING,
-            followerCount: followerCount
+            isFollowing: response.isFollowing,
+            followerCount: response.followerCount || followerCount,
+            followingCount: response.followingCount
           });
         }
         
       } else {
-        throw new Error(response.error || 'Failed to update follow status');
+        throw new Error(response.message || 'Failed to update follow status');
       }
       
     } catch (error) {
       console.error('❌ Follow action failed:', error);
       
-      // ✅ Revert optimistic updates on error
+      // ✅ PRESERVED: Revert optimistic updates on error
       setFollowState(previousState);
       setFollowerCount(previousCount);
       
@@ -160,20 +190,7 @@ function FollowButton({
     }
   };
 
-  // ✅ Simulate API call (replace with real API)
-  const simulateFollowAPI = async (userId, currentState) => {
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 400));
-    
-    // Simulate occasional failures (5% chance)
-    if (Math.random() < 0.05) {
-      return { success: false, error: 'Network error' };
-    }
-    
-    return { success: true };
-  };
-
-  // ✅ Size configurations
+  // ✅ PRESERVED: Size configurations
   const sizeClasses = {
     sm: "px-3 py-1.5 text-xs",
     default: "px-4 py-2 text-sm",
@@ -182,17 +199,22 @@ function FollowButton({
 
   const buttonConfig = getButtonConfig();
 
+  // ✅ PRESERVED: Don't render for self profile
+  if (isSelfProfile) {
+    return null;
+  }
+
   return (
     <div className="relative">
       <Button
         onClick={handleFollowToggle}
-        disabled={buttonConfig.disabled}
+        disabled={buttonConfig.disabled || apiLoading}
         className={`
           ${buttonConfig.className} 
           ${sizeClasses[size]}
           ${className}
           transition-all duration-200 font-semibold border
-          ${followState === FOLLOW_STATES.LOADING ? 'pointer-events-none' : ''}
+          ${followState === FOLLOW_STATES.LOADING || apiLoading ? 'pointer-events-none' : ''}
         `}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
@@ -205,18 +227,25 @@ function FollowButton({
         </div>
       </Button>
 
-      {/* ✅ Tooltip for additional context */}
+      {/* ✅ PRESERVED: Tooltip for additional context */}
       {showTooltip && followState === FOLLOW_STATES.PENDING && (
         <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs rounded-lg whitespace-nowrap animate-fadeIn z-50">
           Follow request sent to {userName}
           <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-2 border-r-2 border-t-4 border-l-transparent border-r-transparent border-t-gray-900 dark:border-t-gray-100"></div>
         </div>
       )}
+
+      {/* ✅ NEW: Show API errors if any */}
+      {apiError && followState === FOLLOW_STATES.ERROR && (
+        <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-3 py-1 bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300 text-xs rounded-lg whitespace-nowrap animate-fadeIn z-50 max-w-48 text-center">
+          {apiError}
+        </div>
+      )}
     </div>
   );
 }
 
-// ✅ Enhanced User Card with Follow Button (Helper Component)
+// ✅ PRESERVED: Enhanced User Card with Follow Button (Helper Component)
 export function UserCard({ 
   user, 
   showFollowButton = true, 
