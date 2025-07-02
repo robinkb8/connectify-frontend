@@ -1,6 +1,6 @@
-// ===== src/components/pages/HomeFeed/components/PostCard/PostCard.jsx - ENHANCED WITH PROFILE NAVIGATION =====
+// ===== src/components/pages/HomeFeed/components/PostCard/PostCard.jsx - ENHANCED WITH REAL API INTEGRATION =====
 import React, { useState, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom'; // ✅ NEW: Add navigation
+import { useNavigate } from 'react-router-dom';
 import { 
   MessageCircle, 
   Share2, 
@@ -9,13 +9,12 @@ import {
 } from "lucide-react";
 import AnimatedHeart from '../../../../ui/AnimatedHeart/AnimatedHeart';
 import AnimatedButton from '../../../../ui/AnimatedButton/AnimatedButton';
+import useLikes from '../../../../hooks/useLikes';
 
-// ✅ PRESERVED: Enhanced PostCard with performance improvements + NEW profile navigation
 const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate }) => {
-  // ✅ NEW: Add navigation hook
   const navigate = useNavigate();
 
-  // ✅ PRESERVED: Memoize mapped data to prevent recreation on every render
+  // PRESERVED: Memoize mapped data to prevent recreation on every render
   const user = useMemo(() => ({
     name: post.author?.name || post.author?.username || 'Unknown User',
     username: post.author?.username || 'unknown',
@@ -36,64 +35,54 @@ const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate 
 
   const timestamp = post.time_since_posted || 'Unknown time';
 
-  // ✅ PRESERVED: Component State with animation support
-  const [isLiked, setIsLiked] = useState(post.is_liked || false);
+  // ENHANCED: Use useLikes hook for real API integration
+  const {
+    isLiked,
+    likesCount,
+    isLoading: isLikeLoading,
+    toggleLike,
+    error: likeError
+  } = useLikes(post.id, post.is_liked || false, stats.likes);
+
+  // PRESERVED: All other component state
   const [isSaved, setIsSaved] = useState(false);
-  const [likesCount, setLikesCount] = useState(stats.likes);
   const [sharesCount, setSharesCount] = useState(stats.shares);
   const [showOptions, setShowOptions] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
 
-  // ✅ NEW: Profile navigation handler
+  // PRESERVED: Profile navigation handler
   const handleAuthorClick = useCallback((e) => {
-    e.stopPropagation(); // Prevent event bubbling
+    e.stopPropagation();
     if (user.username && user.username !== 'unknown') {
       navigate(`/profile/${user.username}`);
     }
   }, [navigate, user.username]);
 
-  // ✅ PRESERVED: All existing memoized event handlers
+  // ENHANCED: Real API integration for likes
   const handleLike = useCallback(async () => {
-    const newLikedState = !isLiked;
-    const newCount = newLikedState ? likesCount + 1 : likesCount - 1;
-    
-    setIsLiked(newLikedState);
-    setLikesCount(newCount);
+    if (isLikeLoading) return; // Prevent multiple simultaneous requests
 
-    if (onStatsUpdate) {
+    const result = await toggleLike();
+
+    // Update parent component with new stats
+    if (onStatsUpdate && result.success) {
       onStatsUpdate({
-        total_likes: newCount,
-        is_liked: newLikedState
+        total_likes: result.likesCount,
+        is_liked: result.isLiked
       });
     }
 
-    try {
-      // Background API call (replace with real API)
-      const method = newLikedState ? 'POST' : 'DELETE';
-      const response = await fetch(`/api/posts/${post.id}/like/`, {
-        method,
-        headers: { 'Content-Type': 'application/json' }
-      });
-      
-      if (!response.ok) {
-        // Revert on error
-        setIsLiked(!newLikedState);
-        setLikesCount(newLikedState ? newCount - 1 : newCount + 1);
-      }
-    } catch (error) {
-      console.error('Like error:', error);
-      // Revert on error
-      setIsLiked(!newLikedState);
-      setLikesCount(newLikedState ? newCount - 1 : newCount + 1);
+    // Log any errors (errorHandler utility can be integrated here later)
+    if (!result.success) {
+      console.error('Like operation failed:', result.error);
     }
-  }, [isLiked, likesCount, onStatsUpdate, post.id]);
+  }, [toggleLike, isLikeLoading, onStatsUpdate]);
 
-  // ✅ PRESERVED: Memoized comment handler
+  // PRESERVED: All other memoized handlers
   const handleComment = useCallback(() => {
     onCommentClick?.(post);
   }, [onCommentClick, post]);
 
-  // ✅ PRESERVED: Memoized share handler
   const handleShare = useCallback(async () => {
     setIsSharing(true);
     try {
@@ -105,27 +94,23 @@ const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate 
     }
   }, []);
 
-  // ✅ PRESERVED: Memoized save handler
   const handleSave = useCallback(() => {
     setIsSaved(!isSaved);
   }, [isSaved]);
 
-  // ✅ PRESERVED: Memoized post click handler
   const handlePostClick = useCallback(() => {
     onPostClick?.(post);
   }, [onPostClick, post]);
 
-  // ✅ PRESERVED: Memoized options handlers
   const handleOptionsToggle = useCallback(() => {
     setShowOptions(!showOptions);
   }, [showOptions]);
 
   const handleOptionsBlur = useCallback(() => {
-    // Close menu when clicking outside
     setTimeout(() => setShowOptions(false), 100);
   }, []);
 
-  // ✅ PRESERVED: Memoized image rendering to prevent recreation
+  // PRESERVED: Memoized image rendering
   const renderImages = useCallback(() => {
     if (!content.images.length) return null;
 
@@ -167,10 +152,9 @@ const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate 
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200 group">
-      {/* ✅ ENHANCED: Header with profile navigation */}
+      {/* PRESERVED: Header with profile navigation */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-3">
-          {/* ✅ ENHANCED: Clickable avatar */}
           <div 
             className="w-10 h-10 bg-gradient-to-r from-blue-500 to-teal-500 rounded-full flex items-center justify-center transition-transform duration-200 group-hover:scale-105 cursor-pointer"
             onClick={handleAuthorClick}
@@ -189,7 +173,6 @@ const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate 
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              {/* ✅ ENHANCED: Clickable name with navigation */}
               <h3 
                 className="font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200 cursor-pointer"
                 onClick={handleAuthorClick}
@@ -202,7 +185,6 @@ const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate 
                 </div>
               )}
             </div>
-            {/* ✅ ENHANCED: Clickable username with navigation */}
             <p className="text-sm text-gray-500 dark:text-gray-400">
               <span 
                 className="hover:text-blue-500 dark:hover:text-blue-400 cursor-pointer transition-colors duration-200"
@@ -215,7 +197,7 @@ const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate 
           </div>
         </div>
 
-        {/* ✅ PRESERVED: Options menu */}
+        {/* PRESERVED: Options menu */}
         <div className="relative">
           <AnimatedButton
             variant="ghost"
@@ -228,7 +210,6 @@ const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate 
             <MoreHorizontal className="h-5 w-5" />
           </AnimatedButton>
           
-          {/* ✅ PRESERVED: Options Menu with smooth slide-in */}
           {showOptions && (
             <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 min-w-32 animate-slideIn">
               <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t-lg transition-colors duration-150">
@@ -245,7 +226,7 @@ const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate 
         </div>
       </div>
 
-      {/* ✅ PRESERVED: Content with smooth hover effects */}
+      {/* PRESERVED: Content */}
       {content.text && (
         <p 
           className="text-gray-900 dark:text-white leading-relaxed cursor-pointer hover:text-gray-700 dark:hover:text-gray-200 transition-colors duration-200" 
@@ -255,30 +236,36 @@ const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate 
         </p>
       )}
 
-      {/* ✅ PRESERVED: Images with enhanced animations */}
+      {/* PRESERVED: Images */}
       {renderImages()}
 
-      {/* ✅ PRESERVED: Actions with Advanced Animations */}
+      {/* PRESERVED: Actions with Enhanced Like Button */}
       <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
         <div className="flex items-center space-x-6">
           
-          {/* ✅ PRESERVED: Enhanced Heart Button */}
+          {/* ENHANCED: Heart Button with real API integration and loading state */}
           <div className="flex items-center space-x-2">
             <AnimatedHeart
               isLiked={isLiked}
               onClick={handleLike}
               size={20}
               showParticles={true}
-              className="transition-transform duration-200 hover:scale-110"
+              className={`transition-transform duration-200 hover:scale-110 ${
+                isLikeLoading ? 'opacity-50 cursor-wait' : 'cursor-pointer'
+              }`}
+              disabled={isLikeLoading}
             />
             <span className={`text-sm font-medium transition-colors duration-200 ${
               isLiked ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'
             }`}>
               {likesCount}
             </span>
+            {likeError && (
+              <span className="text-xs text-red-500 ml-1" title={likeError}>⚠</span>
+            )}
           </div>
 
-          {/* ✅ PRESERVED: Comment Button with feedback */}
+          {/* PRESERVED: Comment Button */}
           <AnimatedButton
             variant="ghost"
             size="sm"
@@ -291,7 +278,7 @@ const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate 
             <span className="text-sm font-medium">{stats.comments}</span>
           </AnimatedButton>
 
-          {/* ✅ PRESERVED: Share Button with loading state */}
+          {/* PRESERVED: Share Button */}
           <AnimatedButton
             variant="ghost"
             size="sm"
@@ -306,7 +293,7 @@ const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate 
           </AnimatedButton>
         </div>
 
-        {/* ✅ PRESERVED: Save Button with state feedback */}
+        {/* PRESERVED: Save Button */}
         <AnimatedButton
           variant="ghost"
           size="sm"
@@ -320,7 +307,7 @@ const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate 
         </AnimatedButton>
       </div>
 
-      {/* ✅ PRESERVED: Additional Animations CSS */}
+      {/* PRESERVED: Additional Animations CSS */}
       <style jsx>{`
         @keyframes slideIn {
           from {
@@ -340,7 +327,7 @@ const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate 
     </div>
   );
 }, (prevProps, nextProps) => {
-  // ✅ PRESERVED: Custom comparison function to prevent unnecessary re-renders
+  // PRESERVED: Custom comparison function
   return (
     prevProps.post.id === nextProps.post.id &&
     prevProps.post.total_likes === nextProps.post.total_likes &&
