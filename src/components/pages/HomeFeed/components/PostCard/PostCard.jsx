@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import AnimatedHeart from '../../../../ui/AnimatedHeart/AnimatedHeart';
 import AnimatedButton from '../../../../ui/AnimatedButton/AnimatedButton';
-import useLikes from '../../../../hooks/useLikes';
+import useLikes from '../../../../../hooks/useLikes';
 
 const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate }) => {
   const navigate = useNavigate();

@@ -144,7 +144,7 @@ const AppLayout = React.memo(() => {
     ) || { transition: 'fade', skeleton: 'feed' };
   }, [location.pathname]);
 
-  // ✅ ENHANCED - Active tab detection with profile support
+  // ✅ FIXED - Active tab detection with own profile check
   React.useEffect(() => {
     const path = location.pathname;
     
@@ -152,10 +152,17 @@ const AppLayout = React.memo(() => {
     if (path === '/home' || path === '/') setActiveTab('home');
     else if (path.startsWith('/search')) setActiveTab('search');
     else if (path.startsWith('/messages')) setActiveTab('messages');
-    else if (path.startsWith('/profile')) setActiveTab('profile'); // Handles both /profile and /profile/username
+    else if (path.startsWith('/profile')) {
+      // Only activate profile tab for own profile
+      if (path === '/profile' || path === `/profile/${user?.username}`) {
+        setActiveTab('profile');
+      } else {
+        setActiveTab(''); // Other user's profile - no tab active
+      }
+    }
     else if (path.startsWith('/settings')) setActiveTab('settings');
     else if (path.startsWith('/upgrade')) setActiveTab('upgrade');
-  }, [location.pathname]);
+  }, [location.pathname, user?.username]); // Added user?.username dependency
 
   // ✅ ENHANCED - Tab change handler with profile redirect
   const handleTabChange = useCallback((tab) => {
