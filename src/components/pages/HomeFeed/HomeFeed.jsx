@@ -1,179 +1,114 @@
-// ===== src/components/pages/HomeFeed/HomeFeed.jsx - FIXED FOR ORIGINAL DESIGN =====
-import React, { useState, useEffect, useCallback } from 'react';
+// ===== src/components/pages/HomeFeed/HomeFeed.jsx - ENHANCED WITH HOOKS =====
+import React, { useState, useCallback } from 'react';
 import { Search } from "lucide-react";
 import { Input } from '../../ui/Input/Input';
 
-// ✅ Import Enhanced Components (Keep existing functionality)
+// PRESERVED: Import existing components
 import PostCard from './components/PostCard';
 import SimpleCreatePost from './components/SimpleCreatePost';
 import { NoPostsEmpty, LoadingState, LoadingErrorEmpty } from '../../ui/EmptyState/EmptyState';
 import EnhancedCommentsModal from '../../modals/EnhancedCommentsModal';
 
-// ✅ DJANGO API CONFIGURATION - Your existing API
-const API_BASE_URL = 'http://127.0.0.1:8000/api';
+// ENHANCED: Import new hooks
+import usePosts from '../../../hooks/usePosts';
+import useRealTime from '../../../hooks/useRealTime';
 
-// ✅ DATA TRANSFORMATION - Your existing function
-const transformApiPost = (apiPost) => {
-  console.log('🔄 Transforming API post:', apiPost);
-  
-  const transformed = {
-    id: apiPost.id,
-    author: {
-      username: apiPost.author?.username || 'Unknown User',
-      name: apiPost.author?.name || apiPost.author?.username || 'Unknown User',
-      avatar: apiPost.author?.avatar || null,
-      verified: apiPost.author?.verified || false
-    },
-    content: apiPost.content || '',
-    image_url: apiPost.image_url || null,
-    total_likes: apiPost.total_likes || 0,
-    total_comments: apiPost.total_comments || 0,
-    total_shares: apiPost.total_shares || 0,
-    time_since_posted: apiPost.time_since_posted || 'Unknown time',
-    is_liked: apiPost.is_liked || false,
-    is_active: apiPost.is_active !== false
-  };
-  
-  console.log('✅ Transformed post:', transformed);
-  return transformed;
-};
-
-// ✅ FETCH POSTS - Your existing API call
-const fetchPosts = async (page = 1) => {
-  const url = `${API_BASE_URL}/posts/?page=${page}`;
-  
-  console.log('🔍 Fetching posts from:', url);
-  
-  try {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      }
-    });
-
-    console.log('🔍 Response status:', response.status);
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    
-    console.log('🔍 Raw API Response:', data);
-    
-    // Handle both paginated and non-paginated responses
-    const posts = Array.isArray(data) ? data : (data.results || []);
-    const hasNext = data.next ? true : false;
-    const hasPrevious = data.previous ? true : false;
-    
-    return {
-      posts: posts.map(transformApiPost),
-      hasNext,
-      hasPrevious,
-      count: data.count || posts.length
-    };
-    
-  } catch (error) {
-    console.error('❌ Error fetching posts:', error);
-    return {
-      posts: [],
-      hasNext: false,
-      hasPrevious: false,
-      count: 0
-    };
-  }
-};
-
-// ✅ MAIN HOMEFEED COMPONENT - SIMPLIFIED TO WORK WITH ResponsiveLayout
+// ENHANCED: Main HomeFeed Component with improved state management
 function HomeFeed() {
-  // ✅ State Management - Your existing state + comments modal
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(false);
+  // ENHANCED: Use posts hook instead of manual state management
+  const {
+    posts,
+    loading,
+    error,
+    hasMore,
+    refreshing,
+    loadMorePosts,
+    refreshPosts,
+    updatePostStats,
+    updatePost,
+    addPost,
+    filterPosts,
+    retryFetch,
+    isEmpty,
+    isInitialLoading
+  } = usePosts({ autoLoad: true });
 
-  // ✅ Enhanced Comments Modal State
+  // PRESERVED: Local state for UI interactions
+  const [searchQuery, setSearchQuery] = useState("");
   const [showComments, setShowComments] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
 
-  // ✅ Load Posts on Component Mount
-  useEffect(() => {
-    loadPosts();
-  }, []);
-
-  const loadPosts = useCallback(async (pageNum = 1) => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const result = await fetchPosts(pageNum);
-      
-      if (pageNum === 1) {
-        setPosts(result.posts);
-      } else {
-        setPosts(prev => [...prev, ...result.posts]);
-      }
-      
-      setHasMore(result.hasNext);
-      setPage(pageNum);
-      
-    } catch (err) {
-      console.error('Error loading posts:', err);
-      setError('Failed to load posts. Please try again.');
-    } finally {
-      setLoading(false);
+  // ENHANCED: Real-time updates integration
+  const realTime = useRealTime({
+    enabled: true,
+    pollingInterval: 30000,
+    onPostUpdate: updatePost,
+    onNewPost: addPost,
+    onPostDelete: (postId) => {
+      // Handle post deletion
+      console.log('Post deleted:', postId);
     }
-  }, []);
+  });
 
-  // ✅ Load More Posts
-  const loadMorePosts = useCallback(() => {
-    if (hasMore && !loading) {
-      loadPosts(page + 1);
-    }
-  }, [hasMore, loading, page, loadPosts]);
+  // ENHANCED: Search functionality with hook integration
+  const filteredPosts = filterPosts(searchQuery);
 
-  // ✅ Search Functionality
-  const filteredPosts = posts.filter(post =>
-    post.content?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    post.author?.username?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // ✅ Enhanced Post Interaction Handlers
-  const handleCommentClick = (post) => {
+  // PRESERVED: Post interaction handlers
+  const handleCommentClick = useCallback((post) => {
     console.log('💬 Opening comments for post:', post.id);
     setSelectedPost(post);
     setShowComments(true);
-  };
-
-  const handlePostClick = (post) => {
-    console.log('📱 Post clicked:', post.id);
-    // Could navigate to detailed post view or expand inline
-  };
-
-  // ✅ Update post stats when interactions happen
-  const updatePostStats = useCallback((postId, updates) => {
-    setPosts(prevPosts => 
-      prevPosts.map(post => 
-        post.id === postId 
-          ? { ...post, ...updates }
-          : post
-      )
-    );
   }, []);
 
-  // ✅ MAIN RENDER - ResponsiveLayout handles navigation, we just show content
+  const handlePostClick = useCallback((post) => {
+    console.log('📱 Post clicked:', post.id);
+    // Could navigate to detailed post view or expand inline
+  }, []);
+
+  // ENHANCED: Stats update handler with real-time sync
+  const handleStatsUpdate = useCallback((postId, updates) => {
+    updatePostStats(postId, updates);
+    
+    // Trigger real-time update check to sync with other clients
+    realTime.forceUpdate();
+  }, [updatePostStats, realTime]);
+
+  // ENHANCED: Comment added handler
+  const handleCommentAdded = useCallback((newComment) => {
+    if (selectedPost) {
+      updatePostStats(selectedPost.id, {
+        total_comments: selectedPost.total_comments + 1
+      });
+    }
+  }, [selectedPost, updatePostStats]);
+
+  // ENHANCED: Pull to refresh functionality
+  const handleRefresh = useCallback(async () => {
+    await refreshPosts();
+  }, [refreshPosts]);
+
+  // PRESERVED: Main render with enhanced loading states
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-      {/* ✅ Create Post Component (if you want it) */}
-      {/* <SimpleCreatePost /> */}
+      {/* ENHANCED: Search Input */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+        <Input
+          type="text"
+          placeholder="Search posts..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-10 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+        />
+      </div>
 
-      {/* ✅ Posts Feed with Enhanced Loading States */}
+      {/* PRESERVED: Create Post Component (commented out as before) */}
+      {/* <SimpleCreatePost onPostCreated={addPost} /> */}
+
+      {/* ENHANCED: Posts Feed with improved loading states */}
       <div className="space-y-6">
-        {loading && posts.length === 0 ? (
-          // ✅ LOADING STATE - Show skeletons
+        {isInitialLoading ? (
+          // PRESERVED: Loading skeleton
           <div className="space-y-6">
             {[...Array(3)].map((_, i) => (
               <div key={i} className="animate-pulse">
@@ -191,41 +126,86 @@ function HomeFeed() {
             ))}
           </div>
         ) : error ? (
-          // ✅ ERROR STATE
-          <LoadingErrorEmpty onRetry={() => loadPosts(1)} />
-        ) : posts.length === 0 ? (
-          // ✅ EMPTY STATE
+          // ENHANCED: Error state with retry
+          <div className="text-center py-8">
+            <LoadingErrorEmpty onRetry={retryFetch} />
+          </div>
+        ) : isEmpty ? (
+          // PRESERVED: Empty state
           <NoPostsEmpty onCreatePost={() => console.log('Create post')} />
         ) : (
-          // ✅ POSTS EXIST - Show actual posts with enhanced interactions
+          // ENHANCED: Posts list with real-time updates
           <>
+            {/* Pull to refresh indicator */}
+            {refreshing && (
+              <div className="text-center py-2">
+                <div className="inline-flex items-center space-x-2 text-sm text-gray-500">
+                  <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                  <span>Refreshing...</span>
+                </div>
+              </div>
+            )}
+
             {filteredPosts.map((post) => (
               <PostCard 
                 key={post.id} 
                 post={post}
                 onCommentClick={() => handleCommentClick(post)}
                 onPostClick={() => handlePostClick(post)}
-                onStatsUpdate={(updates) => updatePostStats(post.id, updates)}
+                onStatsUpdate={(updates) => handleStatsUpdate(post.id, updates)}
               />
             ))}
             
-            {/* ✅ Load More Button */}
+            {/* ENHANCED: Load More with improved UX */}
             {hasMore && (
               <div className="text-center py-4">
                 <button
                   onClick={loadMorePosts}
                   disabled={loading}
-                  className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors"
+                  className={`
+                    px-6 py-2 rounded-lg font-medium transition-all duration-200
+                    ${loading 
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                      : 'bg-purple-600 text-white hover:bg-purple-700 hover:scale-105 active:scale-95'
+                    }
+                  `}
                 >
-                  {loading ? 'Loading...' : 'Load More'}
+                  {loading ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+                      <span>Loading...</span>
+                    </div>
+                  ) : (
+                    'Load More'
+                  )}
                 </button>
+              </div>
+            )}
+
+            {/* ENHANCED: Real-time status indicator (for development) */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="fixed bottom-4 right-4 bg-black/80 text-white px-3 py-2 rounded-lg text-xs">
+                Real-time: {realTime.isActive ? '🟢 Active' : '🔴 Inactive'}
               </div>
             )}
           </>
         )}
       </div>
 
-      {/* ✅ Enhanced Comments Modal */}
+      {/* ENHANCED: Pull to refresh hint */}
+      {!isInitialLoading && !isEmpty && (
+        <div className="text-center py-4">
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="text-sm text-gray-500 hover:text-blue-500 transition-colors"
+          >
+            {refreshing ? 'Refreshing...' : 'Pull to refresh or click here'}
+          </button>
+        </div>
+      )}
+
+      {/* PRESERVED: Enhanced Comments Modal */}
       <EnhancedCommentsModal
         isOpen={showComments}
         onClose={() => {
@@ -234,14 +214,7 @@ function HomeFeed() {
         }}
         postId={selectedPost?.id}
         postAuthor={selectedPost?.author}
-        onCommentAdded={(newComment) => {
-          // Update comment count for the selected post
-          if (selectedPost) {
-            updatePostStats(selectedPost.id, {
-              total_comments: selectedPost.total_comments + 1
-            });
-          }
-        }}
+        onCommentAdded={handleCommentAdded}
       />
     </div>
   );
