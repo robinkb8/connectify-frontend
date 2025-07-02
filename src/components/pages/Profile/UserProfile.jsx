@@ -1,95 +1,141 @@
-// ===== src/components/pages/Profile/UserProfile.jsx - UPDATED =====
-import React, { useState } from 'react';
+// components/pages/Profile/UserProfile.jsx - Enhanced with Real API Integration
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Settings, MapPin, Calendar, LinkIcon, Edit3, MoreHorizontal, MessageCircle } from "lucide-react";
 import { Button } from '../../ui/Button/Button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/Tabs/Tabs';
 import PostCard from '../HomeFeed/components/PostCard';
-import FollowButton, { FOLLOW_STATES } from '../../ui/FollowButton'; // ✅ Import Enhanced FollowButton
+import FollowButton, { FOLLOW_STATES } from '../../ui/FollowButton'; 
 import { ResponsiveContainer } from '../../layout/ResponsiveLayout';
+import { useProfile } from '../../../hooks/useProfile';
+import { useAuth } from '../../../contexts/AuthContext';
+import { postsAPI } from '../../../utils/api';
+import EditProfileModal from './EditProfileModal';
 
-function UserProfile({ isOwnProfile = false, onBack, userId }) {
+function UserProfile({ isOwnProfile: propIsOwnProfile, onBack, userId: propUserId }) {
+  // Get username from URL params or use current user
+  const { username } = useParams();
+  const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
+  
+  // State management
   const [activeTab, setActiveTab] = useState("posts");
-  const [followerCount, setFollowerCount] = useState(1234);
+  const [userPosts, setUserPosts] = useState([]);
+  const [postsLoading, setPostsLoading] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
 
-  // DEBUG: Log the isOwnProfile value
-  console.log("🔍 UserProfile isOwnProfile:", isOwnProfile);
+  // Determine which user profile to show
+  const targetUsername = username || currentUser?.username;
+  const targetUserId = propUserId || currentUser?.id;
 
-  // ✅ Mock user data
-  const user = {
-    id: userId || 'robin-123',
-    name: "ROBIN",
-    username: "Robinkb",
-    bio: "Full-stack developer passionate about creating amazing user experiences. Love working with React, Node.js, and exploring new technologies. Always learning, always building! 🚀",
-    location: "Ernakulam kerala",
-    website: "yoursite.dev",
-    avatar: "",
-    verified: true,
-    joinDate: "March 2023",
-    followers: followerCount,
-    following: 567,
-    posts: 89,
-    media: 42,
-    isPrivate: false,
-    isFollowing: false // This would come from API
+  // Use profile hook for real data
+  const { 
+    profile, 
+    loading: profileLoading, 
+    error: profileError, 
+    isOwnProfile: hookIsOwnProfile,
+    refreshProfile 
+  } = useProfile(targetUsername);
+
+  // Determine if this is own profile
+  const isOwnProfile = propIsOwnProfile !== undefined ? propIsOwnProfile : hookIsOwnProfile;
+
+  // Fetch user posts
+  useEffect(() => {
+    const fetchUserPosts = async () => {
+      if (!profile?.id) return;
+
+      setPostsLoading(true);
+      try {
+        const response = await postsAPI.getUserPosts(profile.id);
+        if (response && response.results) {
+          setUserPosts(response.results);
+        }
+      } catch (error) {
+        console.error('Failed to fetch user posts:', error);
+        setUserPosts([]);
+      } finally {
+        setPostsLoading(false);
+      }
+    };
+
+    fetchUserPosts();
+  }, [profile?.id]);
+
+  // Handle Follow Change
+  const handleFollowChange = ({ userId, isFollowing, followerCount }) => {
+    // Update profile data with new follower count
+    if (profile) {
+      refreshProfile();
+    }
+    console.log(`User ${userId} ${isFollowing ? 'followed' : 'unfollowed'}, new count: ${followerCount}`);
   };
 
-  // ✅ Mock posts data with correct structure for PostCard
-  const userPosts = [
-    {
-      id: 1,
-      author: { username: user.username, name: user.name, avatar: user.avatar, verified: user.verified },
-      content: "Just launched my new project! Excited to share it with the community 🚀",
-      image_url: null,
-      total_likes: 124,
-      total_comments: 23,
-      total_shares: 12,
-      time_since_posted: "2h",
-      is_liked: false,
-      is_active: true,
-    },
-    {
-      id: 2,
-      author: { username: user.username, name: user.name, avatar: user.avatar, verified: user.verified },
-      content: "Beautiful sunset from my rooftop garden 🌅 Nature never fails to amaze me!",
-      image_url: null,
-      total_likes: 89,
-      total_comments: 15,
-      total_shares: 7,
-      time_since_posted: "1d",
-      is_liked: false,
-      is_active: true,
-    },
-    {
-      id: 3,
-      author: { username: user.username, name: user.name, avatar: user.avatar, verified: user.verified },
-      content: "Working on some exciting new features. Can't wait to show you all! 💻✨",
-      image_url: null,
-      total_likes: 67,
-      total_comments: 18,
-      total_shares: 9,
-      time_since_posted: "3d",
-      is_liked: true,
-      is_active: true,
-    },
-  ];
-
-  // ✅ Handle Follow Change (from FollowButton)
-  const handleFollowChange = ({ userId, isFollowing, followerCount: newCount }) => {
-    setFollowerCount(newCount);
-    console.log(`User ${userId} ${isFollowing ? 'followed' : 'unfollowed'}, new count: ${newCount}`);
-  };
-
-  // ✅ Handle Message
+  // Handle Message
   const handleMessage = () => {
     console.log('💬 Message button clicked!');
-    // Navigate to messages or open chat
+    if (profile?.id) {
+      navigate(`/messages/${profile.id}`);
+    }
   };
 
-  // ✅ Handle Edit Profile
+  // Handle Edit Profile
   const handleEditProfile = () => {
-    console.log('⚙️ Edit Profile clicked!');
-    // Open edit profile modal
+    setShowEditModal(true);
   };
+
+  // Handle profile update success
+  const handleProfileUpdated = (updatedUser) => {
+    refreshProfile();
+    setShowEditModal(false);
+  };
+
+  // Loading state
+  if (profileLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50 dark:from-slate-900 dark:via-blue-900 dark:to-slate-900">
+        <ResponsiveContainer className="py-8">
+          <div className="flex justify-center items-center h-96">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+          </div>
+        </ResponsiveContainer>
+      </div>
+    );
+  }
+
+  // Error state
+  if (profileError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50 dark:from-slate-900 dark:via-blue-900 dark:to-slate-900">
+        <ResponsiveContainer className="py-8">
+          <div className="flex flex-col justify-center items-center h-96">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+              Profile Not Found
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              {profileError}
+            </p>
+            <Button onClick={() => navigate(-1)} className="bg-blue-600 hover:bg-blue-700 text-white">
+              Go Back
+            </Button>
+          </div>
+        </ResponsiveContainer>
+      </div>
+    );
+  }
+
+  // No profile data
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50 dark:from-slate-900 dark:via-blue-900 dark:to-slate-900">
+        <ResponsiveContainer className="py-8">
+          <div className="flex justify-center items-center h-96">
+            <p className="text-gray-600 dark:text-gray-400">No profile data available</p>
+          </div>
+        </ResponsiveContainer>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50 dark:from-slate-900 dark:via-blue-900 dark:to-slate-900">
@@ -103,15 +149,15 @@ function UserProfile({ isOwnProfile = false, onBack, userId }) {
               <div className="relative">
                 <div className="w-32 h-32 rounded-full bg-gradient-to-r from-blue-500 via-teal-500 to-emerald-500 p-1">
                   <div className="w-full h-full rounded-full bg-white dark:bg-gray-900 flex items-center justify-center overflow-hidden">
-                    {user.avatar ? (
+                    {profile.profile?.avatar ? (
                       <img 
-                        src={user.avatar} 
+                        src={profile.profile.avatar} 
                         alt="Profile" 
                         className="w-full h-full object-cover"
                       />
                     ) : (
                       <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent">
-                        {user.name.charAt(0)}
+                        {profile.full_name?.charAt(0) || profile.username?.charAt(0) || 'U'}
                       </span>
                     )}
                   </div>
@@ -133,45 +179,54 @@ function UserProfile({ isOwnProfile = false, onBack, userId }) {
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                        {user.name}
+                        {profile.full_name || profile.username}
                       </h1>
-                      {user.verified && (
+                      {profile.verified && (
                         <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
                           <span className="text-white text-xs">✓</span>
                         </div>
                       )}
                     </div>
                     <p className="text-blue-600 dark:text-blue-300 text-lg mb-2">
-                      @{user.username}
+                      @{profile.username}
                     </p>
                     <div className="inline-flex px-3 py-1 bg-blue-100 dark:bg-blue-600/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30 rounded-full text-sm font-medium">
-                      {user.isPrivate ? "Private Account" : "Pro Member"}
+                      {profile.profile?.is_private ? "Private Account" : "Public Account"}
                     </div>
                   </div>
                 </div>
 
                 {/* Bio */}
-                <p className="text-gray-700 dark:text-gray-300 text-lg leading-relaxed max-w-2xl">
-                  {user.bio}
-                </p>
+                {profile.profile?.bio && (
+                  <p className="text-gray-700 dark:text-gray-300 text-lg leading-relaxed max-w-2xl">
+                    {profile.profile.bio}
+                  </p>
+                )}
 
                 {/* Details */}
                 <div className="flex flex-wrap gap-6 text-gray-600 dark:text-gray-400">
-                  {user.location && (
+                  {profile.profile?.location && (
                     <div className="flex items-center gap-2">
                       <MapPin className="h-4 w-4" />
-                      <span>{user.location}</span>
+                      <span>{profile.profile.location}</span>
                     </div>
                   )}
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    <span>Joined {user.joinDate}</span>
-                  </div>
-                  {user.website && (
+                  {profile.date_joined && (
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      <span>Joined {new Date(profile.date_joined).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
+                    </div>
+                  )}
+                  {profile.profile?.website && (
                     <div className="flex items-center gap-2">
                       <LinkIcon className="h-4 w-4" />
-                      <a href={`https://${user.website}`} className="text-blue-600 dark:text-blue-400 hover:underline">
-                        {user.website}
+                      <a 
+                        href={profile.profile.website} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        {profile.profile.website.replace(/^https?:\/\//, '')}
                       </a>
                     </div>
                   )}
@@ -182,20 +237,26 @@ function UserProfile({ isOwnProfile = false, onBack, userId }) {
                   {/* Stats Row */}
                   <div className="flex gap-8">
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-gray-900 dark:text-white">{user.posts}</div>
+                      <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                        {profile.profile?.posts_count || 0}
+                      </div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">Posts</div>
                     </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-gray-900 dark:text-white">{followerCount.toLocaleString()}</div>
+                    <div className="text-center cursor-pointer hover:opacity-80 transition-opacity">
+                      <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                        {profile.profile?.followers_count || 0}
+                      </div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">Followers</div>
                     </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-gray-900 dark:text-white">{user.following}</div>
+                    <div className="text-center cursor-pointer hover:opacity-80 transition-opacity">
+                      <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                        {profile.profile?.following_count || 0}
+                      </div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">Following</div>
                     </div>
                   </div>
 
-                  {/* ✅ ENHANCED ACTION BUTTONS */}
+                  {/* Action Buttons */}
                   <div className="flex gap-3">
                     {isOwnProfile ? (
                       /* YOUR OWN PROFILE - Show Edit Profile */
@@ -207,15 +268,15 @@ function UserProfile({ isOwnProfile = false, onBack, userId }) {
                         Edit Profile
                       </Button>
                     ) : (
-                      /* OTHER USER'S PROFILE - Show Enhanced Follow & Message */
+                      /* OTHER USER'S PROFILE - Show Follow & Message */
                       <>
-                        {/* ✅ ENHANCED FOLLOW BUTTON */}
+                        {/* Enhanced Follow Button */}
                         <FollowButton
-                          userId={user.id}
-                          initialFollowState={user.isFollowing ? FOLLOW_STATES.FOLLOWING : FOLLOW_STATES.NOT_FOLLOWING}
-                          initialFollowerCount={followerCount}
-                          userName={user.name}
-                          isPrivate={user.isPrivate}
+                          userId={profile.id}
+                          initialFollowState={profile.is_following ? FOLLOW_STATES.FOLLOWING : FOLLOW_STATES.NOT_FOLLOWING}
+                          initialFollowerCount={profile.profile?.followers_count || 0}
+                          userName={profile.full_name || profile.username}
+                          isPrivate={profile.profile?.is_private || false}
                           onFollowChange={handleFollowChange}
                           className="flex-1 py-3"
                           size="default"
@@ -259,9 +320,21 @@ function UserProfile({ isOwnProfile = false, onBack, userId }) {
           </div>
 
           <TabsContent value="posts" className="space-y-4 mt-6">
-            {userPosts.map((post) => (
-              <PostCard key={post.id} post={post} />
-            ))}
+            {postsLoading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+              </div>
+            ) : userPosts.length > 0 ? (
+              userPosts.map((post) => (
+                <PostCard key={post.id} post={post} />
+              ))
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-gray-500 dark:text-gray-400">
+                  {isOwnProfile ? "You haven't posted anything yet." : "No posts yet."}
+                </p>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="media" className="mt-6">
@@ -280,6 +353,16 @@ function UserProfile({ isOwnProfile = false, onBack, userId }) {
           </TabsContent>
         </Tabs>
       </ResponsiveContainer>
+
+      {/* Edit Profile Modal */}
+      {showEditModal && (
+        <EditProfileModal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          user={profile}
+          onProfileUpdated={handleProfileUpdated}
+        />
+      )}
     </div>
   );
 }
