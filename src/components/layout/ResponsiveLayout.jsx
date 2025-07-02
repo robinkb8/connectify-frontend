@@ -1,16 +1,8 @@
-// src/components/layout/ResponsiveLayout.jsx - OPTIMIZED
+// src/components/layout/ResponsiveLayout.jsx - Fixed logout functionality
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import MobileBottomNav from './MobileBottomNav';
 import MobileHeader from './MobileHeader';
 import DesktopSidebar from './DesktopSidebar';
-
-// Move static data outside component to prevent recreation on every render
-const SIDEBAR_ACTIONS = {
-  settings: (onTabChange) => onTabChange?.('settings'),
-  upgrade: (onTabChange) => onTabChange?.('upgrade'),
-  help: () => console.log('Help & Support clicked'),
-  logout: () => console.log('Logout clicked'),
-};
 
 // Simple theme detection hook - moved outside for reusability
 const useSimpleTheme = () => {
@@ -58,6 +50,7 @@ const ResponsiveLayout = React.memo(({
   activeTab, 
   onTabChange, 
   onCreatePost, 
+  onLogout, // Accept onLogout prop from App.js
   user,
   title = "Connectify",
   showBack = false,
@@ -70,6 +63,17 @@ const ResponsiveLayout = React.memo(({
   const [isTablet, setIsTablet] = useState(false);
   
   const { theme, toggleTheme } = useSimpleTheme();
+
+  // Memoize sidebar actions - now with proper logout functionality
+  const sidebarActions = useMemo(() => ({
+    settings: (onTabChange) => onTabChange?.('settings'),
+    upgrade: (onTabChange) => onTabChange?.('upgrade'),
+    help: () => console.log('Help & Support clicked'),
+    logout: () => {
+      console.log('Logout clicked - calling logout function');
+      onLogout?.(); // Call the actual logout function from App.js
+    },
+  }), [onLogout]);
 
   // Memoize viewport detection to prevent unnecessary recalculations
   const viewportConfig = useMemo(() => ({
@@ -93,13 +97,13 @@ const ResponsiveLayout = React.memo(({
 
   // Memoize sidebar navigation handler to prevent recreation
   const handleSidebarNavigation = useCallback((action) => {
-    const handler = SIDEBAR_ACTIONS[action];
+    const handler = sidebarActions[action];
     if (handler) {
       handler(onTabChange);
     } else {
       console.log('Unknown action:', action);
     }
-  }, [onTabChange]);
+  }, [sidebarActions, onTabChange]);
 
   // Memoize menu toggle handlers to prevent recreation
   const handleMenuToggle = useCallback(() => {
@@ -264,7 +268,8 @@ const ResponsiveLayout = React.memo(({
     prevProps.showBack === nextProps.showBack &&
     prevProps.isNavigating === nextProps.isNavigating &&
     prevProps.user?.id === nextProps.user?.id &&
-    prevProps.children === nextProps.children
+    prevProps.children === nextProps.children &&
+    prevProps.onLogout === nextProps.onLogout // Include onLogout in comparison
   );
 });
 

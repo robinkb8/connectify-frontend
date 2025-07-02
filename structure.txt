@@ -430,6 +430,7 @@ C:.
 |   |   |       1e69685db50193668435d48a4426333cb837aa58558754a4798fa727a5dc1090.json
 |   |   |       1e76fa844f89467da34cbb2678ce66efc003a9f7888f48173a60661b83670c7a.json
 |   |   |       1e78c7daff1b1b099b8486758649808a3647903204e572503fef9e1108a72414.json
+|   |   |       1ebbe3a923f9e1d4f0c3b5102cba94d108dc3d7f890997f7be2f40eb03745742.json
 |   |   |       1ebe25b457d134f30614bd73aa457aefa766b1e78ca43e5bf1cb04d320980368.json
 |   |   |       1ec26f88d56030d0f61a6e15b5d524492626e724f777c24c30f56d2a7b68c7a7.json
 |   |   |       1ef286f613a3ffe666ee7446e8ce53f37fe98858205e74cccf39e22d27a2a4a6.json
@@ -856,6 +857,7 @@ C:.
 |   |   |       5210134f7d35dc0058d6ead3c915572ce89547a4b335e8310cde50b1b4992a2b.json
 |   |   |       523adc02c684d8bf9a33060cab537a0d986f2711d8bf669a7630e15224b30ecd.json
 |   |   |       5275770c03f21e5423d780b587e93a1d16a79fece6968dd161bf5148c4a2d796.json
+|   |   |       52784f519bebe0b77a8c52c1590681e6985654c7083fb17d2c4f9391ec5a6567.json
 |   |   |       527e42d057bf9b34a0170de7e519f7dee91b46126ebceb978b8b1ccb4d0d35cc.json
 |   |   |       529f7ef67dc115aa2ecc0ee553dadd265770ab20e022eea6180038eedfb4e1f5.json
 |   |   |       52ae97bc76a6a45643acd7664e9a9cba4e2a92aac2cd65fc5a70e7ec8dc4164f.json
@@ -1147,6 +1149,7 @@ C:.
 |   |   |       758825b3d2a5588d823c5f6b556b992c9d3a8d64c5759b61fbc1777a6b486916.json
 |   |   |       759ab99508793c0a5f122ba202b52d6a1bf67d9e1366896dba6a6f7c132f779a.json
 |   |   |       75c26f8cee105d9e966bc6cdd311ea5a9dacd963197fbd1213257f1a8da6d25c.json
+|   |   |       75c3bd052de9ef20b4af8b2f3cee192c15dc113022be3c4e827805ad05a71700.json
 |   |   |       75f51f19de87c4340c89f5d137a58b724aafc4194f914bdd1692297452f009a7.json
 |   |   |       76112bdb08fda76a2e8d33512c6aa819c1b813698f7d473d36e24012eda69ddc.json
 |   |   |       762f971130129e49aca1d51acc0d4a4988ce6a03e2f54d6671b3fbf0e88510b0.json
@@ -1755,6 +1758,7 @@ C:.
 |   |   |       c172f6b7c7a23f3d4b1dd95ab7a0f34c9b20be900f3219739c33073094ba265d.json
 |   |   |       c178995ce60c09506d8bf1fbcd1ab04ae4bcd25c9dccf2ab0c8591be7d98ceb1.json
 |   |   |       c19d6278542c0f13a8c35abcc73258ad240c97d7e1a634c1335f579ee76b4aa4.json
+|   |   |       c1b18efad2ea1673c5c410640c3c5e109c17c2dc304274e4d0a55c97442e790e.json
 |   |   |       c1b6805b3bb25fff4d16921b39f818bda635cef41f4471cd8b76b4fad35c7d2e.json
 |   |   |       c1b9a3ea7c5b0e197b266468462d7589c91f2459f39bc1f527dd511fe77125f7.json
 |   |   |       c1d96d08f1a0671b62ec01570d1764806ebe528ef7a10829b3cb51c634cda3da.json
@@ -2070,6 +2074,7 @@ C:.
 |   |   |       e66fdd97be9974686b8acf575f89ffd60a7f5625d49fb0da24dbed3976dc32a7.json
 |   |   |       e6b0177279c6365d7bf470743da77640b8089ee31fc14c5ebe5490545d8de878.json
 |   |   |       e6b4fa3c36f9f84a1664858ad9b00dd280642d8446e4f059e2de2679e36c9482.json
+|   |   |       e6b89141cae1b309cb3aeadd788edf23e0fb1454bc93553c21d03d1a1e2f37f6.json
 |   |   |       e710e0890bc2e423874cf277bed8391992f077f2e15a50edf4a24ad85e095a1d.json
 |   |   |       e74fd72ad5bebd6ddf54a061dd48571894cee82acbe32d03403df00e1998b290.json
 |   |   |       e74fec28b42ef753c9493e1f10ecf1e063d3f7330b2e33e4992f4ab294357ecb.json
@@ -53066,6 +53071,8 @@ C:.
     |   +---modals
     |   |       EnhancedCommentsModal.jsx
     |   |       EnhancedPostCreationModal.jsx
+    |   |       FollowersModal.jsx
+    |   |       FollowingModal.jsx
     |   |       PostOptionsMenu.jsx
     |   |       ShareModal.jsx
     |   |       
@@ -53091,10 +53098,16 @@ C:.
     |   |   |       MessagesPage.jsx
     |   |   |       
     |   |   +---Profile
-    |   |   |       EditProfileModal.jsx
-    |   |   |       index.js
-    |   |   |       UserProfile.jsx
-    |   |   |       
+    |   |   |   |   EditProfileModal.jsx
+    |   |   |   |   index.js
+    |   |   |   |   UserProfile.jsx
+    |   |   |   |   
+    |   |   |   \---components
+    |   |   |           FollowersList.jsx
+    |   |   |           FollowingList.jsx
+    |   |   |           index.js
+    |   |   |           ProfileStats.jsx
+    |   |   |           
     |   |   +---Search
     |   |   |   |   index.js
     |   |   |   |   SearchPage.jsx
@@ -53171,16 +53184,20 @@ C:.
     |       AuthContext.js
     |       
     +---hooks
+    |       useFollow.js
     |       useFormValidation.js
+    |       useProfile.js
     |       
     \---utils
         |   api.js
         |   cn.js
+        |   profileHelpers.js
         |   
         +---api
         |       comments.js
         |       index.js
         |       posts.js
+        |       profiles.js
         |       
         +---constants
         |       validation.js
