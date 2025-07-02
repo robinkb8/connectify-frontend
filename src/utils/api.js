@@ -1,8 +1,11 @@
-// src/utils/api.js - Enhanced with JWT Authentication + Existing Functionality
+// src/utils/api.js - Enhanced with JWT Authentication + Profile API Integration
+
+// Import profile API
+import { profilesAPI } from './api/profiles';
 
 const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
-// JWT Token Management
+// JWT Token Management - PRESERVED
 class TokenManager {
   constructor() {
     this.tokenKey = 'accessToken';
@@ -34,7 +37,7 @@ class TokenManager {
 
 const tokenManager = new TokenManager();
 
-// Enhanced API Request with JWT Support
+// Enhanced API Request with JWT Support - PRESERVED
 const apiRequest = async (endpoint, options = {}) => {
   const url = `${API_BASE_URL}${endpoint}`;
   const token = tokenManager.getAccessToken();
@@ -93,7 +96,7 @@ const apiRequest = async (endpoint, options = {}) => {
   }
 };
 
-// Refresh Access Token
+// Refresh Access Token - PRESERVED
 const refreshTokens = async () => {
   const refreshToken = tokenManager.getRefreshToken();
   if (!refreshToken) return false;
@@ -119,7 +122,7 @@ const refreshTokens = async () => {
   }
 };
 
-// Authentication API
+// Authentication API - PRESERVED COMPLETELY
 export const authAPI = {
   login: async (email, password) => {
     try {
@@ -215,7 +218,7 @@ export const authAPI = {
   getAccessToken: () => tokenManager.getAccessToken()
 };
 
-// Enhanced Posts API (preserving your existing functionality + JWT)
+// Enhanced Posts API - PRESERVED COMPLETELY
 export const postsAPI = {
   fetchPosts: async (page = 1) => {
     try {
@@ -290,7 +293,7 @@ export const postsAPI = {
   }
 };
 
-// Enhanced Comments API (preserving your existing functionality + JWT)
+// Enhanced Comments API - PRESERVED COMPLETELY
 export const commentsAPI = {
   getComments: async (postId) => {
     try {
@@ -334,8 +337,9 @@ export const commentsAPI = {
   }
 };
 
-// Profile API
+// ENHANCED Profile API - Merging existing with new comprehensive functions
 export const profileAPI = {
+  // PRESERVED existing methods
   updateProfile: async (profileData) => {
     const formData = new FormData();
     
@@ -377,11 +381,23 @@ export const profileAPI = {
 
     if (!response.ok) throw new Error('Failed to upload avatar');
     return response.json();
-  }
+  },
+
+  // NEW comprehensive profile methods
+  getUserProfile: profilesAPI.getUserProfile,
+  getCurrentUserProfile: profilesAPI.getCurrentUserProfile,
+  updateUserProfile: profilesAPI.updateUserProfile,
+  followUser: profilesAPI.followUser,
+  unfollowUser: profilesAPI.unfollowUser,
+  getUserFollowers: profilesAPI.getUserFollowers,
+  getUserFollowing: profilesAPI.getUserFollowing
 };
 
-// Export the token manager for use in components
+// Export the token manager for use in components - PRESERVED
 export { tokenManager };
 
-// Export default API request function (backward compatibility)
+// Export profiles API separately
+export { profilesAPI };
+
+// Export default API request function (backward compatibility) - PRESERVED
 export default apiRequest;
