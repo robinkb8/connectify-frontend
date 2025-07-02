@@ -1,68 +1,9 @@
-// ===== src/components/modals/EnhancedCommentsModal.jsx - OPTIMIZED =====
+// ===== src/components/modals/EnhancedCommentsModal.jsx - REAL API INTEGRATION =====
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { X, MessageCircle, Heart, Reply, Trash2, Send, MoreHorizontal } from 'lucide-react';
+import useComments from '../../hooks/useComments';
 
-// ✅ OPTIMIZED: Move mock data outside component to prevent recreation
-const MOCK_COMMENTS = [
-  {
-    id: '1',
-    user: {
-      name: 'Sarah Wilson',
-      username: 'sarahw',
-      avatar: null
-    },
-    content: 'This looks amazing! Great work on the design. The color scheme is really well thought out.',
-    timestamp: '2h ago',
-    likes: 12,
-    isLiked: false,
-    isNew: false,
-    replies: [
-      {
-        id: '1-1',
-        user: {
-          name: 'Alex Chen',
-          username: 'alexchen',
-          avatar: null
-        },
-        content: 'I totally agree! The gradient effects are stunning.',
-        timestamp: '1h ago',
-        likes: 3,
-        isLiked: true,
-        isNew: false,
-      }
-    ]
-  },
-  {
-    id: '2',
-    user: {
-      name: 'Mike Johnson',
-      username: 'mikej',
-      avatar: null
-    },
-    content: 'Could you share some insights about your design process? I\'m particularly interested in how you approached the user research phase and what tools you used for prototyping.',
-    timestamp: '3h ago',
-    likes: 8,
-    isLiked: false,
-    isNew: false,
-    replies: []
-  },
-  {
-    id: '3',
-    user: {
-      name: 'Emma Davis',
-      username: 'emmad',
-      avatar: null
-    },
-    content: 'Beautiful work! 🎨✨',
-    timestamp: '4h ago',
-    likes: 5,
-    isLiked: true,
-    isNew: false,
-    replies: []
-  }
-];
-
-// ✅ OPTIMIZED: Memoized Individual Comment Component
+// PRESERVED: Memoized Individual Comment Component
 const CommentItem = React.memo(({ comment, onLike, onReply, onDelete, isOwnComment, level = 0 }) => {
   const [isLiked, setIsLiked] = useState(comment.isLiked || false);
   const [likesCount, setLikesCount] = useState(comment.likes || 0);
@@ -71,7 +12,7 @@ const CommentItem = React.memo(({ comment, onLike, onReply, onDelete, isOwnComme
   const [isDeleting, setIsDeleting] = useState(false);
   const [showMore, setShowMore] = useState(false);
 
-  // ✅ OPTIMIZED: Memoized event handlers
+  // PRESERVED: All memoized event handlers
   const handleLike = useCallback(() => {
     const newLikedState = !isLiked;
     const newCount = newLikedState ? likesCount + 1 : likesCount - 1;
@@ -127,9 +68,17 @@ const CommentItem = React.memo(({ comment, onLike, onReply, onDelete, isOwnComme
       <div className="flex space-x-3 p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg transition-colors">
         {/* Avatar */}
         <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-teal-500 rounded-full flex items-center justify-center flex-shrink-0">
-          <span className="text-white font-bold text-xs">
-            {comment.user.name.charAt(0).toUpperCase()}
-          </span>
+          {comment.user.avatar ? (
+            <img 
+              src={comment.user.avatar} 
+              alt={comment.user.name}
+              className="w-full h-full rounded-full object-cover"
+            />
+          ) : (
+            <span className="text-white font-bold text-xs">
+              {comment.user.name.charAt(0).toUpperCase()}
+            </span>
+          )}
         </div>
 
         {/* Comment Content */}
@@ -165,13 +114,11 @@ const CommentItem = React.memo(({ comment, onLike, onReply, onDelete, isOwnComme
 
           {/* Actions */}
           <div className="flex items-center space-x-4">
-            {/* Like */}
+            {/* Like - Disabled for now since comments likes not implemented in backend */}
             <button
               onClick={handleLike}
-              className={`
-                flex items-center space-x-1 text-xs transition-all duration-200 hover:scale-105
-                ${isLiked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'}
-              `}
+              disabled
+              className="flex items-center space-x-1 text-xs text-gray-400 cursor-not-allowed"
             >
               <Heart className={`w-3 h-3 ${isLiked ? 'fill-current' : ''}`} />
               <span>{likesCount}</span>
@@ -260,7 +207,7 @@ const CommentItem = React.memo(({ comment, onLike, onReply, onDelete, isOwnComme
     </div>
   );
 }, (prevProps, nextProps) => {
-  // ✅ OPTIMIZED: Custom comparison to prevent unnecessary re-renders
+  // PRESERVED: Custom comparison to prevent unnecessary re-renders
   return (
     prevProps.comment.id === nextProps.comment.id &&
     prevProps.comment.likes === nextProps.comment.likes &&
@@ -273,47 +220,40 @@ const CommentItem = React.memo(({ comment, onLike, onReply, onDelete, isOwnComme
 
 CommentItem.displayName = 'CommentItem';
 
-// ✅ OPTIMIZED: Enhanced Comments Modal with performance improvements
+// ENHANCED: Comments Modal with REAL API Integration
 const EnhancedCommentsModal = React.memo(({ isOpen, onClose, postId, postAuthor }) => {
-  const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [sortBy, setSortBy] = useState('newest');
-  
   const textareaRef = useRef(null);
 
-  // ✅ OPTIMIZED: Memoized load comments function
-  const loadComments = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setComments(MOCK_COMMENTS);
-    } catch (error) {
-      setError('Failed to load comments');
-      console.error('Error loading comments:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  // ENHANCED: Use real API through useComments hook
+  const {
+    comments,
+    isLoading,
+    isSubmitting,
+    error,
+    sortBy,
+    fetchComments,
+    addComment,
+    deleteComment,
+    sortComments,
+    clearError
+  } = useComments(postId);
 
-  // ✅ Load comments when modal opens
+  // ENHANCED: Load comments when modal opens
   useEffect(() => {
     if (isOpen && postId) {
-      loadComments();
+      fetchComments();
     }
-  }, [isOpen, postId, loadComments]);
+  }, [isOpen, postId, fetchComments]);
 
-  // ✅ Auto-focus textarea when modal opens
+  // PRESERVED: Auto-focus textarea when modal opens
   useEffect(() => {
     if (isOpen && textareaRef.current) {
       setTimeout(() => textareaRef.current?.focus(), 100);
     }
   }, [isOpen]);
 
-  // ✅ Auto-resize textarea
+  // PRESERVED: Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -321,167 +261,46 @@ const EnhancedCommentsModal = React.memo(({ isOpen, onClose, postId, postAuthor 
     }
   }, [newComment]);
 
-  // ✅ OPTIMIZED: Memoized comment submission handler
+  // ENHANCED: Real comment submission
   const handleSubmitComment = useCallback(async () => {
     if (!newComment.trim() || isSubmitting) return;
 
-    // Create optimistic comment for instant UI feedback
-    const optimisticComment = {
-      id: `temp-${Date.now()}`,
-      user: {
-        name: 'You',
-        username: 'you',
-        avatar: null
-      },
-      content: newComment.trim(),
-      timestamp: 'just now',
-      likes: 0,
-      isLiked: false,
-      isNew: true,
-      isOptimistic: true,
-      replies: []
-    };
-
-    // ✅ INSTANT UI UPDATE
-    setComments(prev => [optimisticComment, ...prev]);
-    setNewComment('');
-    setError('');
-    setIsSubmitting(true);
-
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Replace optimistic comment with real data
-      const realComment = {
-        ...optimisticComment,
-        id: `comment-${Date.now()}`,
-        isOptimistic: false,
-        isNew: true
-      };
-
-      setComments(prev => prev.map(comment => 
-        comment.id === optimisticComment.id ? realComment : comment
-      ));
-
-      console.log('✅ Comment posted successfully');
-
-    } catch (error) {
-      // Remove optimistic comment and show error
-      setComments(prev => prev.filter(comment => comment.id !== optimisticComment.id));
-      setError('Failed to post comment. Please try again.');
-      setNewComment(optimisticComment.content);
-      console.error('Error posting comment:', error);
-      
-      setTimeout(() => setError(''), 3000);
-    } finally {
-      setIsSubmitting(false);
+    const result = await addComment(newComment.trim());
+    
+    if (result.success) {
+      setNewComment('');
+      clearError();
     }
-  }, [newComment, isSubmitting]);
+  }, [newComment, isSubmitting, addComment, clearError]);
 
-  // ✅ OPTIMIZED: Memoized like handler
+  // ENHANCED: Real like handler (placeholder since backend doesn't support comment likes yet)
   const handleLikeComment = useCallback(async (commentId, isLiked) => {
-    try {
-      await new Promise(resolve => setTimeout(resolve, 200));
-      console.log(`${isLiked ? 'Liked' : 'Unliked'} comment ${commentId}`);
-    } catch (error) {
-      console.error('Error liking comment:', error);
-    }
+    // Placeholder - backend doesn't support comment likes yet
+    console.log(`${isLiked ? 'Liked' : 'Unliked'} comment ${commentId}`);
   }, []);
 
-  // ✅ OPTIMIZED: Memoized reply handler
+  // ENHANCED: Real reply handler
   const handleReplyToComment = useCallback(async (parentId, replyText) => {
-    const optimisticReply = {
-      id: `temp-reply-${Date.now()}`,
-      user: {
-        name: 'You',
-        username: 'you',
-        avatar: null
-      },
-      content: replyText,
-      timestamp: 'just now',
-      likes: 0,
-      isLiked: false,
-      isNew: true,
-      isOptimistic: true
-    };
-
-    // Instant UI update
-    setComments(prev => prev.map(comment => 
-      comment.id === parentId 
-        ? { ...comment, replies: [optimisticReply, ...(comment.replies || [])] }
-        : comment
-    ));
-
-    try {
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      const realReply = {
-        ...optimisticReply,
-        id: `reply-${Date.now()}`,
-        isOptimistic: false
-      };
-
-      setComments(prev => prev.map(comment => 
-        comment.id === parentId 
-          ? { 
-              ...comment, 
-              replies: comment.replies.map(reply => 
-                reply.id === optimisticReply.id ? realReply : reply
-              )
-            }
-          : comment
-      ));
-    } catch (error) {
-      setComments(prev => prev.map(comment => 
-        comment.id === parentId 
-          ? { 
-              ...comment, 
-              replies: comment.replies.filter(reply => reply.id !== optimisticReply.id)
-            }
-          : comment
-      ));
-      console.error('Error posting reply:', error);
+    const result = await addComment(replyText, parentId);
+    if (!result.success) {
+      console.error('Failed to post reply:', result.error);
     }
-  }, []);
+  }, [addComment]);
 
-  // ✅ OPTIMIZED: Memoized delete handler
+  // ENHANCED: Real delete handler
   const handleDeleteComment = useCallback(async (commentId) => {
-    try {
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      setTimeout(() => {
-        setComments(prev => prev.filter(comment => {
-          if (comment.id === commentId) return false;
-          if (comment.replies) {
-            comment.replies = comment.replies.filter(reply => reply.id !== commentId);
-          }
-          return true;
-        }));
-      }, 300);
-    } catch (error) {
-      console.error('Error deleting comment:', error);
+    const result = await deleteComment(commentId);
+    if (!result.success) {
+      console.error('Failed to delete comment:', result.error);
     }
-  }, []);
+  }, [deleteComment]);
 
-  // ✅ OPTIMIZED: Memoized sort handler
+  // ENHANCED: Real sort handler
   const handleSortChange = useCallback((newSortBy) => {
-    setSortBy(newSortBy);
-    let sortedComments = [...comments];
-    switch (newSortBy) {
-      case 'popular':
-        sortedComments.sort((a, b) => (b.likes || 0) - (a.likes || 0));
-        break;
-      case 'oldest':
-        sortedComments.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-        break;
-      default: // newest
-        sortedComments.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    }
-    setComments(sortedComments);
-  }, [comments]);
+    sortComments(newSortBy);
+  }, [sortComments]);
 
-  // ✅ OPTIMIZED: Memoized key press handler
+  // PRESERVED: Memoized key press handler
   const handleKeyPress = useCallback((e) => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
@@ -628,7 +447,7 @@ const EnhancedCommentsModal = React.memo(({ isOpen, onClose, postId, postAuthor 
         </div>
       </div>
 
-      {/* Custom Animations */}
+      {/* PRESERVED: Custom Animations */}
       <style jsx>{`
         @keyframes slideIn {
           from {
@@ -666,7 +485,7 @@ const EnhancedCommentsModal = React.memo(({ isOpen, onClose, postId, postAuthor 
     </div>
   );
 }, (prevProps, nextProps) => {
-  // ✅ OPTIMIZED: Custom comparison for modal
+  // PRESERVED: Custom comparison for modal
   return (
     prevProps.isOpen === nextProps.isOpen &&
     prevProps.postId === nextProps.postId &&
