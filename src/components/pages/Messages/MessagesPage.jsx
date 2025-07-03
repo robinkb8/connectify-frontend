@@ -1,114 +1,92 @@
-// ===== src/components/pages/Messages/MessagesPage.jsx - COMPLETE CONTACTS LIST =====
+// src/components/pages/Messages/MessagesPage.jsx - UPDATED WITH REAL API INTEGRATION
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Search, 
   Plus,
   Send,
-  MoreHorizontal
+  MoreHorizontal,
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react';
 import { Button } from '../../ui/Button/Button';
+import useMessaging from '../../../hooks/useMessaging';
 
-// ✅ Keep ALL your original mock data
-const mockChats = [
-  {
-    id: "1",
-    user: {
-      id: "1",
-      name: "Sarah Johnson",
-      username: "sarahj",
-      avatar: null,
-      isOnline: true,
-      lastSeen: "Online"
-    },
-    lastMessage: {
-      text: "That sounds great! When do you want to start?",
-      timestamp: "2:30 PM",
-      isOwn: false,
-      isRead: true
-    },
-    unreadCount: 2,
-    isPinned: false
-  },
-  {
-    id: "2", 
-    user: {
-      id: "2",
-      name: "Mike Chen",
-      username: "mikechen",
-      avatar: null,
-      isOnline: false,
-      lastSeen: "5 min ago"
-    },
-    lastMessage: {
-      text: "Thanks for the help earlier!",
-      timestamp: "1:45 PM", 
-      isOwn: true,
-      isRead: true
-    },
-    unreadCount: 0,
-    isPinned: true
-  },
-  {
-    id: "3",
-    user: {
-      id: "3", 
-      name: "Emma Davis",
-      username: "emmad",
-      avatar: null,
-      isOnline: true,
-      lastSeen: "Online"
-    },
-    lastMessage: {
-      text: "Can you send me the files?",
-      timestamp: "12:20 PM",
-      isOwn: false, 
-      isRead: false
-    },
-    unreadCount: 1,
-    isPinned: false
-  }
-];
-
-// ✅ Enhanced Chat Item Component - Preserved all original styling
+// Enhanced Chat Item Component with Real Data
 const ChatItem = ({ chat, onClick, isMobile = false }) => {
-  const { user, lastMessage, unreadCount, isPinned } = chat;
+  const { display_name, participants, last_message, unread_count, other_participant } = chat;
+
+  // Get the display user (for direct messages, use other_participant)
+  const displayUser = other_participant || {
+    name: display_name || 'Unknown User',
+    username: 'unknown',
+    avatar: null
+  };
+
+  // Format timestamp
+  const formatTime = (timestamp) => {
+    if (!timestamp) return '';
+    
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInHours = (now - date) / (1000 * 60 * 60);
+
+    if (diffInHours < 24) {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else if (diffInHours < 168) {
+      return date.toLocaleDateString([], { weekday: 'short' });
+    } else {
+      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    }
+  };
+
+  // Get avatar letter
+  const getAvatarLetter = () => {
+    const name = displayUser.full_name || displayUser.name || displayUser.username || 'U';
+    return name.charAt(0).toUpperCase();
+  };
 
   return (
     <div 
       onClick={() => onClick(chat.id)}
       className="flex items-center space-x-3 p-3 sm:p-4 cursor-pointer transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-800 border-b border-gray-100 dark:border-gray-700 last:border-b-0 active:scale-[0.98]"
     >
-      {/* Avatar with all original styling */}
+      {/* Avatar with original styling */}
       <div className="relative flex-shrink-0">
         <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-          <span className="text-white font-bold text-sm sm:text-base">
-            {user.name.charAt(0).toUpperCase()}
-          </span>
+          {displayUser.avatar ? (
+            <img 
+              src={displayUser.avatar} 
+              alt={displayUser.full_name || displayUser.name || displayUser.username}
+              className="w-full h-full rounded-full object-cover"
+            />
+          ) : (
+            <span className="text-white font-bold text-sm sm:text-base">
+              {getAvatarLetter()}
+            </span>
+          )}
         </div>
-        {user.isOnline && (
-          <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full"></div>
-        )}
+        {/* Online status - placeholder for future online status feature */}
+        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-gray-400 border-2 border-white dark:border-gray-800 rounded-full"></div>
       </div>
 
-      {/* Content with all original styling and responsive design */}
+      {/* Content with original styling and responsive design */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2 min-w-0">
             <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base truncate">
-              {user.name}
+              {displayUser.full_name || displayUser.name || displayUser.username}
             </h3>
-            {isPinned && (
-              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full flex-shrink-0"></div>
-            )}
           </div>
           <div className="flex items-center space-x-2 flex-shrink-0">
-            <span className="text-xs text-gray-500 dark:text-gray-400">
-              {lastMessage.timestamp}
-            </span>
-            {unreadCount > 0 && (
+            {last_message && (
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                {formatTime(last_message.created_at)}
+              </span>
+            )}
+            {unread_count > 0 && (
               <div className="w-5 h-5 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center font-medium animate-pulse">
-                {unreadCount}
+                {unread_count}
               </div>
             )}
           </div>
@@ -116,9 +94,15 @@ const ChatItem = ({ chat, onClick, isMobile = false }) => {
         
         <div className="flex items-center justify-between mt-1">
           <p className="text-sm text-gray-500 dark:text-gray-400 truncate flex-1 pr-2">
-            {lastMessage.isOwn ? 'You: ' : ''}{lastMessage.text}
+            {last_message ? (
+              <>
+                {last_message.is_own_message ? 'You: ' : ''}{last_message.content || 'Media message'}
+              </>
+            ) : (
+              'No messages yet'
+            )}
           </p>
-          {!lastMessage.isRead && !lastMessage.isOwn && (
+          {last_message && !last_message.is_own_message && last_message.delivery_status?.status !== 'read' && (
             <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 animate-pulse"></div>
           )}
         </div>
@@ -127,7 +111,47 @@ const ChatItem = ({ chat, onClick, isMobile = false }) => {
   );
 };
 
-// ✅ Enhanced Empty State - Preserved original functionality
+// Error State Component
+const ErrorState = ({ error, onRetry }) => (
+  <div className="flex flex-col items-center justify-center h-full text-center p-6">
+    <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mb-4">
+      <AlertCircle className="w-8 h-8 text-red-500" />
+    </div>
+    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+      Something went wrong
+    </h3>
+    <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-sm">
+      {error || 'Failed to load conversations. Please try again.'}
+    </p>
+    <Button 
+      onClick={onRetry}
+      className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95 flex items-center space-x-2"
+    >
+      <RefreshCw className="w-4 h-4" />
+      <span>Try Again</span>
+    </Button>
+  </div>
+);
+
+// Loading State Component
+const LoadingState = () => (
+  <div className="p-4">
+    {[...Array(6)].map((_, index) => (
+      <div key={index} className="flex items-center space-x-3 p-4 border-b border-gray-100 dark:border-gray-700 animate-pulse">
+        <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+        <div className="flex-1">
+          <div className="flex items-center justify-between mb-2">
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
+            <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-12"></div>
+          </div>
+          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
+// Enhanced Empty State - Preserved original functionality
 const NoMessagesEmpty = ({ onFindPeople }) => (
   <div className="flex flex-col items-center justify-center h-full text-center p-6">
     <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4 animate-pulse">
@@ -148,14 +172,23 @@ const NoMessagesEmpty = ({ onFindPeople }) => (
   </div>
 );
 
-// ✅ Main Messages Component - ENHANCED CONTACTS LIST ONLY
+// Main Messages Component - UPDATED WITH REAL API
 function MessagesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isMobile, setIsMobile] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  // ✅ Preserve responsive detection from original
+  // Use the messaging hook
+  const {
+    chats,
+    isLoading,
+    error,
+    loadChats,
+    selectChat,
+    clearError
+  } = useMessaging();
+
+  // Preserve responsive detection from original
   useEffect(() => {
     const checkMobile = () => {
       const mobile = window.innerWidth < 768;
@@ -167,45 +200,69 @@ function MessagesPage() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // ✅ Enhanced chat selection with loading state
-  const handleChatSelect = (chatId) => {
-    setIsLoading(true);
-    
-    // Small delay for smooth transition feedback
-    setTimeout(() => {
+  // Enhanced chat selection with real API
+  const handleChatSelect = async (chatId) => {
+    try {
+      // Navigate to chat immediately for responsive feel
       navigate(`/messages/${chatId}`);
-      setIsLoading(false);
-    }, 150);
+      
+      // Select chat in background (this will be handled by ChatView)
+      // selectChat(chatId);
+    } catch (error) {
+      console.error('Error selecting chat:', error);
+    }
   };
 
-  // ✅ Handle find people - Navigate to search
+  // Handle find people - Navigate to search
   const handleFindPeople = () => {
     navigate('/search');
   };
 
-  // ✅ Handle new conversation
+  // Handle new conversation
   const handleNewConversation = () => {
-    navigate('/search'); // Or open a modal to select users
+    navigate('/search');
   };
 
-  // ✅ Filter chats with enhanced search
-  const filteredChats = mockChats.filter(chat =>
-    chat.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    chat.user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    chat.lastMessage.text.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Handle retry on error
+  const handleRetry = () => {
+    clearError();
+    loadChats();
+  };
 
-  // ✅ Sort chats: pinned first, then by unread, then by timestamp
+  // Filter chats with enhanced search
+  const filteredChats = chats.filter(chat => {
+    if (!searchQuery) return true;
+    
+    const searchLower = searchQuery.toLowerCase();
+    const displayName = chat.display_name || '';
+    const otherUser = chat.other_participant || {};
+    const lastMessage = chat.last_message || {};
+    
+    return (
+      displayName.toLowerCase().includes(searchLower) ||
+      (otherUser.username || '').toLowerCase().includes(searchLower) ||
+      (otherUser.full_name || '').toLowerCase().includes(searchLower) ||
+      (lastMessage.content || '').toLowerCase().includes(searchLower)
+    );
+  });
+
+  // Sort chats: unread first, then by last activity
   const sortedChats = [...filteredChats].sort((a, b) => {
-    if (a.isPinned !== b.isPinned) return b.isPinned - a.isPinned;
-    if (a.unreadCount !== b.unreadCount) return b.unreadCount - a.unreadCount;
-    return b.lastMessage.timestamp.localeCompare(a.lastMessage.timestamp);
+    // First, sort by unread count (unread messages first)
+    if (a.unread_count !== b.unread_count) {
+      return b.unread_count - a.unread_count;
+    }
+    
+    // Then sort by last activity (most recent first)
+    const aTime = a.last_activity || a.created_at || 0;
+    const bTime = b.last_activity || b.created_at || 0;
+    return new Date(bTime) - new Date(aTime);
   });
 
   return (
     <div className="h-full flex flex-col bg-white dark:bg-gray-900">
       
-      {/* ✅ Enhanced Header with all original functionality */}
+      {/* Enhanced Header with all original functionality */}
       <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
         <div className="flex items-center justify-between mb-4 sm:mb-6">
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
@@ -218,8 +275,19 @@ function MessagesPage() {
               className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200 hover:scale-105"
               onClick={handleNewConversation}
               title="Start new conversation"
+              disabled={isLoading}
             >
               <Plus className="w-5 h-5 sm:w-6 sm:h-6" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200 hover:scale-105"
+              onClick={handleRetry}
+              title="Refresh conversations"
+              disabled={isLoading}
+            >
+              <RefreshCw className={`w-5 h-5 sm:w-6 sm:h-6 ${isLoading ? 'animate-spin' : ''}`} />
             </Button>
             <Button 
               variant="ghost" 
@@ -232,7 +300,7 @@ function MessagesPage() {
           </div>
         </div>
         
-        {/* ✅ Enhanced Search with all original styling */}
+        {/* Enhanced Search with all original styling */}
         <div className="relative">
           <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 transition-colors" />
           <input
@@ -241,6 +309,7 @@ function MessagesPage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 bg-gray-100 dark:bg-gray-800 border-0 rounded-xl text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 text-sm sm:text-base"
+            disabled={isLoading}
           />
           {searchQuery && (
             <button
@@ -252,23 +321,28 @@ function MessagesPage() {
           )}
         </div>
 
-        {/* ✅ Results counter */}
-        {searchQuery && (
+        {/* Results counter */}
+        {searchQuery && !isLoading && (
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
             {filteredChats.length} {filteredChats.length === 1 ? 'conversation' : 'conversations'} found
           </p>
         )}
-      </div>
 
-      {/* ✅ Enhanced Chats List with all original functionality */}
-      <div className="flex-1 overflow-y-auto">
-        {isLoading && (
-          <div className="absolute inset-0 bg-white/50 dark:bg-gray-900/50 flex items-center justify-center z-10">
-            <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        {/* Error message */}
+        {error && (
+          <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
           </div>
         )}
-        
-        {sortedChats.length > 0 ? (
+      </div>
+
+      {/* Enhanced Chats List with real API data */}
+      <div className="flex-1 overflow-y-auto">
+        {isLoading && chats.length === 0 ? (
+          <LoadingState />
+        ) : error && chats.length === 0 ? (
+          <ErrorState error={error} onRetry={handleRetry} />
+        ) : sortedChats.length > 0 ? (
           <div className="divide-y divide-gray-100 dark:divide-gray-700">
             {sortedChats.map((chat, index) => (
               <div
@@ -308,7 +382,7 @@ function MessagesPage() {
         )}
       </div>
 
-      {/* ✅ Preserve all original animation styles */}
+      {/* Preserve all original animation styles */}
       <style jsx>{`
         @keyframes slideUp {
           from {
