@@ -1,4 +1,4 @@
-// components/pages/Profile/UserProfile.jsx - Enhanced with Real API Integration
+// components/pages/Profile/UserProfile.jsx - FIXED MESSAGE BUTTON
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Settings, MapPin, Calendar, LinkIcon, Edit3, MoreHorizontal, MessageCircle } from "lucide-react";
@@ -10,6 +10,7 @@ import { ResponsiveContainer } from '../../layout/ResponsiveLayout';
 import { useProfile } from '../../../hooks/useProfile';
 import { useAuth } from '../../../contexts/AuthContext';
 import { postsAPI } from '../../../utils/api';
+import useMessaging from '../../../hooks/useMessaging';
 import EditProfileModal from './EditProfileModal';
 
 function UserProfile({ isOwnProfile: propIsOwnProfile, onBack, userId: propUserId }) {
@@ -23,6 +24,10 @@ function UserProfile({ isOwnProfile: propIsOwnProfile, onBack, userId: propUserI
   const [userPosts, setUserPosts] = useState([]);
   const [postsLoading, setPostsLoading] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [isCreatingChat, setIsCreatingChat] = useState(false);
+
+  // Use messaging hook for chat creation
+  const { createChat } = useMessaging();
 
   // Determine which user profile to show
   const targetUsername = username || currentUser?.username;
@@ -71,11 +76,37 @@ function UserProfile({ isOwnProfile: propIsOwnProfile, onBack, userId: propUserI
     console.log(`User ${userId} ${isFollowing ? 'followed' : 'unfollowed'}, new count: ${followerCount}`);
   };
 
-  // Handle Message
-  const handleMessage = () => {
+  // FIXED: Handle Message - Create/Find Chat and Navigate to Chat ID
+  const handleMessage = async () => {
+    if (!profile?.id || isCreatingChat) return;
+    
     console.log('💬 Message button clicked!');
-    if (profile?.id) {
-      navigate(`/messages/${profile.id}`);
+    console.log('Target user ID:', profile.id);
+    console.log('Current user ID:', currentUser?.id);
+    
+    setIsCreatingChat(true);
+    
+    try {
+      // Create a direct message chat with the target user
+      // participantIds should contain the target user ID (current user is added automatically)
+      const newChat = await createChat([profile.id], false, null);
+      
+      console.log('✅ Chat created/found:', newChat);
+      console.log('🔍 Chat ID:', newChat.id);
+      console.log('🔍 Chat keys:', Object.keys(newChat));
+      console.log('🔍 Full chat object:', JSON.stringify(newChat, null, 2));
+      
+      // Navigate to the chat using the Chat ID (UUID)
+      navigate(`/messages/${newChat.id}`);
+      
+    } catch (error) {
+      console.error('❌ Error creating/finding chat:', error);
+      
+      // Show user-friendly error message
+      alert('Failed to start conversation. Please try again.');
+      
+    } finally {
+      setIsCreatingChat(false);
     }
   };
 
@@ -282,14 +313,24 @@ function UserProfile({ isOwnProfile: propIsOwnProfile, onBack, userId: propUserI
                           size="default"
                         />
 
-                        {/* Message Button */}
+                        {/* FIXED: Message Button with Chat Creation */}
                         <Button 
                           onClick={handleMessage}
+                          disabled={isCreatingChat}
                           variant="outline" 
-                          className="flex-1 py-3 border-blue-300 dark:border-blue-400 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-400 dark:hover:border-blue-300 transition-all duration-200 font-semibold"
+                          className="flex-1 py-3 border-blue-300 dark:border-blue-400 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-400 dark:hover:border-blue-300 transition-all duration-200 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          <MessageCircle className="w-4 h-4 mr-2" />
-                          Message
+                          {isCreatingChat ? (
+                            <>
+                              <div className="w-4 h-4 mr-2 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                              Starting...
+                            </>
+                          ) : (
+                            <>
+                              <MessageCircle className="w-4 h-4 mr-2" />
+                              Message
+                            </>
+                          )}
                         </Button>
                       </>
                     )}
