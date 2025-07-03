@@ -188,6 +188,21 @@ function MessagesPage() {
     clearError
   } = useMessaging();
 
+
+    useEffect(() => {
+    console.log('🔍 DEBUG MessagesPage Chats:');
+    console.log('- Number of chats:', chats.length);
+    
+    chats.forEach((chat, index) => {
+      console.log(`Chat ${index}:`, {
+        id: chat.id,
+        idType: typeof chat.id,
+        keys: Object.keys(chat),
+        fullChat: chat
+      });
+    });
+  }, [chats]);
+
   // Preserve responsive detection from original
   useEffect(() => {
     const checkMobile = () => {
@@ -202,16 +217,18 @@ function MessagesPage() {
 
   // Enhanced chat selection with real API
   const handleChatSelect = async (chatId) => {
-    try {
-      // Navigate to chat immediately for responsive feel
-      navigate(`/messages/${chatId}`);
-      
-      // Select chat in background (this will be handled by ChatView)
-      // selectChat(chatId);
-    } catch (error) {
-      console.error('Error selecting chat:', error);
-    }
-  };
+  console.log('🔍 DEBUG: Chat selected:', {
+    chatId: chatId,
+    idType: typeof chatId,
+    allChats: chats
+  });
+  
+  try {
+    navigate(`/messages/${chatId}`);
+  } catch (error) {
+    console.error('Error selecting chat:', error);
+  }
+};
 
   // Handle find people - Navigate to search
   const handleFindPeople = () => {
