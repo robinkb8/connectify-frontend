@@ -1,4 +1,4 @@
-// ===== src/components/layout/MobileBottomNav.jsx - MAIN NAVIGATION =====
+// src/components/layout/MobileBottomNav.jsx - RESTORED TO ORIGINAL STRUCTURE
 import React from 'react';
 import { 
   Home, 
@@ -8,7 +8,7 @@ import {
   User
 } from 'lucide-react';
 
-// ✅ Mobile Bottom Navigation - PRIMARY NAVIGATION (All Devices)
+// Mobile Bottom Navigation - ORIGINAL STRUCTURE PRESERVED
 const MobileBottomNav = ({ activeTab, onTabChange, onCreatePost }) => {
   const navItems = [
     { id: 'home', icon: Home, label: 'Home' },

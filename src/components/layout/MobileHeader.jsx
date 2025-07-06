@@ -1,4 +1,4 @@
-// ===== src/components/layout/MobileHeader.jsx - HAMBURGER FOR SECONDARY ACTIONS =====
+// src/components/layout/MobileHeader.jsx - With Working Notifications
 import React, { useState } from 'react';
 import { 
   ChevronLeft, 
@@ -14,8 +14,10 @@ import {
   Moon,
   Sun
 } from 'lucide-react';
+import useNotifications from '../../hooks/useNotifications';
+import NotificationPanel from '../ui/NotificationPanel/NotificationPanel';
 
-// ✅ Mobile Header Component - Hamburger for Secondary Actions Only
+// Mobile Header Component with Working Notifications
 const MobileHeader = ({ 
   title, 
   showBack, 
@@ -28,6 +30,13 @@ const MobileHeader = ({
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  // Get unread notification count
+  const { unreadCount } = useNotifications({
+    autoLoad: true,
+    autoConnect: true
+  });
 
   const handleMenuToggle = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -44,7 +53,22 @@ const MobileHeader = ({
     // Add your theme toggle logic here
   };
 
-  // ✅ SECONDARY ACTIONS ONLY (like your original design)
+  const handleNotificationClick = () => {
+    setShowNotifications(!showNotifications);
+  };
+
+  const handleNotificationClose = () => {
+    setShowNotifications(false);
+  };
+
+  const handleNotificationNavigate = (url) => {
+    // Handle navigation based on notification
+    console.log('Navigate to:', url);
+    // You can add your navigation logic here
+    setShowNotifications(false);
+  };
+
+  // SECONDARY ACTIONS ONLY (like your original design)
   const menuItems = [
     { 
       id: 'theme', 
@@ -96,10 +120,17 @@ const MobileHeader = ({
           <div className="flex items-center space-x-2 flex-shrink-0">
             {actions || (
               <>
-                <button className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative">
+                <button 
+                  onClick={handleNotificationClick}
+                  className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative"
+                >
                   <Bell className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-                  {/* Notification dot */}
-                  <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></div>
+                  {/* Unread count badge */}
+                  {unreadCount > 0 && (
+                    <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </div>
+                  )}
                 </button>
               </>
             )}
@@ -107,7 +138,14 @@ const MobileHeader = ({
         </div>
       </div>
 
-      {/* ✅ HAMBURGER MENU OVERLAY - SECONDARY ACTIONS */}
+      {/* Notification Panel */}
+      <NotificationPanel
+        isOpen={showNotifications}
+        onClose={handleNotificationClose}
+        onNavigate={handleNotificationNavigate}
+      />
+
+      {/* HAMBURGER MENU OVERLAY - SECONDARY ACTIONS */}
       {isMenuOpen && (
         <div className="fixed inset-0 z-50">
           {/* Backdrop */}

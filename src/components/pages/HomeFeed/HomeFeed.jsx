@@ -1,6 +1,6 @@
-// ===== src/components/pages/HomeFeed/HomeFeed.jsx - ENHANCED WITH HOOKS =====
+// src/components/pages/HomeFeed/HomeFeed.jsx - With Notification Button
 import React, { useState, useCallback } from 'react';
-import { Search } from "lucide-react";
+import { Search, Bell } from "lucide-react";
 import { Input } from '../../ui/Input/Input';
 
 // PRESERVED: Import existing components
@@ -8,12 +8,14 @@ import PostCard from './components/PostCard';
 import SimpleCreatePost from './components/SimpleCreatePost';
 import { NoPostsEmpty, LoadingState, LoadingErrorEmpty } from '../../ui/EmptyState/EmptyState';
 import EnhancedCommentsModal from '../../modals/EnhancedCommentsModal';
+import NotificationPanel from '../../ui/NotificationPanel/NotificationPanel';
 
 // ENHANCED: Import new hooks
 import usePosts from '../../../hooks/usePosts';
 import useRealTime from '../../../hooks/useRealTime';
+import useNotifications from '../../../hooks/useNotifications';
 
-// ENHANCED: Main HomeFeed Component with improved state management
+// ENHANCED: Main HomeFeed Component with notifications
 function HomeFeed() {
   // ENHANCED: Use posts hook instead of manual state management
   const {
@@ -33,10 +35,19 @@ function HomeFeed() {
     isInitialLoading
   } = usePosts({ autoLoad: true });
 
+  // NEW: Notifications hook
+  const { unreadCount } = useNotifications({
+    autoLoad: true,
+    autoConnect: true
+  });
+
   // PRESERVED: Local state for UI interactions
   const [searchQuery, setSearchQuery] = useState("");
   const [showComments, setShowComments] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
+  
+  // NEW: Notification panel state
+  const [showNotifications, setShowNotifications] = useState(false);
 
   // ENHANCED: Real-time updates integration
   const realTime = useRealTime({
@@ -65,6 +76,20 @@ function HomeFeed() {
     // Could navigate to detailed post view or expand inline
   }, []);
 
+  // NEW: Notification handlers
+  const handleNotificationClick = () => {
+    setShowNotifications(!showNotifications);
+  };
+
+  const handleNotificationClose = () => {
+    setShowNotifications(false);
+  };
+
+  const handleNotificationNavigate = (url) => {
+    console.log('Navigate to:', url);
+    setShowNotifications(false);
+  };
+
   // ENHANCED: Stats update handler with real-time sync
   const handleStatsUpdate = useCallback((postId, updates) => {
     updatePostStats(postId, updates);
@@ -90,16 +115,32 @@ function HomeFeed() {
   // PRESERVED: Main render with enhanced loading states
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-      {/* ENHANCED: Search Input */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-        <Input
-          type="text"
-          placeholder="Search posts..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
-        />
+      {/* ENHANCED: Search Input with Notification Button */}
+      <div className="flex items-center space-x-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            type="text"
+            placeholder="Search posts..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+          />
+        </div>
+        
+        {/* NEW: Notification Button */}
+        <button
+          onClick={handleNotificationClick}
+          className="relative p-3 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        >
+          <Bell className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+          {/* Unread count badge */}
+          {unreadCount > 0 && (
+            <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </div>
+          )}
+        </button>
       </div>
 
       {/* PRESERVED: Create Post Component (commented out as before) */}
@@ -204,6 +245,13 @@ function HomeFeed() {
           </button>
         </div>
       )}
+
+      {/* NEW: Notification Panel */}
+      <NotificationPanel
+        isOpen={showNotifications}
+        onClose={handleNotificationClose}
+        onNavigate={handleNotificationNavigate}
+      />
 
       {/* PRESERVED: Enhanced Comments Modal */}
       <EnhancedCommentsModal

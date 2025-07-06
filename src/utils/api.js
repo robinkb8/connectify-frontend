@@ -401,3 +401,5 @@ export { profilesAPI };
 
 // Export default API request function (backward compatibility) - PRESERVED
 export default apiRequest;
+
+export { notificationsAPI } from './api/notifications';

@@ -1,4 +1,4 @@
-// ===== src/components/layout/DesktopSidebar.jsx - FULLY FUNCTIONAL =====
+// src/components/layout/DesktopSidebar.jsx - RESTORED TO ORIGINAL STRUCTURE
 import React, { useState } from 'react';
 import { 
   Settings, 
@@ -14,7 +14,7 @@ import {
   Shield
 } from 'lucide-react';
 
-// ✅ Desktop Sidebar with Working Buttons
+// Desktop Sidebar - ORIGINAL STRUCTURE PRESERVED
 const DesktopSidebar = ({ 
   activeTab, 
   onTabChange, 
@@ -25,7 +25,7 @@ const DesktopSidebar = ({
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  // ✅ Handle sidebar item clicks
+  // Handle sidebar item clicks
   const handleItemClick = (item) => {
     console.log('Sidebar item clicked:', item.id);
     
@@ -43,7 +43,7 @@ const DesktopSidebar = ({
     }
   };
 
-  // ✅ Sidebar Items with proper functionality
+  // Sidebar Items - ORIGINAL STRUCTURE
   const secondaryItems = [
     { 
       id: 'upgrade', 
@@ -79,7 +79,7 @@ const DesktopSidebar = ({
     }
   ];
 
-  // ✅ User stats (mock data)
+  // User stats (mock data)
   const userStats = {
     posts: 42,
     followers: 1.2,
@@ -91,7 +91,7 @@ const DesktopSidebar = ({
       isCollapsed ? 'w-20' : 'w-80'
     }`}>
       
-      {/* ✅ Header */}
+      {/* Header */}
       <div className="p-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
           {!isCollapsed && (
@@ -109,10 +109,10 @@ const DesktopSidebar = ({
         </div>
       </div>
 
-      {/* ✅ Content */}
+      {/* Content */}
       <div className="flex-1 flex flex-col">
         
-        {/* ✅ User Profile Section */}
+        {/* User Profile Section */}
         {user && (
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
             <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'} p-4 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer`}>
@@ -146,7 +146,7 @@ const DesktopSidebar = ({
           </div>
         )}
 
-        {/* ✅ Navigation Items */}
+        {/* Navigation Items - ORIGINAL STRUCTURE */}
         <div className="flex-1 p-4">
           <div className="space-y-2">
             {secondaryItems.map((item) => {
@@ -191,7 +191,7 @@ const DesktopSidebar = ({
           </div>
         </div>
 
-        {/* ✅ Footer */}
+        {/* Footer */}
         {!isCollapsed && (
           <div className="p-4 border-t border-gray-200 dark:border-gray-700">
             <div className="text-center">
