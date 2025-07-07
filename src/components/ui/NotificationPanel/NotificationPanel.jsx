@@ -1,4 +1,4 @@
-// src/components/ui/NotificationPanel/NotificationPanel.jsx - Updated with Real Data
+// src/components/ui/NotificationPanel/NotificationPanel.jsx - Auto Mark as Read
 import React, { useEffect } from 'react';
 import { 
   Heart, 
@@ -54,9 +54,11 @@ const NotificationIcon = ({ type }) => {
 // Individual Notification Item
 const NotificationItem = ({ notification, onMarkAsRead, onAction }) => {
   const handleClick = () => {
+    // Mark as read if not already read
     if (!notification.is_read) {
       onMarkAsRead(notification.id);
     }
+    
     if (onAction && notification.content_object_data) {
       // Navigate based on notification type
       const { content_object_data, type } = notification;
@@ -203,7 +205,7 @@ const NotificationItem = ({ notification, onMarkAsRead, onAction }) => {
           </div>
         </div>
 
-        {/* Action Button */}
+        {/* Action Button - Only show for unread notifications */}
         <div className="flex-shrink-0">
           {!notification.is_read && (
             <Button
@@ -243,6 +245,18 @@ function NotificationPanel({ isOpen, onClose, onNavigate }) {
     autoLoad: true,
     autoConnect: true
   });
+
+  // AUTO-MARK ALL UNREAD AS READ WHEN PANEL OPENS
+  useEffect(() => {
+    if (isOpen && unreadCount > 0) {
+      // Add a small delay to ensure smooth UX
+      const timer = setTimeout(() => {
+        markAllAsRead();
+      }, 800); // 800ms delay allows user to see notifications before they're marked as read
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, unreadCount, markAllAsRead]);
 
   // Refresh notifications when panel opens
   useEffect(() => {
@@ -333,7 +347,7 @@ function NotificationPanel({ isOpen, onClose, onNavigate }) {
             </button>
           </div>
 
-          {/* Mark All Read Button */}
+          {/* Manual Mark All Read Button (optional) */}
           {unreadCount > 0 && (
             <Button
               variant="ghost"
