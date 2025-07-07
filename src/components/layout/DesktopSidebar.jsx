@@ -1,4 +1,4 @@
-// src/components/layout/DesktopSidebar.jsx - RESTORED TO ORIGINAL STRUCTURE
+// src/components/layout/DesktopSidebar.jsx - ENHANCED WITH DYNAMIC USER STATS
 import React, { useState } from 'react';
 import { 
   Settings, 
@@ -14,7 +14,7 @@ import {
   Shield
 } from 'lucide-react';
 
-// Desktop Sidebar - ORIGINAL STRUCTURE PRESERVED
+// Desktop Sidebar - ORIGINAL STRUCTURE PRESERVED + DYNAMIC STATS
 const DesktopSidebar = ({ 
   activeTab, 
   onTabChange, 
@@ -79,11 +79,36 @@ const DesktopSidebar = ({
     }
   ];
 
-  // User stats (mock data)
-  const userStats = {
-    posts: 42,
-    followers: 1.2,
-    following: 234
+  // ✅ ENHANCED - Dynamic user stats from backend
+  const getUserStats = () => {
+    if (!user || !user.profile) {
+      // Fallback to default values if no user data
+      return {
+        posts: 0,
+        followers: 0,
+        following: 0
+      };
+    }
+
+    const profile = user.profile;
+    
+    return {
+      posts: profile.posts_count || 0,
+      followers: profile.followers_count || 0,
+      following: profile.following_count || 0
+    };
+  };
+
+  const userStats = getUserStats();
+
+  // ✅ ENHANCED - Helper function to format numbers
+  const formatCount = (count) => {
+    if (count >= 1000000) {
+      return (count / 1000000).toFixed(1) + 'M';
+    } else if (count >= 1000) {
+      return (count / 1000).toFixed(1) + 'k';
+    }
+    return count.toString();
   };
 
   return (
@@ -112,32 +137,40 @@ const DesktopSidebar = ({
       {/* Content */}
       <div className="flex-1 flex flex-col">
         
-        {/* User Profile Section */}
+        {/* User Profile Section - ENHANCED WITH DYNAMIC DATA */}
         {user && (
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
             <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'} p-4 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer`}>
               
-              {/* Avatar */}
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-white font-bold text-lg">
-                  {user.name?.charAt(0)?.toUpperCase() || 'U'}
-                </span>
+              {/* Avatar - ENHANCED */}
+              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+                {user.profile?.avatar ? (
+                  <img 
+                    src={user.profile.avatar} 
+                    alt={user.full_name || user.username}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-white font-bold text-lg">
+                    {(user.full_name || user.username)?.charAt(0)?.toUpperCase() || 'U'}
+                  </span>
+                )}
               </div>
               
-              {/* User Info */}
+              {/* User Info - ENHANCED WITH REAL DATA */}
               {!isCollapsed && (
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-gray-900 dark:text-white truncate">
-                    {user.name || 'User'}
+                    {user.full_name || user.username || 'User'}
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
                     @{user.username || 'username'}
                   </p>
                   
-                  {/* Quick Stats */}
+                  {/* Dynamic Stats - REAL DATA FROM BACKEND */}
                   <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
                     <span>{userStats.posts} posts</span>
-                    <span>{userStats.followers}k followers</span>
+                    <span>{formatCount(userStats.followers)} followers</span>
                     <span>{userStats.following} following</span>
                   </div>
                 </div>
@@ -146,7 +179,7 @@ const DesktopSidebar = ({
           </div>
         )}
 
-        {/* Navigation Items - ORIGINAL STRUCTURE */}
+        {/* Navigation Items - ORIGINAL STRUCTURE PRESERVED */}
         <div className="flex-1 p-4">
           <div className="space-y-2">
             {secondaryItems.map((item) => {

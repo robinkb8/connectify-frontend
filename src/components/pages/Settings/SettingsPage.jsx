@@ -1,6 +1,5 @@
- 
-// ===== src/components/pages/Settings/SettingsPage.jsx =====
-import React, { useState } from 'react';
+// ===== src/components/pages/Settings/SettingsPage.jsx - ENHANCED WITH REAL DATA =====
+import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft,
   User,
@@ -21,12 +20,15 @@ import {
   Lock,
   Mail,
   Phone,
-  AlertTriangle
+  AlertTriangle,
+  Loader2,
+  Upload
 } from 'lucide-react';
 import { Button } from '../../ui/Button/Button';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useAuth } from '../../../contexts/AuthContext'; // ✅ ADDED
 
-// ✅ Settings Categories
+// ✅ Settings Categories - PRESERVED
 const SETTINGS_CATEGORIES = {
   ACCOUNT: 'account',
   PRIVACY: 'privacy',
@@ -36,24 +38,12 @@ const SETTINGS_CATEGORIES = {
   SUPPORT: 'support'
 };
 
-// ✅ Mock User Data
-const mockUserData = {
-  name: 'John Doe',
-  username: 'johndoe',
-  email: 'john.doe@example.com',
-  phone: '+1 (555) 123-4567',
-  bio: 'Software engineer who loves building amazing apps! 🚀',
-  avatar: null,
-  isVerified: false,
-  joinDate: 'March 2024'
-};
-
-// ✅ Settings Section Component
+// ✅ Settings Section Component - PRESERVED
 const SettingsSection = ({ title, children, icon: Icon }) => (
   <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
     <div className="p-6 border-b border-gray-200 dark:border-gray-700">
       <div className="flex items-center space-x-3">
-        {Icon && <Icon className="w-5 h-5 text-gray-600 dark:text-gray-400" />}
+        {Icon && <Icon className="w-5 -5 text-gray-600 dark:text-gray-400" />}
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{title}</h2>
       </div>
     </div>
@@ -63,7 +53,7 @@ const SettingsSection = ({ title, children, icon: Icon }) => (
   </div>
 );
 
-// ✅ Settings Item Component
+// ✅ Settings Item Component - PRESERVED
 const SettingsItem = ({ 
   icon: Icon, 
   title, 
@@ -104,7 +94,7 @@ const SettingsItem = ({
   </div>
 );
 
-// ✅ Toggle Switch Component
+// ✅ Toggle Switch Component - PRESERVED
 const ToggleSwitch = ({ enabled, onChange, disabled = false }) => (
   <button
     onClick={() => !disabled && onChange(!enabled)}
@@ -121,11 +111,31 @@ const ToggleSwitch = ({ enabled, onChange, disabled = false }) => (
   </button>
 );
 
-// ✅ Main Settings Page Component
+// ✅ ENHANCED - Main Settings Page Component with Real Data Integration
 function SettingsPage({ onBack, onNavigate }) {
   const { theme, toggleTheme } = useTheme();
+  const { user, updateProfile, uploadAvatar } = useAuth(); // ✅ REAL USER DATA
+  
   const [activeCategory, setActiveCategory] = useState(SETTINGS_CATEGORIES.ACCOUNT);
-  const [userData, setUserData] = useState(mockUserData);
+  
+  // ✅ ENHANCED - Use real user data instead of mock data
+  const [userData, setUserData] = useState({
+    name: '',
+    username: '',
+    email: '',
+    phone: '',
+    bio: '',
+    avatar: null,
+    joinDate: ''
+  });
+  
+  // ✅ NEW - Loading and error states for profile updates
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [updateError, setUpdateError] = useState(null);
+  const [updateSuccess, setUpdateSuccess] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  
+  // ✅ PRESERVED - Notification states
   const [notifications, setNotifications] = useState({
     likes: true,
     comments: true,
@@ -137,6 +147,8 @@ function SettingsPage({ onBack, onNavigate }) {
     email: true,
     sms: false
   });
+  
+  // ✅ PRESERVED - Privacy states  
   const [privacy, setPrivacy] = useState({
     profilePublic: true,
     showEmail: false,
@@ -146,7 +158,93 @@ function SettingsPage({ onBack, onNavigate }) {
     activityStatus: true
   });
 
-  // ✅ Handle Settings Updates
+  // ✅ NEW - Load real user data when component mounts
+  useEffect(() => {
+    if (user) {
+      setUserData({
+        name: user.full_name || '',
+        username: user.username || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        bio: user.profile?.bio || '',
+        avatar: user.profile?.avatar || null,
+        joinDate: user.date_joined ? new Date(user.date_joined).toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'long' 
+        }) : 'Unknown'
+      });
+    }
+  }, [user]);
+
+  // ✅ NEW - Handle profile updates with real API calls
+  const handleSaveProfile = async () => {
+    setIsUpdating(true);
+    setUpdateError(null);
+    setUpdateSuccess(false);
+
+    try {
+      const profileData = {
+        full_name: userData.name,
+        username: userData.username,
+        bio: userData.bio
+      };
+
+      const response = await updateProfile(profileData);
+      
+      if (response.success) {
+        setUpdateSuccess(true);
+        setTimeout(() => setUpdateSuccess(false), 3000); // Hide success message after 3 seconds
+      } else {
+        setUpdateError(response.message || 'Failed to update profile');
+      }
+    } catch (error) {
+      setUpdateError('Failed to update profile. Please try again.');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  // ✅ NEW - Handle avatar upload
+  const handleAvatarUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setUpdateError('Please select a valid image file');
+      return;
+    }
+
+    // Validate file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      setUpdateError('Image size must be less than 5MB');
+      return;
+    }
+
+    setAvatarUploading(true);
+    setUpdateError(null);
+
+    try {
+      const response = await uploadAvatar(file);
+      
+      if (response.success) {
+        setUserData(prev => ({
+          ...prev,
+          avatar: response.avatar_url
+        }));
+        setUpdateSuccess(true);
+        setTimeout(() => setUpdateSuccess(false), 3000);
+      } else {
+        setUpdateError(response.message || 'Failed to upload avatar');
+      }
+    } catch (error) {
+      setUpdateError('Failed to upload avatar. Please try again.');
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
+  // ✅ PRESERVED - Handle Settings Updates
   const handleNotificationToggle = (key) => {
     setNotifications(prev => ({ ...prev, [key]: !prev[key] }));
   };
@@ -169,22 +267,63 @@ function SettingsPage({ onBack, onNavigate }) {
     }
   };
 
-  // ✅ Render Settings Content
+  // ✅ ENHANCED - Render Settings Content with Real Data
   const renderSettingsContent = () => {
     switch (activeCategory) {
       case SETTINGS_CATEGORIES.ACCOUNT:
         return (
           <div className="space-y-6">
+            {/* ✅ Success/Error Messages */}
+            {updateSuccess && (
+              <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                <div className="flex items-center">
+                  <Check className="w-5 h-5 text-green-600 dark:text-green-400 mr-2" />
+                  <p className="text-green-800 dark:text-green-200">Profile updated successfully!</p>
+                </div>
+              </div>
+            )}
+            
+            {updateError && (
+              <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                <div className="flex items-center">
+                  <X className="w-5 h-5 text-red-600 dark:text-red-400 mr-2" />
+                  <p className="text-red-800 dark:text-red-200">{updateError}</p>
+                </div>
+              </div>
+            )}
+
             <SettingsSection title="Profile Information" icon={User}>
               <div className="space-y-4">
+                {/* ✅ ENHANCED Avatar Section with Upload */}
                 <div className="flex items-center space-x-4">
-                  <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-teal-500 rounded-full flex items-center justify-center relative">
-                    <span className="text-white font-bold text-xl">
-                      {userData.name.charAt(0)}
-                    </span>
-                    <button className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
-                      <Camera className="w-3 h-3 text-white" />
-                    </button>
+                  <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-teal-500 rounded-full flex items-center justify-center relative overflow-hidden">
+                    {userData.avatar ? (
+                      <img 
+                        src={userData.avatar} 
+                        alt={userData.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-white font-bold text-xl">
+                        {userData.name?.charAt(0)?.toUpperCase() || 'U'}
+                      </span>
+                    )}
+                    
+                    {/* Upload Button */}
+                    <label className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-700 transition-colors">
+                      {avatarUploading ? (
+                        <Loader2 className="w-3 h-3 text-white animate-spin" />
+                      ) : (
+                        <Camera className="w-3 h-3 text-white" />
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAvatarUpload}
+                        className="hidden"
+                        disabled={avatarUploading}
+                      />
+                    </label>
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900 dark:text-white">{userData.name}</h3>
@@ -193,6 +332,7 @@ function SettingsPage({ onBack, onNavigate }) {
                   </div>
                 </div>
                 
+                {/* ✅ ENHANCED Form Fields with Real Data */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -203,6 +343,7 @@ function SettingsPage({ onBack, onNavigate }) {
                       value={userData.name}
                       onChange={(e) => setUserData(prev => ({ ...prev, name: e.target.value }))}
                       className="w-full p-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                      disabled={isUpdating}
                     />
                   </div>
                   <div>
@@ -214,6 +355,7 @@ function SettingsPage({ onBack, onNavigate }) {
                       value={userData.username}
                       onChange={(e) => setUserData(prev => ({ ...prev, username: e.target.value }))}
                       className="w-full p-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                      disabled={isUpdating}
                     />
                   </div>
                 </div>
@@ -226,16 +368,35 @@ function SettingsPage({ onBack, onNavigate }) {
                     value={userData.bio}
                     onChange={(e) => setUserData(prev => ({ ...prev, bio: e.target.value }))}
                     rows={3}
+                    maxLength={150}
                     className="w-full p-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 resize-none"
+                    placeholder="Tell us about yourself..."
+                    disabled={isUpdating}
                   />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    {userData.bio?.length || 0}/150 characters
+                  </p>
                 </div>
                 
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-                  Save Changes
+                {/* ✅ ENHANCED Save Button with Loading State */}
+                <Button 
+                  onClick={handleSaveProfile}
+                  disabled={isUpdating}
+                  className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isUpdating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Changes'
+                  )}
                 </Button>
               </div>
             </SettingsSection>
 
+            {/* ✅ ENHANCED Contact Information with Real Data */}
             <SettingsSection title="Contact Information" icon={Mail}>
               <SettingsItem
                 icon={Mail}
