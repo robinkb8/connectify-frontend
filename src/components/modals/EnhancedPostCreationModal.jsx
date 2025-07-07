@@ -1,5 +1,4 @@
- 
-// ===== src/components/modals/EnhancedPostCreationModal.jsx =====
+// ===== src/components/modals/EnhancedPostCreationModal.jsx - FIXED API INTEGRATION =====
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { 
   X, 
@@ -18,8 +17,10 @@ import {
   Camera
 } from 'lucide-react';
 import { Button } from '../ui/Button/Button';
+// FIXED: Import real API
+import { postsAPI } from '../../utils/api/posts';
 
-// ✅ Post Privacy Options
+// ✅ Post Privacy Options - PRESERVED
 const PRIVACY_OPTIONS = {
   PUBLIC: { 
     value: 'public', 
@@ -41,7 +42,7 @@ const PRIVACY_OPTIONS = {
   }
 };
 
-// ✅ Media Upload Component
+// ✅ Media Upload Component - PRESERVED EXACTLY
 const MediaUpload = ({ files, onFilesChange, maxFiles = 4 }) => {
   const fileInputRef = useRef(null);
   const [dragActive, setDragActive] = useState(false);
@@ -89,7 +90,7 @@ const MediaUpload = ({ files, onFilesChange, maxFiles = 4 }) => {
     onFilesChange([...files, ...validFiles]);
   }, [files, onFilesChange, maxFiles]);
 
-  // ✅ Drag and Drop handlers
+  // ✅ Drag and Drop handlers - PRESERVED
   const handleDrag = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -107,7 +108,7 @@ const MediaUpload = ({ files, onFilesChange, maxFiles = 4 }) => {
     handleFiles(e.dataTransfer.files);
   }, [handleFiles]);
 
-  // ✅ Remove file
+  // ✅ Remove file - PRESERVED
   const removeFile = (index) => {
     const fileToRemove = files[index];
     if (fileToRemove.preview) {
@@ -159,7 +160,7 @@ const MediaUpload = ({ files, onFilesChange, maxFiles = 4 }) => {
         </div>
       </div>
 
-      {/* File Preview Grid */}
+      {/* File Preview Grid - PRESERVED EXACTLY */}
       {files.length > 0 && (
         <div className="grid grid-cols-2 gap-4">
           {files.map((file, index) => (
@@ -256,7 +257,7 @@ const MediaUpload = ({ files, onFilesChange, maxFiles = 4 }) => {
   );
 };
 
-// ✅ Character Counter Component
+// ✅ Character Counter Component - PRESERVED EXACTLY
 const CharacterCounter = ({ current, max, warning = 0.8 }) => {
   const percentage = current / max;
   const isWarning = percentage >= warning;
@@ -302,7 +303,7 @@ const CharacterCounter = ({ current, max, warning = 0.8 }) => {
   );
 };
 
-// ✅ Emoji Picker (Simple Implementation)
+// ✅ Emoji Picker - PRESERVED EXACTLY
 const SimpleEmojiPicker = ({ onEmojiSelect, isOpen, onClose }) => {
   const emojis = ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '😚', '😙', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄', '😬', '🤥', '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '🥴', '😵', '🤯', '🤠', '🥳', '😎', '🤓', '🧐', '😕', '😟', '🙁', '☹️', '😮', '😯', '😲', '😳', '🥺', '😦', '😧', '😨', '😰', '😥', '😢', '😭', '😱', '😖', '😣', '😞', '😓', '😩', '😫', '🥱', '😤', '😡', '😠', '🤬', '😈', '👿', '💀', '☠️', '💩', '🤡', '👹', '👺', '👻', '👽', '👾', '🤖', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾'];
 
@@ -337,7 +338,7 @@ const SimpleEmojiPicker = ({ onEmojiSelect, isOpen, onClose }) => {
   );
 };
 
-// ✅ Main Enhanced Post Creation Modal
+// ✅ Main Enhanced Post Creation Modal - FIXED API INTEGRATION
 function EnhancedPostCreationModal({ isOpen, onClose, onPostCreate }) {
   const [content, setContent] = useState('');
   const [files, setFiles] = useState([]);
@@ -350,9 +351,9 @@ function EnhancedPostCreationModal({ isOpen, onClose, onPostCreate }) {
   const [error, setError] = useState('');
   
   const textareaRef = useRef(null);
-  const maxChars = 280;
+  const maxChars = 2200; // FIXED: Match backend limit
 
-  // ✅ Auto-resize textarea
+  // ✅ Auto-resize textarea - PRESERVED
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -360,14 +361,14 @@ function EnhancedPostCreationModal({ isOpen, onClose, onPostCreate }) {
     }
   }, [content]);
 
-  // ✅ Focus textarea when modal opens
+  // ✅ Focus textarea when modal opens - PRESERVED
   useEffect(() => {
     if (isOpen && textareaRef.current) {
       setTimeout(() => textareaRef.current?.focus(), 100);
     }
   }, [isOpen]);
 
-  // ✅ Clear error after timeout
+  // ✅ Clear error after timeout - PRESERVED
   useEffect(() => {
     if (error) {
       const timer = setTimeout(() => setError(''), 5000);
@@ -375,7 +376,7 @@ function EnhancedPostCreationModal({ isOpen, onClose, onPostCreate }) {
     }
   }, [error]);
 
-  // ✅ Handle post submission
+  // FIXED: Real API Integration - Replace Simulation
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     
@@ -393,37 +394,28 @@ function EnhancedPostCreationModal({ isOpen, onClose, onPostCreate }) {
     setError('');
 
     try {
-      // Create post object
-      const newPost = {
-        id: Date.now().toString(),
-        content: content.trim(),
-        files: files,
-        privacy: privacy,
-        location: location.trim(),
-        timestamp: new Date().toISOString(),
-        author: {
-          name: 'You',
-          username: 'you',
-          avatar: '',
-          verified: false
-        },
-        likes: 0,
-        comments: 0,
-        shares: 0,
-        isLiked: false,
-        hasMedia: files.length > 0
-      };
-
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Simulate occasional failures for testing
-      if (Math.random() < 0.05) {
-        throw new Error('Failed to create post');
+      // FIXED: Create FormData for real API call
+      const formData = new FormData();
+      
+      // Add content if present
+      if (content.trim()) {
+        formData.append('content', content.trim());
+      }
+      
+      // FIXED: Add only the first image (backend supports single image)
+      if (files.length > 0) {
+        // Use the first file for now (since backend Post model has single image field)
+        formData.append('image', files[0]);
       }
 
-      // Call parent callback
-      onPostCreate?.(newPost);
+      console.log('🚀 Submitting post to real API...');
+      console.log('📝 Content:', content.trim());
+      console.log('🖼️ Files count:', files.length);
+
+      // FIXED: Call real API instead of simulation
+      const response = await postsAPI.createPost(formData);
+
+      console.log('✅ Post created successfully:', response);
 
       // Reset form
       setContent('');
@@ -432,21 +424,24 @@ function EnhancedPostCreationModal({ isOpen, onClose, onPostCreate }) {
       setLocation('');
       setShowLocationInput(false);
       setError('');
+
+      // Notify parent component with real post data
+      if (onPostCreate) {
+        onPostCreate(response);
+      }
       
       // Close modal
       onClose();
 
-      console.log('✅ Post created successfully:', newPost);
-      
     } catch (error) {
       console.error('❌ Failed to create post:', error);
-      setError('Failed to create post. Please try again.');
+      setError(error.message || 'Failed to create post. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   }, [content, files, privacy, location, onPostCreate, onClose, maxChars]);
 
-  // ✅ Handle emoji selection
+  // ✅ Handle emoji selection - PRESERVED
   const handleEmojiSelect = (emoji) => {
     const cursorPosition = textareaRef.current?.selectionStart || content.length;
     const newContent = content.slice(0, cursorPosition) + emoji + content.slice(cursorPosition);
@@ -461,14 +456,7 @@ function EnhancedPostCreationModal({ isOpen, onClose, onPostCreate }) {
     }, 0);
   };
 
-  // ✅ Handle hashtag and mention detection (visual only)
-  const processContent = (text) => {
-    return text
-      .replace(/#(\w+)/g, '<span class="text-blue-500">#$1</span>')
-      .replace(/@(\w+)/g, '<span class="text-blue-500">@$1</span>');
-  };
-
-  // ✅ Check if post can be submitted
+  // ✅ Check if post can be submitted - PRESERVED
   const canSubmit = (content.trim() || files.length > 0) && content.length <= maxChars && !isSubmitting;
 
   const selectedPrivacy = Object.values(PRIVACY_OPTIONS).find(option => option.value === privacy);
@@ -479,7 +467,7 @@ function EnhancedPostCreationModal({ isOpen, onClose, onPostCreate }) {
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-2xl shadow-2xl border border-gray-200 dark:border-gray-700 max-h-[95vh] overflow-hidden">
         
-        {/* ✅ Header */}
+        {/* ✅ Header - PRESERVED */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">
             Create Post
@@ -499,7 +487,7 @@ function EnhancedPostCreationModal({ isOpen, onClose, onPostCreate }) {
           </div>
         </div>
 
-        {/* ✅ Content */}
+        {/* ✅ Content - PRESERVED EXACTLY */}
         <div className="flex-1 overflow-y-auto max-h-[calc(95vh-180px)]">
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
             
@@ -603,12 +591,12 @@ function EnhancedPostCreationModal({ isOpen, onClose, onPostCreate }) {
             <MediaUpload 
               files={files}
               onFilesChange={setFiles}
-              maxFiles={4}
+              maxFiles={1}
             />
           </form>
         </div>
 
-        {/* ✅ Footer */}
+        {/* ✅ Footer - PRESERVED */}
         <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
           <div className="flex items-center justify-between">
             
@@ -691,7 +679,7 @@ function EnhancedPostCreationModal({ isOpen, onClose, onPostCreate }) {
         onClick={!isSubmitting ? onClose : undefined}
       />
 
-      {/* ✅ Custom Animations */}
+      {/* ✅ Custom Animations - PRESERVED */}
       <style jsx>{`
         @keyframes slideDown {
           from {
