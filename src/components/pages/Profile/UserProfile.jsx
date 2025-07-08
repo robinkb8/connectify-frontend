@@ -1,4 +1,4 @@
-// components/pages/Profile/UserProfile.jsx - FIXED MESSAGE BUTTON
+// components/pages/Profile/UserProfile.jsx - FIXED MESSAGE BUTTON & AVATAR DISPLAY
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Settings, MapPin, Calendar, LinkIcon, Edit3, MoreHorizontal, MessageCircle } from "lucide-react";
@@ -12,6 +12,15 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { postsAPI } from '../../../utils/api';
 import useMessaging from '../../../hooks/useMessaging';
 import EditProfileModal from './EditProfileModal';
+
+// SURGICAL FIX: Avatar URL helper function
+const getFullAvatarUrl = (avatarPath) => {
+  if (!avatarPath) return null;
+  // If already a full URL, return as-is
+  if (avatarPath.startsWith('http')) return avatarPath;
+  // Convert relative path to full URL
+  return `http://127.0.0.1:8000${avatarPath}`;
+};
 
 function UserProfile({ isOwnProfile: propIsOwnProfile, onBack, userId: propUserId }) {
   // Get username from URL params or use current user
@@ -182,7 +191,7 @@ function UserProfile({ isOwnProfile: propIsOwnProfile, onBack, userId: propUserI
                   <div className="w-full h-full rounded-full bg-white dark:bg-gray-900 flex items-center justify-center overflow-hidden">
                     {profile.profile?.avatar ? (
                       <img 
-                        src={profile.profile.avatar} 
+                        src={getFullAvatarUrl(profile.profile.avatar)} 
                         alt="Profile" 
                         className="w-full h-full object-cover"
                       />

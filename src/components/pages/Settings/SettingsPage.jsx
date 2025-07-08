@@ -1,4 +1,5 @@
-// ===== src/components/pages/Settings/SettingsPage.jsx - ENHANCED WITH REAL DATA =====
+// ===== src/components/pages/Settings/SettingsPage.jsx =====
+// Professional settings page with comprehensive user management and account deletion
 import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft,
@@ -26,9 +27,26 @@ import {
 } from 'lucide-react';
 import { Button } from '../../ui/Button/Button';
 import { useTheme } from '../../providers/ThemeProvider';
-import { useAuth } from '../../../contexts/AuthContext'; // ✅ ADDED
+import { useAuth } from '../../../contexts/AuthContext';
+import DeleteAccountModal from '../../modals/DeleteAccountModal';
 
-// ✅ Settings Categories - PRESERVED
+/**
+ * Helper function to convert relative avatar paths to full URLs
+ * Ensures consistent avatar display across all components
+ */
+const getFullAvatarUrl = (avatarPath) => {
+  if (!avatarPath) return null;
+  // If already a full URL, return as-is
+  if (avatarPath.startsWith('http')) return avatarPath;
+  // Convert relative path to full URL
+  return `http://127.0.0.1:8000${avatarPath}`;
+};
+
+// ===== SETTINGS CONFIGURATION =====
+
+/**
+ * Settings categories enum for navigation and content organization
+ */
 const SETTINGS_CATEGORIES = {
   ACCOUNT: 'account',
   PRIVACY: 'privacy',
@@ -38,12 +56,19 @@ const SETTINGS_CATEGORIES = {
   SUPPORT: 'support'
 };
 
-// ✅ Settings Section Component - PRESERVED
+// ===== REUSABLE UI COMPONENTS =====
+
+/**
+ * Settings section wrapper component with consistent styling
+ * @param {string} title - Section title
+ * @param {React.Component} children - Section content
+ * @param {React.Component} icon - Section icon component
+ */
 const SettingsSection = ({ title, children, icon: Icon }) => (
   <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
     <div className="p-6 border-b border-gray-200 dark:border-gray-700">
       <div className="flex items-center space-x-3">
-        {Icon && <Icon className="w-5 -5 text-gray-600 dark:text-gray-400" />}
+        {Icon && <Icon className="w-5 h-5 text-gray-600 dark:text-gray-400" />}
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{title}</h2>
       </div>
     </div>
@@ -53,12 +78,19 @@ const SettingsSection = ({ title, children, icon: Icon }) => (
   </div>
 );
 
-// ✅ Settings Item Component - PRESERVED
+/**
+ * Individual settings item component with consistent interaction patterns
+ * @param {React.Component} icon - Item icon component
+ * @param {string} title - Item title
+ * @param {string} description - Item description
+ * @param {React.Component} rightElement - Right-side element (button, toggle, etc.)
+ * @param {function} onClick - Click handler
+ * @param {boolean} danger - Whether item represents a dangerous action
+ */
 const SettingsItem = ({ 
   icon: Icon, 
   title, 
   description, 
-  action, 
   rightElement,
   onClick,
   danger = false 
@@ -94,7 +126,12 @@ const SettingsItem = ({
   </div>
 );
 
-// ✅ Toggle Switch Component - PRESERVED
+/**
+ * Toggle switch component with accessibility and state management
+ * @param {boolean} enabled - Current toggle state
+ * @param {function} onChange - State change handler
+ * @param {boolean} disabled - Whether toggle is disabled
+ */
 const ToggleSwitch = ({ enabled, onChange, disabled = false }) => (
   <button
     onClick={() => !disabled && onChange(!enabled)}
@@ -111,14 +148,24 @@ const ToggleSwitch = ({ enabled, onChange, disabled = false }) => (
   </button>
 );
 
-// ✅ ENHANCED - Main Settings Page Component with Real Data Integration
+// ===== MAIN SETTINGS PAGE COMPONENT =====
+
+/**
+ * Comprehensive settings page with real data integration and account management
+ * @param {function} onBack - Back navigation handler
+ * @param {function} onNavigate - Page navigation handler
+ */
 function SettingsPage({ onBack, onNavigate }) {
+  // ===== HOOKS AND CONTEXT =====
   const { theme, toggleTheme } = useTheme();
-  const { user, updateProfile, uploadAvatar } = useAuth(); // ✅ REAL USER DATA
+  const { user, updateProfile, uploadAvatar } = useAuth();
   
+  // ===== STATE MANAGEMENT =====
+  
+  // Navigation state
   const [activeCategory, setActiveCategory] = useState(SETTINGS_CATEGORIES.ACCOUNT);
   
-  // ✅ ENHANCED - Use real user data instead of mock data
+  // User data state with real backend integration
   const [userData, setUserData] = useState({
     name: '',
     username: '',
@@ -129,13 +176,18 @@ function SettingsPage({ onBack, onNavigate }) {
     joinDate: ''
   });
   
-  // ✅ NEW - Loading and error states for profile updates
+  // Profile update states for UX feedback
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateError, setUpdateError] = useState(null);
   const [updateSuccess, setUpdateSuccess] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
   
-  // ✅ PRESERVED - Notification states
+  // Delete account modal states
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
+  
+  // Settings preferences states
   const [notifications, setNotifications] = useState({
     likes: true,
     comments: true,
@@ -148,7 +200,6 @@ function SettingsPage({ onBack, onNavigate }) {
     sms: false
   });
   
-  // ✅ PRESERVED - Privacy states  
   const [privacy, setPrivacy] = useState({
     profilePublic: true,
     showEmail: false,
@@ -158,7 +209,12 @@ function SettingsPage({ onBack, onNavigate }) {
     activityStatus: true
   });
 
-  // ✅ NEW - Load real user data when component mounts
+  // ===== EFFECTS =====
+  
+  /**
+   * Load real user data when component mounts or user changes
+   * Populates form fields with current user information
+   */
   useEffect(() => {
     if (user) {
       setUserData({
@@ -176,7 +232,12 @@ function SettingsPage({ onBack, onNavigate }) {
     }
   }, [user]);
 
-  // ✅ NEW - Handle profile updates with real API calls
+  // ===== EVENT HANDLERS =====
+  
+  /**
+   * Handle profile updates with comprehensive error handling and user feedback
+   * Makes API call to update user profile with validation
+   */
   const handleSaveProfile = async () => {
     setIsUpdating(true);
     setUpdateError(null);
@@ -193,7 +254,7 @@ function SettingsPage({ onBack, onNavigate }) {
       
       if (response.success) {
         setUpdateSuccess(true);
-        setTimeout(() => setUpdateSuccess(false), 3000); // Hide success message after 3 seconds
+        setTimeout(() => setUpdateSuccess(false), 3000);
       } else {
         setUpdateError(response.message || 'Failed to update profile');
       }
@@ -204,18 +265,21 @@ function SettingsPage({ onBack, onNavigate }) {
     }
   };
 
-  // ✅ NEW - Handle avatar upload
+  /**
+   * Handle avatar upload with file validation and progress feedback
+   * Validates file type and size before uploading
+   */
   const handleAvatarUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
-    // Validate file type
+    // File type validation
     if (!file.type.startsWith('image/')) {
       setUpdateError('Please select a valid image file');
       return;
     }
 
-    // Validate file size (5MB limit)
+    // File size validation (5MB limit)
     if (file.size > 5 * 1024 * 1024) {
       setUpdateError('Image size must be less than 5MB');
       return;
@@ -244,15 +308,26 @@ function SettingsPage({ onBack, onNavigate }) {
     }
   };
 
-  // ✅ PRESERVED - Handle Settings Updates
+  /**
+   * Handle notification preference toggles
+   * Updates notification settings in local state
+   */
   const handleNotificationToggle = (key) => {
     setNotifications(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
+  /**
+   * Handle privacy setting toggles
+   * Updates privacy preferences in local state
+   */
   const handlePrivacyToggle = (key) => {
     setPrivacy(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
+  /**
+   * Handle logout with user confirmation
+   * Shows confirmation dialog before proceeding with logout
+   */
   const handleLogout = () => {
     if (window.confirm('Are you sure you want to log out?')) {
       console.log('Logging out...');
@@ -260,20 +335,75 @@ function SettingsPage({ onBack, onNavigate }) {
     }
   };
 
+  /**
+   * Handle delete account button click
+   * Opens delete account confirmation modal instead of browser confirm
+   */
   const handleDeleteAccount = () => {
-    if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-      console.log('Deleting account...');
-      // TODO: Implement account deletion
+    setShowDeleteModal(true);
+  };
+
+  /**
+   * Handle confirmed account deletion with API call
+   * Makes soft delete API call and handles post-deletion cleanup
+   */
+  const handleConfirmDelete = async () => {
+    setIsDeleting(true);
+    setDeleteError(null);
+
+    try {
+      // Make API call to soft delete user account
+      const token = localStorage.getItem('access_token');
+      const response = await fetch('http://127.0.0.1:8000/api/auth/account/delete/', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        // Account deletion successful - clean up and redirect
+        console.log('Account deleted successfully');
+        
+        // Clear authentication data
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        
+        // Close modal and redirect to landing page
+        setShowDeleteModal(false);
+        
+        // Navigate to landing page or trigger logout
+        if (onNavigate) {
+          onNavigate('landing');
+        } else {
+          window.location.href = '/'; // Fallback redirect
+        }
+        
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        setDeleteError(errorData.message || 'Failed to delete account. Please try again.');
+      }
+    } catch (error) {
+      console.error('Delete account error:', error);
+      setDeleteError('Network error. Please check your connection and try again.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
-  // ✅ ENHANCED - Render Settings Content with Real Data
+  // ===== CONTENT RENDERING =====
+  
+  /**
+   * Render settings content based on active category
+   * Returns JSX for the currently selected settings section
+   */
   const renderSettingsContent = () => {
     switch (activeCategory) {
       case SETTINGS_CATEGORIES.ACCOUNT:
         return (
           <div className="space-y-6">
-            {/* ✅ Success/Error Messages */}
+            {/* Success/Error Messages */}
             {updateSuccess && (
               <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
                 <div className="flex items-center">
@@ -292,14 +422,15 @@ function SettingsPage({ onBack, onNavigate }) {
               </div>
             )}
 
+            {/* Profile Information Section */}
             <SettingsSection title="Profile Information" icon={User}>
               <div className="space-y-4">
-                {/* ✅ ENHANCED Avatar Section with Upload */}
+                {/* Avatar Upload Section */}
                 <div className="flex items-center space-x-4">
                   <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-teal-500 rounded-full flex items-center justify-center relative overflow-hidden">
                     {userData.avatar ? (
                       <img 
-                        src={userData.avatar} 
+                        src={getFullAvatarUrl(userData.avatar)}
                         alt={userData.name}
                         className="w-full h-full object-cover"
                       />
@@ -309,7 +440,7 @@ function SettingsPage({ onBack, onNavigate }) {
                       </span>
                     )}
                     
-                    {/* Upload Button */}
+                    {/* Upload Button with Loading State */}
                     <label className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-700 transition-colors">
                       {avatarUploading ? (
                         <Loader2 className="w-3 h-3 text-white animate-spin" />
@@ -325,6 +456,8 @@ function SettingsPage({ onBack, onNavigate }) {
                       />
                     </label>
                   </div>
+                  
+                  {/* User Info Display */}
                   <div>
                     <h3 className="font-semibold text-gray-900 dark:text-white">{userData.name}</h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400">@{userData.username}</p>
@@ -332,7 +465,7 @@ function SettingsPage({ onBack, onNavigate }) {
                   </div>
                 </div>
                 
-                {/* ✅ ENHANCED Form Fields with Real Data */}
+                {/* Profile Form Fields */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -360,6 +493,7 @@ function SettingsPage({ onBack, onNavigate }) {
                   </div>
                 </div>
                 
+                {/* Bio Text Area with Character Count */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Bio
@@ -378,7 +512,7 @@ function SettingsPage({ onBack, onNavigate }) {
                   </p>
                 </div>
                 
-                {/* ✅ ENHANCED Save Button with Loading State */}
+                {/* Save Button with Loading State */}
                 <Button 
                   onClick={handleSaveProfile}
                   disabled={isUpdating}
@@ -396,7 +530,7 @@ function SettingsPage({ onBack, onNavigate }) {
               </div>
             </SettingsSection>
 
-            {/* ✅ ENHANCED Contact Information with Real Data */}
+            {/* Contact Information Section */}
             <SettingsSection title="Contact Information" icon={Mail}>
               <SettingsItem
                 icon={Mail}
@@ -407,8 +541,8 @@ function SettingsPage({ onBack, onNavigate }) {
               <SettingsItem
                 icon={Phone}
                 title="Phone Number"
-                description={userData.phone}
-                rightElement={<Button variant="ghost" className="text-blue-600">Change</Button>}
+                description={userData.phone || "Not provided"}
+                rightElement={<Button variant="ghost" className="text-blue-600">Add</Button>}
               />
             </SettingsSection>
           </div>
@@ -417,6 +551,7 @@ function SettingsPage({ onBack, onNavigate }) {
       case SETTINGS_CATEGORIES.PRIVACY:
         return (
           <div className="space-y-6">
+            {/* Profile Privacy Section */}
             <SettingsSection title="Profile Privacy" icon={Shield}>
               <SettingsItem
                 icon={Globe}
@@ -453,6 +588,7 @@ function SettingsPage({ onBack, onNavigate }) {
               />
             </SettingsSection>
 
+            {/* Interaction Privacy Section */}
             <SettingsSection title="Interaction Privacy" icon={Eye}>
               <SettingsItem
                 icon={Bell}
@@ -494,6 +630,7 @@ function SettingsPage({ onBack, onNavigate }) {
       case SETTINGS_CATEGORIES.NOTIFICATIONS:
         return (
           <div className="space-y-6">
+            {/* Push Notifications Section */}
             <SettingsSection title="Push Notifications" icon={Smartphone}>
               <SettingsItem
                 icon={Bell}
@@ -508,6 +645,7 @@ function SettingsPage({ onBack, onNavigate }) {
               />
             </SettingsSection>
 
+            {/* Activity Notifications Section */}
             <SettingsSection title="Activity Notifications" icon={Bell}>
               <SettingsItem
                 icon={Bell}
@@ -566,6 +704,7 @@ function SettingsPage({ onBack, onNavigate }) {
               />
             </SettingsSection>
 
+            {/* Communication Preferences Section */}
             <SettingsSection title="Communication" icon={Mail}>
               <SettingsItem
                 icon={Mail}
@@ -607,6 +746,7 @@ function SettingsPage({ onBack, onNavigate }) {
       case SETTINGS_CATEGORIES.APPEARANCE:
         return (
           <div className="space-y-6">
+            {/* Theme Settings Section */}
             <SettingsSection title="Theme" icon={theme === 'dark' ? Moon : Sun}>
               <SettingsItem
                 icon={theme === 'dark' ? Moon : Sun}
@@ -626,6 +766,17 @@ function SettingsPage({ onBack, onNavigate }) {
       case SETTINGS_CATEGORIES.DATA:
         return (
           <div className="space-y-6">
+            {/* Delete Error Display */}
+            {deleteError && (
+              <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                <div className="flex items-center">
+                  <X className="w-5 h-5 text-red-600 dark:text-red-400 mr-2" />
+                  <p className="text-red-800 dark:text-red-200">{deleteError}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Data Management Section */}
             <SettingsSection title="Data Management" icon={Download}>
               <SettingsItem
                 icon={Download}
@@ -636,6 +787,7 @@ function SettingsPage({ onBack, onNavigate }) {
               />
             </SettingsSection>
 
+            {/* Danger Zone Section */}
             <SettingsSection title="Danger Zone" icon={AlertTriangle}>
               <SettingsItem
                 icon={Trash2}
@@ -652,6 +804,7 @@ function SettingsPage({ onBack, onNavigate }) {
       case SETTINGS_CATEGORIES.SUPPORT:
         return (
           <div className="space-y-6">
+            {/* Help & Support Section */}
             <SettingsSection title="Help & Support" icon={Bell}>
               <SettingsItem
                 title="Help Center"
@@ -680,6 +833,7 @@ function SettingsPage({ onBack, onNavigate }) {
               />
             </SettingsSection>
 
+            {/* Account Actions Section */}
             <SettingsSection title="Account Actions" icon={LogOut}>
               <SettingsItem
                 icon={LogOut}
@@ -698,9 +852,11 @@ function SettingsPage({ onBack, onNavigate }) {
     }
   };
 
+  // ===== MAIN COMPONENT RENDER =====
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50 dark:from-slate-900 dark:via-blue-900 dark:to-slate-900">
-      {/* Header */}
+      {/* Header Section */}
       <div className="sticky top-0 z-50 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-white/10">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -719,9 +875,10 @@ function SettingsPage({ onBack, onNavigate }) {
         </div>
       </div>
 
+      {/* Main Content Area */}
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Settings Navigation */}
+          {/* Settings Navigation Sidebar */}
           <div className="lg:w-64 flex-shrink-0">
             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
               <nav className="p-2">
@@ -753,12 +910,21 @@ function SettingsPage({ onBack, onNavigate }) {
             </div>
           </div>
 
-          {/* Settings Content */}
+          {/* Settings Content Area */}
           <div className="flex-1">
             {renderSettingsContent()}
           </div>
         </div>
       </div>
+
+      {/* Delete Account Confirmation Modal */}
+      <DeleteAccountModal
+        isOpen={showDeleteModal}
+        onClose={() => !isDeleting && setShowDeleteModal(false)}
+        onConfirm={handleConfirmDelete}
+        user={user}
+        isDeleting={isDeleting}
+      />
     </div>
   );
 }

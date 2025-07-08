@@ -14,6 +14,13 @@ import {
   Shield
 } from 'lucide-react';
 
+
+const getFullAvatarUrl = (avatarPath) => {
+  if (!avatarPath) return null;
+  if (avatarPath.startsWith('http')) return avatarPath;
+  return `http://127.0.0.1:8000${avatarPath}`;
+};
+
 // Desktop Sidebar - ORIGINAL STRUCTURE PRESERVED + DYNAMIC STATS
 const DesktopSidebar = ({ 
   activeTab, 
@@ -146,7 +153,7 @@ const DesktopSidebar = ({
               <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
                 {user.profile?.avatar ? (
                   <img 
-                    src={user.profile.avatar} 
+                    src={getFullAvatarUrl(user.profile.avatar)}
                     alt={user.full_name || user.username}
                     className="w-full h-full object-cover"
                   />
