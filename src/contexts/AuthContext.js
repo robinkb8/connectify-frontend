@@ -1,7 +1,7 @@
-// src/contexts/AuthContext.js - ENHANCED WITH PROFILE MANAGEMENT + ALL EXISTING PRESERVED
+// src/contexts/AuthContext.js - ENHANCED WITH PROFILE MANAGEMENT + PAYMENT INTEGRATION + ALL EXISTING PRESERVED
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authAPI, profileAPI } from '../utils/api';
+import { authAPI, profileAPI, paymentsAPI } from '../utils/api';
 
 const AuthContext = createContext();
 
@@ -17,6 +17,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [subscriptionConfig, setSubscriptionConfig] = useState(null);
 
   // ✅ PRESERVED - Initialize authentication state on app load
   useEffect(() => {
@@ -30,6 +31,9 @@ export const AuthProvider = ({ children }) => {
             // Django returns response.user, not response.data.user
             setUser(response.user);
             setIsAuthenticated(true);
+            
+            // Load subscription config after authentication
+            loadSubscriptionConfig();
           } else {
             // Token invalid, clear it
             authAPI.clearTokens();
@@ -53,6 +57,18 @@ export const AuthProvider = ({ children }) => {
     initializeAuth();
   }, []);
 
+  // ✅ NEW - Load subscription configuration
+  const loadSubscriptionConfig = async () => {
+    try {
+      const response = await paymentsAPI.getSubscriptionConfig();
+      if (response.success) {
+        setSubscriptionConfig(response.config);
+      }
+    } catch (error) {
+      console.error('Failed to load subscription config:', error);
+    }
+  };
+
   // ✅ PRESERVED - Login method
   const login = async (email, password) => {
     try {
@@ -63,6 +79,10 @@ export const AuthProvider = ({ children }) => {
         // Django returns response.user, not response.data.user
         setUser(response.user);
         setIsAuthenticated(true);
+        
+        // Load subscription config after successful login
+        loadSubscriptionConfig();
+        
         return { success: true, message: response.message };
       } else {
         return { success: false, message: response.message };
@@ -85,6 +105,10 @@ export const AuthProvider = ({ children }) => {
         // Django returns response.user, not response.data.user
         setUser(response.user);
         setIsAuthenticated(true);
+        
+        // Load subscription config after successful registration
+        loadSubscriptionConfig();
+        
         return { success: true, message: response.message };
       } else {
         // Django returns response.errors, not response.data.errors
@@ -107,6 +131,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setUser(null);
       setIsAuthenticated(false);
+      setSubscriptionConfig(null);
     }
   };
 
@@ -213,6 +238,130 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // ✅ NEW - Payment and subscription methods
+  const createPaymentOrder = async (amount) => {
+    try {
+      const response = await paymentsAPI.createOrder(amount);
+      return response;
+    } catch (error) {
+      console.error('Create payment order error:', error);
+      return { 
+        success: false, 
+        message: 'Failed to create payment order. Please try again.' 
+      };
+    }
+  };
+
+  const verifyPayment = async (paymentData) => {
+    try {
+      const response = await paymentsAPI.verifyPayment(paymentData);
+      
+      if (response.success) {
+        // Refresh user data to get updated pro status
+        await refreshUserData();
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('Verify payment error:', error);
+      return { 
+        success: false, 
+        message: 'Payment verification failed. Please try again.' 
+      };
+    }
+  };
+
+  const getSubscriptionStatus = async () => {
+    try {
+      const response = await paymentsAPI.getSubscriptionStatus();
+      return response;
+    } catch (error) {
+      console.error('Get subscription status error:', error);
+      return { 
+        success: false, 
+        message: 'Failed to get subscription status' 
+      };
+    }
+  };
+
+  const getPaymentHistory = async (limit = 10) => {
+    try {
+      const response = await paymentsAPI.getPaymentHistory(limit);
+      return response;
+    } catch (error) {
+      console.error('Get payment history error:', error);
+      return { 
+        success: false, 
+        message: 'Failed to get payment history' 
+      };
+    }
+  };
+
+  const cancelSubscription = async () => {
+    try {
+      const response = await paymentsAPI.cancelSubscription();
+      
+      if (response.success) {
+        // Refresh user data to get updated pro status
+        await refreshUserData();
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('Cancel subscription error:', error);
+      return { 
+        success: false, 
+        message: 'Failed to cancel subscription. Please try again.' 
+      };
+    }
+  };
+
+  // ✅ NEW - Helper methods for payment flow
+  const upgradeToPro = async () => {
+    try {
+      if (!subscriptionConfig) {
+        await loadSubscriptionConfig();
+      }
+      
+      if (!subscriptionConfig) {
+        return { 
+          success: false, 
+          message: 'Subscription configuration not available' 
+        };
+      }
+      
+      // Create payment order for pro subscription
+      const orderResponse = await createPaymentOrder(subscriptionConfig.amount_paise);
+      
+      if (orderResponse.success) {
+        return {
+          success: true,
+          order: orderResponse.order,
+          keyId: orderResponse.key_id,
+          config: subscriptionConfig
+        };
+      } else {
+        return orderResponse;
+      }
+    } catch (error) {
+      console.error('Upgrade to pro error:', error);
+      return { 
+        success: false, 
+        message: 'Failed to initiate upgrade process' 
+      };
+    }
+  };
+
+  // ✅ NEW - Check if user is eligible for upgrade
+  const isEligibleForUpgrade = () => {
+    return user && !user.is_pro;
+  };
+
+  // ✅ NEW - Get pro status display
+  const getProStatusDisplay = () => {
+    return user?.pro_status_display || 'Free User';
+  };
+
   // ✅ PRESERVED - All existing helper methods with proper error handling
   const checkEmailAvailability = async (email) => {
     try {
@@ -261,6 +410,9 @@ export const AuthProvider = ({ children }) => {
     isLoading,
     isAuthenticated,
     
+    // ✅ NEW - Subscription state
+    subscriptionConfig,
+    
     // ✅ PRESERVED - Core authentication methods
     login,
     register,
@@ -272,6 +424,19 @@ export const AuthProvider = ({ children }) => {
     updateProfile,
     uploadAvatar,
     getUserProfile,
+    
+    // ✅ NEW - Payment and subscription methods
+    createPaymentOrder,
+    verifyPayment,
+    getSubscriptionStatus,
+    getPaymentHistory,
+    cancelSubscription,
+    upgradeToPro,
+    
+    // ✅ NEW - Helper methods for payments
+    isEligibleForUpgrade,
+    getProStatusDisplay,
+    loadSubscriptionConfig,
     
     // ✅ PRESERVED - Helper methods for forms
     checkEmailAvailability,

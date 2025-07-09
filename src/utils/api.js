@@ -1,4 +1,4 @@
-// src/utils/api.js - Enhanced with JWT Authentication + Profile API Integration
+// src/utils/api.js - Enhanced with JWT Authentication + Profile API Integration + Payment Endpoints
 
 // Import profile API
 import { profilesAPI } from './api/profiles';
@@ -334,6 +334,101 @@ export const commentsAPI = {
 
   deleteComment: async (commentId) => {
     return apiRequest(`/comments/${commentId}/`, { method: 'DELETE' });
+  }
+};
+
+// NEW Payment API - Razorpay Integration
+export const paymentsAPI = {
+  // Create Razorpay order for subscription
+  createOrder: async (amount) => {
+    try {
+      const response = await apiRequest('/payments/create-order/', {
+        method: 'POST',
+        body: JSON.stringify({ amount })
+      });
+      return response;
+    } catch (error) {
+      console.error('Failed to create payment order:', error);
+      return {
+        success: false,
+        message: 'Failed to create payment order'
+      };
+    }
+  },
+
+  // Verify payment and activate subscription
+  verifyPayment: async (paymentData) => {
+    try {
+      const response = await apiRequest('/payments/verify-payment/', {
+        method: 'POST',
+        body: JSON.stringify(paymentData)
+      });
+      return response;
+    } catch (error) {
+      console.error('Failed to verify payment:', error);
+      return {
+        success: false,
+        message: 'Failed to verify payment'
+      };
+    }
+  },
+
+  // Get current user's subscription status
+  getSubscriptionStatus: async () => {
+    try {
+      const response = await apiRequest('/payments/subscription/status/');
+      return response;
+    } catch (error) {
+      console.error('Failed to get subscription status:', error);
+      return {
+        success: false,
+        message: 'Failed to get subscription status'
+      };
+    }
+  },
+
+  // Get subscription pricing and configuration
+  getSubscriptionConfig: async () => {
+    try {
+      const response = await apiRequest('/payments/subscription/config/');
+      return response;
+    } catch (error) {
+      console.error('Failed to get subscription config:', error);
+      return {
+        success: false,
+        message: 'Failed to get subscription config'
+      };
+    }
+  },
+
+  // Get user's payment history
+  getPaymentHistory: async (limit = 10) => {
+    try {
+      const response = await apiRequest(`/payments/history/?limit=${limit}`);
+      return response;
+    } catch (error) {
+      console.error('Failed to get payment history:', error);
+      return {
+        success: false,
+        message: 'Failed to get payment history'
+      };
+    }
+  },
+
+  // Cancel active subscription
+  cancelSubscription: async () => {
+    try {
+      const response = await apiRequest('/payments/subscription/cancel/', {
+        method: 'POST'
+      });
+      return response;
+    } catch (error) {
+      console.error('Failed to cancel subscription:', error);
+      return {
+        success: false,
+        message: 'Failed to cancel subscription'
+      };
+    }
   }
 };
 

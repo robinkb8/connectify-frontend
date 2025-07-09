@@ -1,18 +1,30 @@
- 
 // src/components/pages/UpgradePage/UpgradePage.jsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Check, Crown, Star, Zap, Shield, ArrowRight, Infinity } from "lucide-react";
+import { ArrowLeft, Check, Crown, Star, Zap, Shield, ArrowRight, Infinity, Loader2 } from "lucide-react";
 import { Button } from "../../ui/Button/Button";
+import { useAuth } from "../../../contexts/AuthContext";
 
 export default function UpgradePage() {
   const navigate = useNavigate();
+  const { user, isAuthenticated, upgradeToPro, verifyPayment, isEligibleForUpgrade } = useAuth();
+  
   const [isVisible, setIsVisible] = useState(false);
   const [hoveredFeature, setHoveredFeature] = useState(null);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState(null); // 'success', 'error', or null
+  const [statusMessage, setStatusMessage] = useState("");
 
   useEffect(() => {
     setIsVisible(true);
   }, []);
+
+  // Redirect if user is already pro
+  useEffect(() => {
+    if (user && user.is_pro) {
+      navigate("/home");
+    }
+  }, [user, navigate]);
 
   const features = [
     {
@@ -56,11 +68,118 @@ export default function UpgradePage() {
     navigate("/home");
   };
 
-  const handlePayment = () => {
-    // TODO: Integrate payment gateway here
-    console.log("Payment button clicked - ₹10");
-    // For now, just show an alert
-    alert("Payment integration will be added here!");
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  const handlePayment = async () => {
+    // Check authentication
+    if (!isAuthenticated) {
+      setPaymentStatus("error");
+      setStatusMessage("Please login to upgrade to Pro");
+      return;
+    }
+
+    // Check eligibility
+    if (!isEligibleForUpgrade()) {
+      setPaymentStatus("error");
+      setStatusMessage("You already have a Pro subscription");
+      return;
+    }
+
+    setIsProcessingPayment(true);
+    setPaymentStatus(null);
+    setStatusMessage("");
+
+    try {
+      // Load Razorpay script
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        throw new Error("Failed to load Razorpay SDK");
+      }
+
+      // Create payment order
+      const orderResponse = await upgradeToPro();
+      
+      if (!orderResponse.success) {
+        throw new Error(orderResponse.message || "Failed to create payment order");
+      }
+
+      const { order, keyId, config } = orderResponse;
+
+      // Configure Razorpay options
+      const options = {
+        key: keyId,
+        amount: order.amount,
+        currency: order.currency,
+        name: "Connectify",
+        description: "Upgrade to Connectify Pro",
+        order_id: order.id,
+        handler: async function (response) {
+          try {
+            // Verify payment on backend
+            const verificationResponse = await verifyPayment({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+
+            if (verificationResponse.success) {
+              setPaymentStatus("success");
+              setStatusMessage(verificationResponse.data?.message || "Welcome to Connectify Pro!");
+              
+              // Redirect to home after 3 seconds
+              setTimeout(() => {
+                navigate("/home");
+              }, 3000);
+            } else {
+              throw new Error(verificationResponse.message || "Payment verification failed");
+            }
+          } catch (error) {
+            console.error("Payment verification error:", error);
+            setPaymentStatus("error");
+            setStatusMessage("Payment verification failed. Please contact support.");
+          } finally {
+            setIsProcessingPayment(false);
+          }
+        },
+        prefill: {
+          name: user?.full_name || "",
+          email: user?.email || "",
+          contact: user?.phone || "",
+        },
+        notes: {
+          user_id: user?.id || "",
+          subscription_type: "pro",
+        },
+        theme: {
+          color: "#3B82F6",
+        },
+        modal: {
+          ondismiss: function () {
+            setIsProcessingPayment(false);
+            setPaymentStatus("error");
+            setStatusMessage("Payment cancelled");
+          },
+        },
+      };
+
+      // Open Razorpay checkout
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
+
+    } catch (error) {
+      console.error("Payment error:", error);
+      setIsProcessingPayment(false);
+      setPaymentStatus("error");
+      setStatusMessage(error.message || "Payment failed. Please try again.");
+    }
   };
 
   // Card Component (inline since it's simple)
@@ -104,6 +223,26 @@ export default function UpgradePage() {
       </div>
 
       <div className="relative z-10 px-6 pb-8 max-w-4xl mx-auto">
+        {/* Status Messages */}
+        {paymentStatus && (
+          <div
+            className={`mb-8 p-4 rounded-lg border ${
+              paymentStatus === "success"
+                ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                : "bg-red-500/10 border-red-500/20 text-red-400"
+            }`}
+          >
+            <div className="flex items-center">
+              {paymentStatus === "success" ? (
+                <Check className="h-5 w-5 mr-2" />
+              ) : (
+                <Shield className="h-5 w-5 mr-2" />
+              )}
+              <span>{statusMessage}</span>
+            </div>
+          </div>
+        )}
+
         {/* Hero Section */}
         <div
           className={`text-center py-16 transition-all duration-1000 ${
@@ -240,12 +379,31 @@ export default function UpgradePage() {
           style={{ transitionDelay: "1600ms" }}
         >
           <Button 
-            className="w-full bg-gradient-to-r from-blue-500 to-teal-500 hover:from-blue-600 hover:to-teal-600 text-white font-semibold py-6 text-lg rounded-xl shadow-2xl hover:shadow-blue-500/25 transition-all duration-300 transform hover:scale-[1.02] group"
+            className={`w-full font-semibold py-6 text-lg rounded-xl shadow-2xl transition-all duration-300 transform hover:scale-[1.02] group ${
+              isProcessingPayment || paymentStatus === "success"
+                ? "bg-slate-600 cursor-not-allowed"
+                : "bg-gradient-to-r from-blue-500 to-teal-500 hover:from-blue-600 hover:to-teal-600 hover:shadow-blue-500/25"
+            }`}
             onClick={handlePayment}
+            disabled={isProcessingPayment || paymentStatus === "success"}
           >
-            <Crown className="h-5 w-5 mr-3 group-hover:rotate-12 transition-transform" />
-            Upgrade Now - ₹10
-            <ArrowRight className="h-5 w-5 ml-3 group-hover:translate-x-1 transition-transform" />
+            {isProcessingPayment ? (
+              <>
+                <Loader2 className="h-5 w-5 mr-3 animate-spin" />
+                Processing Payment...
+              </>
+            ) : paymentStatus === "success" ? (
+              <>
+                <Check className="h-5 w-5 mr-3 text-emerald-400" />
+                Payment Successful!
+              </>
+            ) : (
+              <>
+                <Crown className="h-5 w-5 mr-3 group-hover:rotate-12 transition-transform" />
+                Upgrade Now - ₹10
+                <ArrowRight className="h-5 w-5 ml-3 group-hover:translate-x-1 transition-transform" />
+              </>
+            )}
           </Button>
 
           <div className="flex items-center justify-center space-x-8 text-sm text-slate-400">
