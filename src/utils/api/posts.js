@@ -148,7 +148,96 @@ export const postsAPI = {
     } catch (error) {
       throw new Error('Failed to fetch user posts');
     }
+  },
+
+  // 🆕 NEW: Edit post with proper JWT auth (NOW INSIDE THE OBJECT)
+  editPost: async (postId, updateData) => {
+    try {
+      let body;
+      let headers = {};
+
+      // Get token for Authorization header
+      const token = tokenManager.getAccessToken();
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      // Handle different input types
+      if (updateData instanceof FormData) {
+        // Already FormData - use as is
+        body = updateData;
+        // Don't set Content-Type for FormData
+      } else if (updateData.image) {
+        // Has image - convert to FormData
+        const formData = new FormData();
+        if (updateData.content !== undefined) {
+          formData.append('content', updateData.content || '');
+        }
+        formData.append('image', updateData.image);
+        body = formData;
+      } else {
+        // Text only - can use JSON
+        body = JSON.stringify({ content: updateData.content });
+        headers['Content-Type'] = 'application/json';
+      }
+
+      console.log('🔄 Updating post with ID:', postId);
+
+      const response = await fetch(`${API_BASE_URL}/posts/${postId}/edit/`, {
+        method: 'PUT',
+        headers,
+        body
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ API Error Response:', errorText);
+        throw new Error(`Failed to update post: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Post updated successfully:', result);
+      return result;
+
+    } catch (error) {
+      console.error('❌ Failed to update post:', error);
+      throw error;
+    }
+  },
+
+  // 🆕 NEW: Delete post with proper JWT auth (NOW INSIDE THE OBJECT)
+  deletePost: async (postId) => {
+    try {
+      const token = tokenManager.getAccessToken();
+      const headers = {};
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      console.log('🗑️ Deleting post with ID:', postId);
+
+      const response = await fetch(`${API_BASE_URL}/posts/${postId}/delete/`, {
+        method: 'DELETE',
+        headers
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ API Error Response:', errorText);
+        throw new Error(`Failed to delete post: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Post deleted successfully:', result);
+      return result;
+
+    } catch (error) {
+      console.error('❌ Failed to delete post:', error);
+      throw error;
+    }
   }
-};
+
+}; // ← IMPORTANT: Object ends here with semicolon
 
 export default postsAPI;

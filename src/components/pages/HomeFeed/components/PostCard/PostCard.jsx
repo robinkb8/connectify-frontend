@@ -1,18 +1,24 @@
-// ===== src/components/pages/HomeFeed/components/PostCard/PostCard.jsx - ENHANCED WITH REAL API INTEGRATION =====
+// ===== src/components/pages/HomeFeed/components/PostCard/PostCard.jsx - ENHANCED WITH EDIT/DELETE FUNCTIONALITY =====
 import React, { useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   MessageCircle, 
   Share2, 
   MoreHorizontal, 
-  Bookmark
+  Bookmark,
+  Edit2,        // 🆕 NEW: Edit icon
+  Trash2        // 🆕 NEW: Delete icon
 } from "lucide-react";
 import AnimatedHeart from '../../../../ui/AnimatedHeart/AnimatedHeart';
 import AnimatedButton from '../../../../ui/AnimatedButton/AnimatedButton';
 import useLikes from '../../../../../hooks/useLikes';
+import { useAuth } from '../../../../../contexts/AuthContext';  // 🆕 NEW: Auth context
+import { postsAPI } from '../../../../../utils/api/posts';  // 🆕 NEW: Posts API - FIXED PATH
+import EditPostModal from '../../../../modals/EditPostModal';  // 🆕 NEW: Edit modal
 
-const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate }) => {
+const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate, onPostUpdated, onPostDeleted }) => {
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth();  // 🆕 NEW: Get current user
 
   // PRESERVED: Memoize mapped data to prevent recreation on every render
   const user = useMemo(() => ({
@@ -35,6 +41,11 @@ const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate 
 
   const timestamp = post.time_since_posted || 'Unknown time';
 
+  // 🆕 NEW: Check if current user owns this post
+  const isOwnPost = useMemo(() => {
+    return currentUser && post.author && currentUser.id === post.author.id;
+  }, [currentUser, post.author]);
+
   // ENHANCED: Use useLikes hook for real API integration
   const {
     isLiked,
@@ -49,6 +60,10 @@ const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate 
   const [sharesCount, setSharesCount] = useState(stats.shares);
   const [showOptions, setShowOptions] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+  
+  // 🆕 NEW: Edit modal state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // PRESERVED: Profile navigation handler
   const handleAuthorClick = useCallback((e) => {
@@ -109,6 +124,44 @@ const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate 
   const handleOptionsBlur = useCallback(() => {
     setTimeout(() => setShowOptions(false), 100);
   }, []);
+
+  // 🆕 NEW: Edit post handler
+  const handleEditPost = useCallback(() => {
+    setShowOptions(false);
+    setShowEditModal(true);
+  }, []);
+
+  // 🆕 NEW: Delete post handler
+  const handleDeletePost = useCallback(async () => {
+    if (!window.confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
+      return;
+    }
+
+    setIsDeleting(true);
+    setShowOptions(false);
+
+    try {
+      const response = await postsAPI.deletePost(post.id);
+      
+      if (response.success) {
+        // Notify parent component about deletion
+        onPostDeleted?.(post.id);
+      } else {
+        alert(response.message || 'Failed to delete post');
+      }
+    } catch (error) {
+      console.error('Failed to delete post:', error);
+      alert('Failed to delete post. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [post.id, onPostDeleted]);
+
+  // 🆕 NEW: Handle post update from edit modal
+  const handlePostUpdated = useCallback((updatedPost) => {
+    onPostUpdated?.(updatedPost);
+    setShowEditModal(false);
+  }, [onPostUpdated]);
 
   // PRESERVED: Memoized image rendering
   const renderImages = useCallback(() => {
@@ -197,7 +250,7 @@ const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate 
           </div>
         </div>
 
-        {/* PRESERVED: Options menu */}
+        {/* 🆕 ENHANCED: Conditional Options menu based on ownership */}
         <div className="relative">
           <AnimatedButton
             variant="ghost"
@@ -206,21 +259,46 @@ const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate 
             onBlur={handleOptionsBlur}
             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 w-8 h-8 rounded-full"
             pressScale={0.9}
+            disabled={isDeleting}
           >
             <MoreHorizontal className="h-5 w-5" />
           </AnimatedButton>
           
           {showOptions && (
             <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 min-w-32 animate-slideIn">
-              <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t-lg transition-colors duration-150">
-                Share
-              </button>
-              <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150">
-                Report
-              </button>
-              <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded-b-lg transition-colors duration-150">
-                Hide
-              </button>
+              {isOwnPost ? (
+                /* 🆕 NEW: Own post options - Edit & Delete */
+                <>
+                  <button 
+                    onClick={handleEditPost}
+                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t-lg transition-colors duration-150 flex items-center gap-2"
+                  >
+                    <Edit2 className="h-4 w-4" />
+                    Edit
+                  </button>
+                  <button 
+                    onClick={handleDeletePost}
+                    disabled={isDeleting}
+                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded-b-lg transition-colors duration-150 flex items-center gap-2 text-red-600 dark:text-red-400 disabled:opacity-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    {isDeleting ? 'Deleting...' : 'Delete'}
+                  </button>
+                </>
+              ) : (
+                /* PRESERVED: Other user's post options - Share, Report, Hide */
+                <>
+                  <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t-lg transition-colors duration-150">
+                    Share
+                  </button>
+                  <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150">
+                    Report
+                  </button>
+                  <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded-b-lg transition-colors duration-150">
+                    Hide
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -306,6 +384,16 @@ const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate 
           <Bookmark className={`h-5 w-5 ${isSaved ? "fill-current" : ""}`} />
         </AnimatedButton>
       </div>
+
+      {/* 🆕 NEW: Edit Post Modal */}
+      {showEditModal && (
+        <EditPostModal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          post={post}
+          onPostUpdated={handlePostUpdated}
+        />
+      )}
 
       {/* PRESERVED: Additional Animations CSS */}
       <style jsx>{`
