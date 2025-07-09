@@ -26,7 +26,7 @@ const useComments = (postId) => {
       const response = await commentsAPI.getComments(postId);
       
       // Transform API response to match our UI format
-      const transformedComments = response.map(comment => ({
+      const transformedComments = response.results.map(comment => ({
         id: comment.id,
         user: {
           name: comment.author?.full_name || comment.author?.username || 'Unknown User',

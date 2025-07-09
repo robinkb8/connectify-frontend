@@ -1,5 +1,5 @@
 // src/utils/api/comments.js - Enhanced with JWT Authentication
-import { apiRequest } from './index';
+import apiRequest from '../api'; 
 
 /**
  * Comments API with JWT authentication support
