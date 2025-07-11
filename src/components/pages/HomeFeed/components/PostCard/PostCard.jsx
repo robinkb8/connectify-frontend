@@ -1,4 +1,4 @@
-// ===== src/components/pages/HomeFeed/components/PostCard/PostCard.jsx - ENHANCED WITH EDIT/DELETE FUNCTIONALITY =====
+// ===== src/components/pages/HomeFeed/components/PostCard/PostCard.jsx - ENHANCED WITH SHARE MODAL =====
 import React, { useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -15,6 +15,7 @@ import useLikes from '../../../../../hooks/useLikes';
 import { useAuth } from '../../../../../contexts/AuthContext';  // 🆕 NEW: Auth context
 import { postsAPI } from '../../../../../utils/api/posts';  // 🆕 NEW: Posts API - FIXED PATH
 import EditPostModal from '../../../../modals/EditPostModal';  // 🆕 NEW: Edit modal
+import ShareModal from '../../../../modals/ShareModal';  // 🆕 SURGICAL FIX: Share modal
 
 const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate, onPostUpdated, onPostDeleted }) => {
   const navigate = useNavigate();
@@ -65,6 +66,9 @@ const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate,
   const [showEditModal, setShowEditModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // 🆕 SURGICAL FIX: Share modal state
+  const [showShareModal, setShowShareModal] = useState(false);
+
   // PRESERVED: Profile navigation handler
   const handleAuthorClick = useCallback((e) => {
     e.stopPropagation();
@@ -98,15 +102,10 @@ const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate,
     onCommentClick?.(post);
   }, [onCommentClick, post]);
 
-  const handleShare = useCallback(async () => {
-    setIsSharing(true);
-    try {
-      // Simulate share API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setSharesCount(prev => prev + 1);
-    } finally {
-      setIsSharing(false);
-    }
+  // 🆕 SURGICAL FIX: Share handler now opens modal
+  const handleShare = useCallback((e) => {
+    e.stopPropagation(); // Prevent event bubbling
+    setShowShareModal(true);
   }, []);
 
   const handleSave = useCallback(() => {
@@ -162,6 +161,12 @@ const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate,
     onPostUpdated?.(updatedPost);
     setShowEditModal(false);
   }, [onPostUpdated]);
+
+  // 🆕 SURGICAL FIX: Handle successful share
+  const handleShareSuccess = useCallback(() => {
+    setSharesCount(prev => prev + 1);
+    setShowShareModal(false);
+  }, []);
 
   // PRESERVED: Memoized image rendering
   const renderImages = useCallback(() => {
@@ -356,12 +361,11 @@ const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate,
             <span className="text-sm font-medium">{stats.comments}</span>
           </AnimatedButton>
 
-          {/* PRESERVED: Share Button */}
+          {/* 🆕 SURGICAL FIX: Share Button with consistent design */}
           <AnimatedButton
             variant="ghost"
             size="sm"
-            onAsyncClick={handleShare}
-            loading={isSharing}
+            onClick={handleShare}
             className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-green-500 transition-all duration-200"
             pressScale={0.95}
             ripple={true}
@@ -392,6 +396,19 @@ const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate,
           onClose={() => setShowEditModal(false)}
           post={post}
           onPostUpdated={handlePostUpdated}
+        />
+      )}
+
+      {/* 🆕 SURGICAL FIX: Share Modal */}
+      {showShareModal && (
+        <ShareModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          post={post}
+          postContent={content.text}
+          postUrl={`${window.location.origin}/post/${post.id}`}
+          authorName={user.name}
+          onShareSuccess={handleShareSuccess}
         />
       )}
 
