@@ -1,10 +1,11 @@
-// src/hooks/useMessaging.js - Complete Messaging State Management Hook
+// src/hooks/useMessaging.js - FIXED: WebSocket Connection Stability
 import { useState, useEffect, useCallback, useRef } from 'react';
 import messagingAPI, { MessagingWebSocket } from '../utils/api/messaging';
 
 /**
- * Custom hook for managing messaging functionality
+ * FIXED: Custom hook for managing messaging functionality
  * Handles chats, messages, WebSocket connections, and real-time updates
+ * SOLUTION: Added userId → chatId resolution for stable WebSocket connections
  */
 const useMessaging = () => {
   // State management
@@ -19,6 +20,76 @@ const useMessaging = () => {
   // WebSocket management
   const wsRef = useRef(null);
   const typingTimeoutRef = useRef({});
+  
+  // FIXED: Add chat ID cache to avoid repeated API calls
+  const chatIdCacheRef = useRef(new Map());
+
+  // FIXED: Helper function to resolve userId to actual chatId
+  const findOrCreateChat = useCallback(async (userIdOrChatId) => {
+    try {
+      // Check cache first
+      if (chatIdCacheRef.current.has(userIdOrChatId)) {
+        return chatIdCacheRef.current.get(userIdOrChatId);
+      }
+
+      // Check if it's already a valid chat ID (UUID format)
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (uuidRegex.test(userIdOrChatId)) {
+        // Try to get chat details to verify it exists
+        try {
+          const chatDetails = await messagingAPI.getChat(userIdOrChatId);
+          chatIdCacheRef.current.set(userIdOrChatId, userIdOrChatId);
+          return userIdOrChatId;
+        } catch (error) {
+          console.log('Chat ID not found:', userIdOrChatId);
+        }
+      }
+
+      // It's a userId - find or create chat with this user
+      console.log('🔍 Resolving userId to chatId:', userIdOrChatId);
+      
+      // First, check existing chats for this user
+      const response = await messagingAPI.getChats();
+      const userChats = response.results || response;
+      
+      // Look for existing chat with this user
+      const existingChat = userChats.find(chat => {
+        if (chat.is_group_chat) return false;
+        
+        // Find other participant
+        const otherParticipant = chat.participants?.find(p => 
+          p.id !== getCurrentUser().id
+        );
+        
+        return otherParticipant && (
+          otherParticipant.id.toString() === userIdOrChatId.toString() ||
+          otherParticipant.username === userIdOrChatId
+        );
+      });
+
+      if (existingChat) {
+        console.log('✅ Found existing chat:', existingChat.id);
+        chatIdCacheRef.current.set(userIdOrChatId, existingChat.id);
+        return existingChat.id;
+      }
+
+      // No existing chat found - create new one
+      console.log('🆕 Creating new chat with user:', userIdOrChatId);
+      const newChat = await messagingAPI.createChat([userIdOrChatId], false);
+      
+      console.log('✅ Created new chat:', newChat.id);
+      chatIdCacheRef.current.set(userIdOrChatId, newChat.id);
+      
+      // Add to chats list
+      setChats(prevChats => [newChat, ...prevChats]);
+      
+      return newChat.id;
+      
+    } catch (error) {
+      console.error('❌ Error resolving userId to chatId:', error);
+      throw error;
+    }
+  }, []);
 
   // Chat management functions
   const loadChats = useCallback(async () => {
@@ -60,34 +131,42 @@ const useMessaging = () => {
     }
   }, []);
 
-  const selectChat = useCallback(async (chatId) => {
+  // FIXED: Updated selectChat to resolve userId to chatId
+  const selectChat = useCallback(async (userIdOrChatId) => {
     try {
       setIsLoading(true);
       setError(null);
       
-      // Get chat details
-      const chatDetails = await messagingAPI.getChat(chatId);
+      console.log('🎯 Selecting chat for:', userIdOrChatId);
+      
+      // FIXED: Resolve userId to actual chatId
+      const actualChatId = await findOrCreateChat(userIdOrChatId);
+      console.log('✅ Resolved to chat ID:', actualChatId);
+      
+      // Get chat details using actual chat ID
+      const chatDetails = await messagingAPI.getChat(actualChatId);
       setCurrentChat(chatDetails);
       
       // Load messages for this chat
-      const messagesResponse = await messagingAPI.getMessages(chatId);
+      const messagesResponse = await messagingAPI.getMessages(actualChatId);
       const messagesData = messagesResponse.results || messagesResponse;
       
       setMessages(prev => ({
         ...prev,
-        [chatId]: messagesData
+        [actualChatId]: messagesData
       }));
       
-      // Connect WebSocket for real-time updates
-      connectWebSocket(chatId);
+      // FIXED: Connect WebSocket using actual chat ID
+      console.log('🔌 Connecting WebSocket to chat:', actualChatId);
+      connectWebSocket(actualChatId);
       
     } catch (error) {
-      console.error('Error selecting chat:', error);
+      console.error('❌ Error selecting chat:', error);
       setError('Failed to load conversation');
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [findOrCreateChat]);
 
   const updateChat = useCallback(async (chatId, updateData) => {
     try {
@@ -133,6 +212,13 @@ const useMessaging = () => {
         return newMessages;
       });
       
+      // Clear from cache
+      chatIdCacheRef.current.forEach((value, key) => {
+        if (value === chatId) {
+          chatIdCacheRef.current.delete(key);
+        }
+      });
+      
     } catch (error) {
       console.error('Error deleting chat:', error);
       setError('Failed to delete conversation');
@@ -141,11 +227,19 @@ const useMessaging = () => {
   }, [currentChat]);
 
   // Message management functions
-  const sendNewMessage = useCallback(async (chatId, content, messageType = 'text', attachment = null, replyTo = null) => {
+  const sendNewMessage = useCallback(async (chatIdOrUserId, content, messageType = 'text', attachment = null, replyTo = null) => {
     if (!content.trim() && !attachment) return;
 
     try {
       setError(null);
+      
+      // FIXED: Resolve to actual chat ID if needed
+      let actualChatId = chatIdOrUserId;
+      if (currentChat) {
+        actualChatId = currentChat.id;
+      } else {
+        actualChatId = await findOrCreateChat(chatIdOrUserId);
+      }
       
       // Optimistically add message to UI
       const tempMessage = {
@@ -155,21 +249,21 @@ const useMessaging = () => {
         sender: getCurrentUser(),
         created_at: new Date().toISOString(),
         status: 'sending',
-        chat: chatId
+        chat: actualChatId
       };
 
       setMessages(prev => ({
         ...prev,
-        [chatId]: [...(prev[chatId] || []), tempMessage]
+        [actualChatId]: [...(prev[actualChatId] || []), tempMessage]
       }));
 
       // Send message to backend
-      const sentMessage = await messagingAPI.sendMessage(chatId, content.trim(), messageType, attachment, replyTo);
+      const sentMessage = await messagingAPI.sendMessage(actualChatId, content.trim(), messageType, attachment, replyTo);
       
       // Replace temp message with actual message
       setMessages(prev => ({
         ...prev,
-        [chatId]: prev[chatId].map(msg =>
+        [actualChatId]: prev[actualChatId].map(msg =>
           msg.id === tempMessage.id ? sentMessage : msg
         )
       }));
@@ -177,7 +271,7 @@ const useMessaging = () => {
       // Update chat's last message in the chats list
       setChats(prevChats =>
         prevChats.map(chat =>
-          chat.id === chatId
+          chat.id === actualChatId
             ? {
                 ...chat,
                 last_message: sentMessage,
@@ -194,18 +288,19 @@ const useMessaging = () => {
       setError('Failed to send message');
       
       // Mark temp message as failed
+      const actualChatId = currentChat?.id || chatIdOrUserId;
       setMessages(prev => ({
         ...prev,
-        [chatId]: prev[chatId].map(msg =>
+        [actualChatId]: prev[actualChatId]?.map(msg =>
           msg.id.toString().startsWith('temp_') 
             ? { ...msg, status: 'failed' }
             : msg
-        )
+        ) || []
       }));
       
       throw error;
     }
-  }, []);
+  }, [currentChat, findOrCreateChat]);
 
   const editMessage = useCallback(async (messageId, newContent) => {
     try {
@@ -250,14 +345,18 @@ const useMessaging = () => {
     }
   }, []);
 
-  // WebSocket management
+  // FIXED: WebSocket management with enhanced connection stability
   const connectWebSocket = useCallback((chatId) => {
     // Disconnect existing connection
     if (wsRef.current) {
+      console.log('🔌 Disconnecting existing WebSocket');
       wsRef.current.disconnect();
     }
 
+    console.log('🚀 Creating new WebSocket connection for chat:', chatId);
+
     const handleMessage = (message) => {
+      console.log('📨 Received message:', message);
       setMessages(prev => ({
         ...prev,
         [chatId]: [...(prev[chatId] || []), message]
@@ -322,16 +421,28 @@ const useMessaging = () => {
     };
 
     const handleError = (error) => {
-      console.error('WebSocket error:', error);
+      console.error('❌ WebSocket error:', error);
       setError('Connection error');
       setIsConnected(false);
     };
 
-    const handleClose = () => {
+    const handleClose = (event) => {
+      console.log('🔌 WebSocket closed:', event.code, event.reason);
       setIsConnected(false);
+      
+      // Don't trigger error state for normal closures
+      if (event.code !== 1000) {
+        setError('Connection lost');
+      }
     };
 
-    // Create new WebSocket connection
+    const handleOpen = () => {
+      console.log('✅ WebSocket connected successfully for chat:', chatId);
+      setIsConnected(true);
+      setError(null);
+    };
+
+    // Create new WebSocket connection with enhanced handlers
     wsRef.current = new MessagingWebSocket(
       chatId,
       handleMessage,
@@ -341,11 +452,14 @@ const useMessaging = () => {
       handleClose
     );
 
+    // Add open handler
+    wsRef.current.onOpen = handleOpen;
+
     wsRef.current.connect();
-    setIsConnected(true);
   }, []);
 
   const disconnectWebSocket = useCallback(() => {
+    console.log('🔌 Disconnecting WebSocket');
     if (wsRef.current) {
       wsRef.current.disconnect();
       wsRef.current = null;
@@ -416,17 +530,49 @@ const useMessaging = () => {
     };
   };
 
-  const getChatMessages = useCallback((chatId) => {
-    return messages[chatId] || [];
+  // FIXED: Updated to handle userId → chatId resolution
+  const getChatMessages = useCallback((userIdOrChatId) => {
+    // Try to get messages by direct chat ID first
+    if (messages[userIdOrChatId]) {
+      return messages[userIdOrChatId];
+    }
+    
+    // Try to find chat ID from cache
+    const cachedChatId = chatIdCacheRef.current.get(userIdOrChatId);
+    if (cachedChatId && messages[cachedChatId]) {
+      return messages[cachedChatId];
+    }
+    
+    // Return empty array as fallback
+    return [];
   }, [messages]);
 
-  const getChatTypingUsers = useCallback((chatId) => {
-    const chatTyping = typingUsers[chatId] || {};
-    return Object.values(chatTyping).map(user => user.username);
+  // FIXED: Updated to handle userId → chatId resolution
+  const getChatTypingUsers = useCallback((userIdOrChatId) => {
+    // Try to get typing users by direct chat ID first
+    if (typingUsers[userIdOrChatId]) {
+      const chatTyping = typingUsers[userIdOrChatId] || {};
+      return Object.values(chatTyping).map(user => user.username);
+    }
+    
+    // Try to find chat ID from cache
+    const cachedChatId = chatIdCacheRef.current.get(userIdOrChatId);
+    if (cachedChatId && typingUsers[cachedChatId]) {
+      const chatTyping = typingUsers[cachedChatId] || {};
+      return Object.values(chatTyping).map(user => user.username);
+    }
+    
+    // Return empty array as fallback
+    return [];
   }, [typingUsers]);
 
   const clearError = useCallback(() => {
     setError(null);
+  }, []);
+
+  // FIXED: Clear cache on logout/unmount
+  const clearCache = useCallback(() => {
+    chatIdCacheRef.current.clear();
   }, []);
 
   // Initialize messaging on mount
@@ -440,8 +586,10 @@ const useMessaging = () => {
       Object.values(typingTimeoutRef.current).forEach(timeout => {
         clearTimeout(timeout);
       });
+      // Clear cache
+      clearCache();
     };
-  }, [loadChats, disconnectWebSocket]);
+  }, [loadChats, disconnectWebSocket, clearCache]);
 
   // Return hook API
   return {
@@ -483,7 +631,11 @@ const useMessaging = () => {
     markAsDelivered,
     
     // Utility
-    clearError
+    clearError,
+    clearCache,
+    
+    // FIXED: Add helper for debugging
+    findOrCreateChat
   };
 };
 

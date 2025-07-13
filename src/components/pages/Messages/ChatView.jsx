@@ -1,4 +1,4 @@
-// src/components/pages/Messages/ChatView.jsx - UPDATED WITH REAL API INTEGRATION
+// src/components/pages/Messages/ChatView.jsx - FIXED: WebSocket Connection Stability
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
@@ -167,7 +167,7 @@ const ChatErrorState = ({ error, onRetry, onBack }) => (
   </div>
 );
 
-// Main ChatView Component - UPDATED WITH REAL API
+// Main ChatView Component - FIXED: WebSocket Connection Stability
 function ChatView() {
   const { userId } = useParams();
   const navigate = useNavigate();
@@ -210,12 +210,14 @@ function ChatView() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Load chat when component mounts or userId changes
+  // FIXED: Load chat when component mounts or userId changes
+  // PROBLEM: selectChat in dependency array caused useEffect to trigger on function changes
+  // SOLUTION: Only depend on userId, not the selectChat function itself
   useEffect(() => {
     if (userId) {
       selectChat(userId);
     }
-  }, [userId, selectChat]);
+  }, [userId]); // FIXED: Removed selectChat from dependency array
 
   // Auto-scroll to bottom - From original
   useEffect(() => {

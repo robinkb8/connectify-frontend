@@ -1,4 +1,4 @@
-// src/utils/api/messaging.js - Complete Messaging API Integration
+// src/utils/api/messaging.js - Complete Messaging API Integration - FIXED: Input Enable
 import { tokenManager } from '../api';
 
 const API_BASE_URL = 'http://127.0.0.1:8000/api';
@@ -423,14 +423,16 @@ export const removeChatParticipant = async (chatId, userId) => {
 };
 
 // =====================================================
-// WEBSOCKET CONNECTION CLASS
+// WEBSOCKET CONNECTION CLASS - FIXED: Added onOpen callback
 // =====================================================
 
 /**
  * WebSocket connection for real-time messaging
+ * FIXED: Added onOpen callback parameter to enable input
  */
 export class MessagingWebSocket {
-  constructor(chatId, onMessage, onTyping, onStatus, onError, onClose) {
+  // FIXED: Added onOpen callback parameter
+  constructor(chatId, onMessage, onTyping, onStatus, onError, onClose, onOpen) {
     this.chatId = chatId;
     this.ws = null;
     this.onMessage = onMessage;
@@ -438,6 +440,7 @@ export class MessagingWebSocket {
     this.onStatus = onStatus;
     this.onError = onError;
     this.onClose = onClose;
+    this.onOpen = onOpen; // FIXED: Added onOpen callback
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
     this.reconnectDelay = 1000;
@@ -455,9 +458,13 @@ export class MessagingWebSocket {
     try {
       this.ws = new WebSocket(wsUrl);
       
+      // FIXED: Call onOpen callback to enable input
       this.ws.onopen = () => {
         console.log('✅ WebSocket connected for chat:', this.chatId);
         this.reconnectAttempts = 0;
+        
+        // FIXED: Call the onOpen callback to set isConnected = true
+        this.onOpen?.(); // This will enable the input!
       };
 
       this.ws.onmessage = (event) => {
