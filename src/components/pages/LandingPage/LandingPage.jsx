@@ -6,6 +6,147 @@ import LoginForm from "../../forms/LoginForm/LoginForm";
 import { useToast } from '../../ui/Toast'; // ✅ CORRECT IMPORT
 
 const ConnectifyLanding = () => {
+  // ✅ GLITCH EFFECT STYLES
+  const glitchStyles = `
+    .glitch {
+      color: #fff;
+      font-size: clamp(2rem, 10vw, 8rem);
+      white-space: nowrap;
+      font-weight: 900;
+      position: relative;
+      margin: 0 auto;
+      user-select: none;
+      cursor: pointer;
+    }
+    .glitch::after,
+    .glitch::before {
+      content: attr(data-text);
+      position: absolute;
+      top: 0;
+      color: #fff;
+      background-color: #060010;
+      overflow: hidden;
+      clip-path: inset(0 0 0 0);
+    }
+    .glitch:not(.enable-on-hover)::after {
+      left: 10px;
+      text-shadow: var(--after-shadow, -10px 0 red);
+      animation: animate-glitch var(--after-duration, 3s) infinite linear alternate-reverse;
+    }
+    .glitch:not(.enable-on-hover)::before {
+      left: -10px;
+      text-shadow: var(--before-shadow, 10px 0 cyan);
+      animation: animate-glitch var(--before-duration, 2s) infinite linear alternate-reverse;
+    }
+    .glitch.enable-on-hover::after,
+    .glitch.enable-on-hover::before {
+      content: '';
+      opacity: 0;
+      animation: none;
+    }
+    .glitch.enable-on-hover:hover::after {
+      content: attr(data-text);
+      opacity: 1;
+      left: 10px;
+      text-shadow: var(--after-shadow, -10px 0 red);
+      animation: animate-glitch var(--after-duration, 3s) infinite linear alternate-reverse;
+    }
+    .glitch.enable-on-hover:hover::before {
+      content: attr(data-text);
+      opacity: 1;
+      left: -10px;
+      text-shadow: var(--before-shadow, 10px 0 cyan);
+      animation: animate-glitch var(--before-duration, 2s) infinite linear alternate-reverse;
+    }
+    @keyframes animate-glitch {
+      0%   { clip-path: inset(20% 0 50% 0); }
+      5%   { clip-path: inset(10% 0 60% 0); }
+      10%  { clip-path: inset(15% 0 55% 0); }
+      15%  { clip-path: inset(25% 0 35% 0); }
+      20%  { clip-path: inset(30% 0 40% 0); }
+      25%  { clip-path: inset(40% 0 20% 0); }
+      30%  { clip-path: inset(10% 0 60% 0); }
+      35%  { clip-path: inset(15% 0 55% 0); }
+      40%  { clip-path: inset(25% 0 35% 0); }
+      45%  { clip-path: inset(30% 0 40% 0); }
+      50%  { clip-path: inset(20% 0 50% 0); }
+      55%  { clip-path: inset(10% 0 60% 0); }
+      60%  { clip-path: inset(15% 0 55% 0); }
+      65%  { clip-path: inset(25% 0 35% 0); }
+      70%  { clip-path: inset(30% 0 40% 0); }
+      75%  { clip-path: inset(40% 0 20% 0); }
+      80%  { clip-path: inset(20% 0 50% 0); }
+      85%  { clip-path: inset(10% 0 60% 0); }
+      90%  { clip-path: inset(15% 0 55% 0); }
+      95%  { clip-path: inset(25% 0 35% 0); }
+      100% { clip-path: inset(30% 0 40% 0); }
+    }
+  `;
+
+  // ✅ CARD DATA FOR AUTO SWIPER
+  const cardData = [
+    {
+      id: 1,
+      name: "Alex Rivera",
+      time: "2 hours ago",
+      message: "Just had an amazing sunset view from the mountains!",
+      emoji: "🌅",
+      bgGradient: "from-orange-400 to-pink-500",
+      avatarGradient: "from-emerald-500 to-teal-500",
+      likes: 142,
+      comments: 23,
+      shares: 12
+    },
+    {
+      id: 2,
+      name: "Sarah Chen",
+      time: "1 hour ago",
+      message: "Coffee and coding session at my favorite café ☕",
+      emoji: "💻",
+      bgGradient: "from-amber-400 to-orange-500",
+      avatarGradient: "from-purple-500 to-pink-500",
+      likes: 89,
+      comments: 15,
+      shares: 8
+    },
+    {
+      id: 3,
+      name: "Mike Johnson",
+      time: "3 hours ago",
+      message: "New artwork finished! What do you think?",
+      emoji: "🎨",
+      bgGradient: "from-blue-400 to-purple-500",
+      avatarGradient: "from-cyan-500 to-blue-500",
+      likes: 234,
+      comments: 41,
+      shares: 19
+    },
+    {
+      id: 4,
+      name: "Emma Davis",
+      time: "30 min ago",
+      message: "Hiking adventure in the national park today!",
+      emoji: "🏔️",
+      bgGradient: "from-green-400 to-emerald-500",
+      avatarGradient: "from-lime-500 to-green-500",
+      likes: 156,
+      comments: 28,
+      shares: 14
+    },
+    {
+      id: 5,
+      name: "David Kim",
+      time: "4 hours ago",
+      message: "Homemade pizza night with friends! 🍕",
+      emoji: "🍕",
+      bgGradient: "from-red-400 to-orange-500",
+      avatarGradient: "from-indigo-500 to-purple-500",
+      likes: 178,
+      comments: 35,
+      shares: 22
+    }
+  ];
+
   // ✅ BACKGROUND ANIMATION STATE
   const [currentBg, setCurrentBg] = useState(0);
   const backgrounds = [
@@ -13,6 +154,9 @@ const ConnectifyLanding = () => {
     "bg-gradient-to-br from-slate-900 via-teal-900 to-slate-900",
     "bg-gradient-to-br from-slate-900 via-cyan-900 to-slate-900"
   ];
+
+  // ✅ CARD SWIPER STATE
+  const [currentCard, setCurrentCard] = useState(0);
 
   // ✅ MODAL STATE MANAGEMENT
   const [showSignUpModal, setShowSignUpModal] = useState(false);
@@ -28,6 +172,14 @@ const ConnectifyLanding = () => {
     }, 5000);
     return () => clearInterval(interval);
   }, [backgrounds.length]);
+
+  // ✅ CARD AUTO SWIPER EFFECT (2-second intervals)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentCard((prev) => (prev + 1) % cardData.length);
+    }, 2000); // 2-second intervals
+    return () => clearInterval(interval);
+  }, [cardData.length]);
 
   // ✅ MODAL EVENT HANDLERS
   const handleJoinNowClick = useCallback(() => {
@@ -60,8 +212,6 @@ const ConnectifyLanding = () => {
     setShowLoginModal(true);
   }, []);
 
-
-
   // ✅ BUTTON COMPONENT
   const Button = ({ children, className, variant = "default", size = "default", onClick, ...props }) => {
     const baseClasses = "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background";
@@ -87,8 +237,13 @@ const ConnectifyLanding = () => {
     );
   };
 
+  // Get current card data
+  const card = cardData[currentCard];
+
   return (
     <div className="min-h-screen bg-slate-900">
+      {/* ✅ INJECT GLITCH STYLES */}
+      <style dangerouslySetInnerHTML={{ __html: glitchStyles }} />
       
 
       {/* Hero Section with Changing Background */}
@@ -122,7 +277,7 @@ const ConnectifyLanding = () => {
               <div className="space-y-4">
                 <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white leading-tight">
                   <span className="relative inline-block">
-                    <span className="animate-text-shimmer bg-gradient-to-r from-blue-400 via-teal-500 to-blue-400 bg-[length:200%_100%] bg-clip-text text-transparent">
+                    <span className="glitch bg-gradient-to-r from-blue-400 via-teal-500 to-blue-400 bg-clip-text" data-text="Connectify">
                       Connectify
                     </span>
                     <span className="absolute -bottom-1 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-teal-400 transform scale-x-0 transition-transform duration-700 animate-expand-line"></span>
@@ -154,7 +309,7 @@ const ConnectifyLanding = () => {
             </div>
 
             {/* Right Content - Phone Mockup */}
-            <div className="flex justify-center lg:justify-end">
+            <div className="flex justify-center lg:justify-center lg:pr-12">
               <div className="relative">
                 {/* Phone Frame */}
                 <div className="w-80 h-[600px] bg-gray-900 rounded-[3rem] p-2 shadow-2xl">
@@ -181,37 +336,51 @@ const ConnectifyLanding = () => {
                         <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-teal-500 rounded-full"></div>
                       </div>
 
-                      {/* Mock Post */}
-                      <div className="bg-gray-700 rounded-2xl p-4 space-y-3">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full"></div>
+                      {/* Auto-Swiper Cards - Bigger Layout */}
+                      <div className="bg-gray-700 rounded-2xl p-6 space-y-4 transition-all duration-500 ease-in-out">
+                        <div className="flex items-center space-x-4">
+                          <div className={`w-12 h-12 bg-gradient-to-r ${card.avatarGradient} rounded-full transition-all duration-500`}></div>
                           <div>
-                            <p className="text-white font-semibold text-sm">Alex Rivera</p>
-                            <p className="text-gray-400 text-xs">2 hours ago</p>
+                            <p className="text-white font-semibold text-base">{card.name}</p>
+                            <p className="text-gray-400 text-sm">{card.time}</p>
                           </div>
                         </div>
-                        <div className="space-y-2">
-                          <p className="text-white text-sm">
-                            Just had an amazing sunset view from the mountains! 
+                        <div className="space-y-3">
+                          <p className="text-white text-base leading-relaxed">
+                            {card.message}
                           </p>
-                          <div className="w-full h-32 bg-gradient-to-br from-orange-400 to-pink-500 rounded-xl flex items-center justify-center">
-                            🌅
+                          <div className={`w-full h-40 bg-gradient-to-br ${card.bgGradient} rounded-xl flex items-center justify-center transition-all duration-500 text-5xl shadow-lg`}>
+                            {card.emoji}
                           </div>
-                          <div className="flex items-center space-x-4 text-gray-400 text-xs">
-                            <div className="flex items-center space-x-1">
-                              <Heart className="w-4 h-4 text-red-400" />
-                              <span>142</span>
-                            </div>
-                            <div className="flex items-center space-x-1">
-                              <MessageCircle className="w-4 h-4" />
-                              <span>23</span>
-                            </div>
-                            <div className="flex items-center space-x-1">
-                              <Share2 className="w-4 h-4" />
-                              <span>12</span>
+                          <div className="flex items-center justify-between pt-2">
+                            <div className="flex items-center space-x-6 text-gray-400 text-sm">
+                              <div className="flex items-center space-x-2">
+                                <Heart className="w-5 h-5 text-red-400" />
+                                <span>{card.likes}</span>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <MessageCircle className="w-5 h-5" />
+                                <span>{card.comments}</span>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <Share2 className="w-5 h-5" />
+                                <span>{card.shares}</span>
+                              </div>
                             </div>
                           </div>
                         </div>
+                      </div>
+
+                      {/* Card Indicators */}
+                      <div className="flex justify-center space-x-2 py-2">
+                        {cardData.map((_, index) => (
+                          <div
+                            key={index}
+                            className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                              index === currentCard ? 'bg-blue-400' : 'bg-gray-600'
+                            }`}
+                          />
+                        ))}
                       </div>
                     </div>
                   </div>
