@@ -5,6 +5,11 @@ import SignUpModal from "../../forms/SignUpForm/SignUpForm";
 import LoginForm from "../../forms/LoginForm/LoginForm";
 import { useToast } from '../../ui/Toast'; // ✅ CORRECT IMPORT
 
+// ✅ IMPORT LOCAL IMAGES FROM ASSETS
+import im1 from '../../../assets/images/slides/im1.jpg';
+import im2 from '../../../assets/images/slides/im2.jpg';
+import im3 from '../../../assets/images/slides/im3.jpg';
+
 const ConnectifyLanding = () => {
   // ✅ GLITCH EFFECT STYLES
   const glitchStyles = `
@@ -83,67 +88,19 @@ const ConnectifyLanding = () => {
     }
   `;
 
-  // ✅ CARD DATA FOR AUTO SWIPER
+  // ✅ CARD DATA FOR AUTO SWIPER - IMPORTED LOCAL IMAGES
   const cardData = [
     {
       id: 1,
-      name: "Alex Rivera",
-      time: "2 hours ago",
-      message: "Just had an amazing sunset view from the mountains!",
-      emoji: "🌅",
-      bgGradient: "from-orange-400 to-pink-500",
-      avatarGradient: "from-emerald-500 to-teal-500",
-      likes: 142,
-      comments: 23,
-      shares: 12
+      imageUrl: im1
     },
     {
       id: 2,
-      name: "Sarah Chen",
-      time: "1 hour ago",
-      message: "Coffee and coding session at my favorite café ☕",
-      emoji: "💻",
-      bgGradient: "from-amber-400 to-orange-500",
-      avatarGradient: "from-purple-500 to-pink-500",
-      likes: 89,
-      comments: 15,
-      shares: 8
+      imageUrl: im2
     },
     {
       id: 3,
-      name: "Mike Johnson",
-      time: "3 hours ago",
-      message: "New artwork finished! What do you think?",
-      emoji: "🎨",
-      bgGradient: "from-blue-400 to-purple-500",
-      avatarGradient: "from-cyan-500 to-blue-500",
-      likes: 234,
-      comments: 41,
-      shares: 19
-    },
-    {
-      id: 4,
-      name: "Emma Davis",
-      time: "30 min ago",
-      message: "Hiking adventure in the national park today!",
-      emoji: "🏔️",
-      bgGradient: "from-green-400 to-emerald-500",
-      avatarGradient: "from-lime-500 to-green-500",
-      likes: 156,
-      comments: 28,
-      shares: 14
-    },
-    {
-      id: 5,
-      name: "David Kim",
-      time: "4 hours ago",
-      message: "Homemade pizza night with friends! 🍕",
-      emoji: "🍕",
-      bgGradient: "from-red-400 to-orange-500",
-      avatarGradient: "from-indigo-500 to-purple-500",
-      likes: 178,
-      comments: 35,
-      shares: 22
+      imageUrl: im3
     }
   ];
 
@@ -300,7 +257,6 @@ const ConnectifyLanding = () => {
                 <Button 
                   variant="outline" 
                   size="lg"
-                  onClick={handleExploreClick}
                   className="border-2 border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-white px-8 py-4 text-lg font-semibold rounded-xl transition-all duration-300"
                 >
                   Explore Features
@@ -309,7 +265,7 @@ const ConnectifyLanding = () => {
             </div>
 
             {/* Right Content - Phone Mockup */}
-            <div className="flex justify-center lg:justify-center lg:pr-12">
+            <div className="flex justify-center lg:justify-center lg:mr-5">
               <div className="relative">
                 {/* Phone Frame */}
                 <div className="w-80 h-[600px] bg-gray-900 rounded-[3rem] p-2 shadow-2xl">
@@ -336,42 +292,16 @@ const ConnectifyLanding = () => {
                         <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-teal-500 rounded-full"></div>
                       </div>
 
-                      {/* Auto-Swiper Cards - Bigger Layout */}
-                      <div className="bg-gray-700 rounded-2xl p-6 space-y-4 transition-all duration-500 ease-in-out">
-                        <div className="flex items-center space-x-4">
-                          <div className={`w-12 h-12 bg-gradient-to-r ${card.avatarGradient} rounded-full transition-all duration-500`}></div>
-                          <div>
-                            <p className="text-white font-semibold text-base">{card.name}</p>
-                            <p className="text-gray-400 text-sm">{card.time}</p>
-                          </div>
-                        </div>
-                        <div className="space-y-3">
-                          <p className="text-white text-base leading-relaxed">
-                            {card.message}
-                          </p>
-                          <div className={`w-full h-40 bg-gradient-to-br ${card.bgGradient} rounded-xl flex items-center justify-center transition-all duration-500 text-5xl shadow-lg`}>
-                            {card.emoji}
-                          </div>
-                          <div className="flex items-center justify-between pt-2">
-                            <div className="flex items-center space-x-6 text-gray-400 text-sm">
-                              <div className="flex items-center space-x-2">
-                                <Heart className="w-5 h-5 text-red-400" />
-                                <span>{card.likes}</span>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <MessageCircle className="w-5 h-5" />
-                                <span>{card.comments}</span>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <Share2 className="w-5 h-5" />
-                                <span>{card.shares}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                      {/* Complete Social Media Card Images */}
+                      <div className="transition-all duration-500 ease-in-out">
+                        <img 
+                          src={card.imageUrl} 
+                          alt="Social media post"
+                          className="w-full rounded-2xl object-cover transition-all duration-500 shadow-lg"
+                        />
                       </div>
 
-                      {/* Card Indicators */}
+                      {/* Card Indicators - 3 dots for 3 images */}
                       <div className="flex justify-center space-x-2 py-2">
                         {cardData.map((_, index) => (
                           <div
@@ -467,7 +397,6 @@ const ConnectifyLanding = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
               size="lg"
-              onClick={handleJoinNowClick}
               className="bg-white text-blue-900 hover:bg-gray-100 px-8 py-4 text-lg font-semibold rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105"
             >
               Start Your Journey
@@ -476,7 +405,6 @@ const ConnectifyLanding = () => {
             <Button 
               variant="outline"
               size="lg"
-              onClick={handleExploreClick}
               className="border-2 border-white text-white hover:bg-white hover:text-blue-900 px-8 py-4 text-lg font-semibold rounded-xl transition-all duration-300"
             >
               Learn More
