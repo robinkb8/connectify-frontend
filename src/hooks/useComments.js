@@ -1,12 +1,13 @@
-// src/hooks/useComments.js
+// src/hooks/useComments.js - Enhanced with Parent Notification for Comment Count Sync
 import { useState, useCallback, useEffect } from 'react';
 import { commentsAPI } from '../utils/api';
 
 /**
- * Custom hook for managing post comments with real API integration
+ * Custom hook for managing post comments with real API integration + Parent Notification Fix
  * Handles fetching, posting, editing, and deleting comments with optimistic updates
+ * ✅ SURGICAL FIX #3: Added parent notification for comment count synchronization
  */
-const useComments = (postId) => {
+const useComments = (postId, onCommentCountUpdate = null) => {
   const [comments, setComments] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -54,16 +55,27 @@ const useComments = (postId) => {
       }));
 
       setComments(transformedComments);
+      
+      // ✅ SURGICAL FIX #3: Notify parent component of actual comment count
+      if (onCommentCountUpdate) {
+        const totalComments = transformedComments.reduce((total, comment) => {
+          return total + 1 + (comment.replies ? comment.replies.length : 0);
+        }, 0);
+        console.log('📊 useComments: Notifying parent of comment count:', totalComments);
+        onCommentCountUpdate(totalComments);
+      }
+      
     } catch (err) {
       console.error('Error fetching comments:', err);
       setError('Failed to load comments. Please try again.');
     } finally {
       setIsLoading(false);
     }
-  }, [postId]);
+  }, [postId, onCommentCountUpdate]);
 
   /**
-   * Add a new comment with optimistic update
+   * ✅ SURGICAL FIX #3: Enhanced addComment with parent notification
+   * Add a new comment with optimistic update and parent count sync
    */
   const addComment = useCallback(async (content, parentCommentId = null) => {
     if (!content.trim() || isSubmitting) return { success: false };
@@ -91,14 +103,40 @@ const useComments = (postId) => {
     // Optimistic update - add comment immediately to UI
     if (parentCommentId) {
       // Adding a reply
-      setComments(prev => prev.map(comment => 
-        comment.id === parentCommentId 
-          ? { ...comment, replies: [optimisticComment, ...(comment.replies || [])] }
-          : comment
-      ));
+      setComments(prev => {
+        const newComments = prev.map(comment => 
+          comment.id === parentCommentId 
+            ? { ...comment, replies: [optimisticComment, ...(comment.replies || [])] }
+            : comment
+        );
+        
+        // 🎯 SURGICAL CHANGE: Notify parent of new comment count (including replies)
+        if (onCommentCountUpdate) {
+          const totalComments = newComments.reduce((total, comment) => {
+            return total + 1 + (comment.replies ? comment.replies.length : 0);
+          }, 0);
+          console.log('📊 useComments: Parent notified of new reply count:', totalComments);
+          onCommentCountUpdate(totalComments);
+        }
+        
+        return newComments;
+      });
     } else {
       // Adding a top-level comment
-      setComments(prev => [optimisticComment, ...prev]);
+      setComments(prev => {
+        const newComments = [optimisticComment, ...prev];
+        
+        // 🎯 SURGICAL CHANGE: Notify parent of new comment count
+        if (onCommentCountUpdate) {
+          const totalComments = newComments.reduce((total, comment) => {
+            return total + 1 + (comment.replies ? comment.replies.length : 0);
+          }, 0);
+          console.log('📊 useComments: Parent notified of new comment count:', totalComments);
+          onCommentCountUpdate(totalComments);
+        }
+        
+        return newComments;
+      });
     }
 
     try {
@@ -144,18 +182,42 @@ const useComments = (postId) => {
     } catch (err) {
       console.error('Error adding comment:', err);
       
-      // Remove optimistic comment on failure
+      // Remove optimistic comment on failure and update parent count
       if (parentCommentId) {
-        setComments(prev => prev.map(comment => 
-          comment.id === parentCommentId 
-            ? { 
-                ...comment, 
-                replies: comment.replies.filter(reply => reply.id !== optimisticComment.id)
-              }
-            : comment
-        ));
+        setComments(prev => {
+          const newComments = prev.map(comment => 
+            comment.id === parentCommentId 
+              ? { 
+                  ...comment, 
+                  replies: comment.replies.filter(reply => reply.id !== optimisticComment.id)
+                }
+              : comment
+          );
+          
+          // Update parent count on failure rollback
+          if (onCommentCountUpdate) {
+            const totalComments = newComments.reduce((total, comment) => {
+              return total + 1 + (comment.replies ? comment.replies.length : 0);
+            }, 0);
+            onCommentCountUpdate(totalComments);
+          }
+          
+          return newComments;
+        });
       } else {
-        setComments(prev => prev.filter(comment => comment.id !== optimisticComment.id));
+        setComments(prev => {
+          const newComments = prev.filter(comment => comment.id !== optimisticComment.id);
+          
+          // Update parent count on failure rollback
+          if (onCommentCountUpdate) {
+            const totalComments = newComments.reduce((total, comment) => {
+              return total + 1 + (comment.replies ? comment.replies.length : 0);
+            }, 0);
+            onCommentCountUpdate(totalComments);
+          }
+          
+          return newComments;
+        });
       }
 
       setError('Failed to post comment. Please try again.');
@@ -164,23 +226,37 @@ const useComments = (postId) => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [postId, isSubmitting]);
+  }, [postId, isSubmitting, onCommentCountUpdate]);
 
   /**
-   * Delete a comment
+   * ✅ SURGICAL FIX #3: Enhanced deleteComment with parent notification
+   * Delete a comment and update parent count
    */
   const deleteComment = useCallback(async (commentId) => {
     try {
       await commentsAPI.deleteComment(commentId);
       
-      // Remove comment from state
-      setComments(prev => prev.filter(comment => {
-        if (comment.id === commentId) return false;
-        if (comment.replies) {
-          comment.replies = comment.replies.filter(reply => reply.id !== commentId);
+      // Remove comment from state and update parent count
+      setComments(prev => {
+        const newComments = prev.filter(comment => {
+          if (comment.id === commentId) return false;
+          if (comment.replies) {
+            comment.replies = comment.replies.filter(reply => reply.id !== commentId);
+          }
+          return true;
+        });
+        
+        // 🎯 SURGICAL CHANGE: Notify parent of updated comment count after deletion
+        if (onCommentCountUpdate) {
+          const totalComments = newComments.reduce((total, comment) => {
+            return total + 1 + (comment.replies ? comment.replies.length : 0);
+          }, 0);
+          console.log('📊 useComments: Parent notified of comment deletion, new count:', totalComments);
+          onCommentCountUpdate(totalComments);
         }
-        return true;
-      }));
+        
+        return newComments;
+      });
 
       return { success: true };
 
@@ -189,10 +265,10 @@ const useComments = (postId) => {
       setError('Failed to delete comment. Please try again.');
       return { success: false, error: err.message };
     }
-  }, []);
+  }, [onCommentCountUpdate]);
 
   /**
-   * Update a comment
+   * PRESERVED: Update a comment (no count change needed)
    */
   const updateComment = useCallback(async (commentId, newContent) => {
     try {
@@ -223,7 +299,7 @@ const useComments = (postId) => {
   }, []);
 
   /**
-   * Sort comments
+   * PRESERVED: Sort comments
    */
   const sortComments = useCallback((newSortBy) => {
     setSortBy(newSortBy);
@@ -248,14 +324,14 @@ const useComments = (postId) => {
   }, []);
 
   /**
-   * Clear error state
+   * PRESERVED: Clear error state
    */
   const clearError = useCallback(() => {
     setError(null);
   }, []);
 
   /**
-   * Refresh comments
+   * PRESERVED: Refresh comments
    */
   const refreshComments = useCallback(() => {
     fetchComments();

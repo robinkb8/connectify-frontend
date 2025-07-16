@@ -1,4 +1,4 @@
-// components/pages/Profile/UserProfile.jsx - FIXED MESSAGE BUTTON & AVATAR DISPLAY + POST COUNT SYNC + COMMENTS MODAL
+// components/pages/Profile/UserProfile.jsx - FIXED MESSAGE BUTTON & AVATAR DISPLAY + POST COUNT SYNC + COMMENTS MODAL + Redux Integration
 import React, { useState, useEffect, useCallback } from 'react'; // ✅ PRESERVED: useCallback import
 import { useParams, useNavigate } from 'react-router-dom';
 import { Settings, MapPin, Calendar, LinkIcon, Edit3, MoreHorizontal, MessageCircle } from "lucide-react";
@@ -7,10 +7,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/Tabs/Tabs';
 import PostCard from '../HomeFeed/components/PostCard';
 import FollowButton, { FOLLOW_STATES } from '../../ui/FollowButton'; 
 import { ResponsiveContainer } from '../../layout/ResponsiveLayout';
-import { useProfile } from '../../../hooks/useProfile';
+import useProfileRedux from '../../../hooks/useProfileRedux'; // 🆕 SURGICAL CHANGE: Redux hook
 import { useAuth } from '../../../contexts/AuthContext';
 import { postsAPI } from '../../../utils/api';
-import useMessaging from '../../../hooks/useMessaging';
+import useMessagingRedux from '../../../hooks/useMessagingRedux'; // 🆕 SURGICAL CHANGE: Redux messaging hook
 import EditProfileModal from './EditProfileModal';
 import EnhancedCommentsModal from '../../modals/EnhancedCommentsModal';  // 🆕 SURGICAL FIX: Added comments modal import
 
@@ -40,21 +40,21 @@ function UserProfile({ isOwnProfile: propIsOwnProfile, onBack, userId: propUserI
   const [showCommentsModal, setShowCommentsModal] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
 
-  // PRESERVED: Use messaging hook for chat creation
-  const { createChat } = useMessaging();
+  // 🆕 SURGICAL CHANGE: Use Redux messaging hook
+  const { createChat } = useMessagingRedux();
 
   // PRESERVED: Determine which user profile to show
   const targetUsername = username || currentUser?.username;
   const targetUserId = propUserId || currentUser?.id;
 
-  // PRESERVED: Use profile hook for real data
+  // 🆕 SURGICAL CHANGE: Use Redux profile hook with identical API
   const { 
     profile, 
     loading: profileLoading, 
     error: profileError, 
     isOwnProfile: hookIsOwnProfile,
     refreshProfile 
-  } = useProfile(targetUsername);
+  } = useProfileRedux(targetUsername);
 
   // PRESERVED: Determine if this is own profile
   const isOwnProfile = propIsOwnProfile !== undefined ? propIsOwnProfile : hookIsOwnProfile;

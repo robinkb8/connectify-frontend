@@ -1,4 +1,4 @@
-// src/components/pages/Messages/MessagesPage.jsx - OPTIMIZED: 85% Performance Improvement
+// src/components/pages/Messages/MessagesPage.jsx - OPTIMIZED with Redux State Management
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -10,7 +10,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { Button } from '../../ui/Button/Button';
-import useMessaging from '../../../hooks/useMessaging';
+import useMessagingRedux from '../../../hooks/useMessagingRedux';
 
 // OPTIMIZATION 1: Memoized Chat Item Component (Prevents unnecessary re-renders)
 const ChatItem = React.memo(({ chat, onClick, isMobile = false }) => {
@@ -190,13 +190,13 @@ const NoMessagesEmpty = React.memo(({ onFindPeople }) => (
   </div>
 ));
 
-// OPTIMIZATION 5: Main Messages Component - HIGHLY OPTIMIZED
+// OPTIMIZATION 5: Main Messages Component - HIGHLY OPTIMIZED with Redux
 function MessagesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isMobile, setIsMobile] = useState(false);
   const navigate = useNavigate();
 
-  // Use the messaging hook
+  // Use the Redux messaging hook
   const {
     chats,
     isLoading,
@@ -204,7 +204,7 @@ function MessagesPage() {
     loadChats,
     selectChat,
     clearError
-  } = useMessaging();
+  } = useMessagingRedux();
 
   // OPTIMIZATION 6: Memoized responsive detection
   useEffect(() => {
@@ -278,7 +278,8 @@ function MessagesPage() {
     }
 
     // Sort chats: unread first, then by last activity
-    return filtered.sort((a, b) => {
+    // FIXED: Create copy before sorting to avoid mutating immutable Redux state
+    return [...filtered].sort((a, b) => {
       // First, sort by unread count (unread messages first)
       if (a.unread_count !== b.unread_count) {
         return b.unread_count - a.unread_count;
@@ -436,7 +437,7 @@ function MessagesPage() {
       </div>
 
       {/* Preserve all original animation styles */}
-      <style jsx>{`
+      <style>{`
         @keyframes slideUp {
           from {
             opacity: 0;

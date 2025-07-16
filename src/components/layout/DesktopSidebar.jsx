@@ -1,5 +1,6 @@
-// src/components/layout/DesktopSidebar.jsx - ENHANCED WITH DYNAMIC USER STATS
-import React, { useState } from 'react';
+// src/components/layout/DesktopSidebar.jsx - ENHANCED WITH ROBUST ERROR HANDLING
+
+import React, { useState, useEffect } from 'react';
 import { 
   Settings, 
   LogOut,
@@ -14,14 +15,13 @@ import {
   Shield
 } from 'lucide-react';
 
-
 const getFullAvatarUrl = (avatarPath) => {
   if (!avatarPath) return null;
   if (avatarPath.startsWith('http')) return avatarPath;
   return `http://127.0.0.1:8000${avatarPath}`;
 };
 
-// Desktop Sidebar - ORIGINAL STRUCTURE PRESERVED + DYNAMIC STATS
+// Desktop Sidebar - ENHANCED WITH ROBUST ERROR HANDLING + REACTIVE UPDATES
 const DesktopSidebar = ({ 
   activeTab, 
   onTabChange, 
@@ -31,6 +31,17 @@ const DesktopSidebar = ({
   onThemeToggle 
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  
+  // ✅ SURGICAL FIX: Force re-render when user profile data changes
+  const [userStatsKey, setUserStatsKey] = useState(0);
+  
+  useEffect(() => {
+    // Update key whenever user profile stats change to force re-render
+    if (user?.profile) {
+      console.log('🔄 DesktopSidebar: User profile data changed, updating display');
+      setUserStatsKey(prev => prev + 1);
+    }
+  }, [user?.profile?.posts_count, user?.profile?.followers_count, user?.profile?.following_count]);
 
   // Handle sidebar item clicks
   const handleItemClick = (item) => {
@@ -50,7 +61,7 @@ const DesktopSidebar = ({
     }
   };
 
-  // Sidebar Items - ORIGINAL STRUCTURE
+  // Sidebar Items - PRESERVED
   const secondaryItems = [
     { 
       id: 'upgrade', 
@@ -86,30 +97,48 @@ const DesktopSidebar = ({
     }
   ];
 
-  // ✅ ENHANCED - Dynamic user stats from backend
+  // ✅ ENHANCED - Robust user stats with better error handling and reactive updates
   const getUserStats = () => {
-    if (!user || !user.profile) {
-      // Fallback to default values if no user data
+    if (!user) {
+      console.log('📊 DesktopSidebar: No user data available');
       return {
         posts: 0,
         followers: 0,
-        following: 0
+        following: 0,
+        isLoading: true
+      };
+    }
+
+    if (!user.profile) {
+      console.log('📊 DesktopSidebar: User exists but no profile data, showing defaults');
+      return {
+        posts: 0,
+        followers: 0,
+        following: 0,
+        isLoading: false
       };
     }
 
     const profile = user.profile;
     
-    return {
-      posts: profile.posts_count || 0,
-      followers: profile.followers_count || 0,
-      following: profile.following_count || 0
+    // ✅ ENHANCED: Better data extraction with fallbacks
+    const stats = {
+      posts: profile.posts_count ?? 0,
+      followers: profile.followers_count ?? 0,
+      following: profile.following_count ?? 0,
+      isLoading: false
     };
+
+    console.log('📊 DesktopSidebar: Current stats display:', stats, 'Key:', userStatsKey);
+    return stats;
   };
 
   const userStats = getUserStats();
 
   // ✅ ENHANCED - Helper function to format numbers
   const formatCount = (count) => {
+    if (typeof count !== 'number' || isNaN(count)) return '0';
+    
     if (count >= 1000000) {
       return (count / 1000000).toFixed(1) + 'M';
     } else if (count >= 1000) {
@@ -118,12 +147,36 @@ const DesktopSidebar = ({
     return count.toString();
   };
 
+  // ✅ ENHANCED - Render stats with loading states and reactive updates
+  const renderStats = () => {
+    if (userStats.isLoading) {
+      return (
+        <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
+          <span className="animate-pulse">• • •</span>
+          <span className="animate-pulse">• • •</span>
+          <span className="animate-pulse">• • •</span>
+        </div>
+      );
+    }
+
+    return (
+      <div 
+        key={userStatsKey} 
+        className="flex items-center space-x-4 mt-2 text-xs text-gray-500 dark:text-gray-400"
+      >
+        <span>{userStats.posts} posts</span>
+        <span>{formatCount(userStats.followers)} followers</span>
+        <span>{formatCount(userStats.following)} following</span>
+      </div>
+    );
+  };
+
   return (
     <div className={`flex flex-col h-screen bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 ${
       isCollapsed ? 'w-20' : 'w-80'
     }`}>
       
-      {/* Header */}
+      {/* Header - PRESERVED */}
       <div className="p-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
           {!isCollapsed && (
@@ -144,27 +197,34 @@ const DesktopSidebar = ({
       {/* Content */}
       <div className="flex-1 flex flex-col">
         
-        {/* User Profile Section - ENHANCED WITH DYNAMIC DATA */}
+        {/* User Profile Section - ENHANCED WITH BETTER ERROR HANDLING */}
         {user && (
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
             <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'} p-4 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer`}>
               
-              {/* Avatar - ENHANCED */}
+              {/* Avatar - ENHANCED WITH BETTER ERROR HANDLING */}
               <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
                 {user.profile?.avatar ? (
                   <img 
                     src={getFullAvatarUrl(user.profile.avatar)}
                     alt={user.full_name || user.username}
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      console.log('Avatar load failed, showing fallback');
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
+                    }}
                   />
-                ) : (
-                  <span className="text-white font-bold text-lg">
-                    {(user.full_name || user.username)?.charAt(0)?.toUpperCase() || 'U'}
-                  </span>
-                )}
+                ) : null}
+                <span 
+                  className="text-white font-bold text-lg"
+                  style={{ display: user.profile?.avatar ? 'none' : 'flex' }}
+                >
+                  {(user.full_name || user.username)?.charAt(0)?.toUpperCase() || 'U'}
+                </span>
               </div>
               
-              {/* User Info - ENHANCED WITH REAL DATA */}
+              {/* User Info - ENHANCED WITH REAL DATA AND LOADING STATES */}
               {!isCollapsed && (
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-gray-900 dark:text-white truncate">
@@ -174,19 +234,15 @@ const DesktopSidebar = ({
                     @{user.username || 'username'}
                   </p>
                   
-                  {/* Dynamic Stats - REAL DATA FROM BACKEND */}
-                  <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    <span>{userStats.posts} posts</span>
-                    <span>{formatCount(userStats.followers)} followers</span>
-                    <span>{userStats.following} following</span>
-                  </div>
+                  {/* ✅ ENHANCED: Dynamic Stats with Loading States */}
+                  {renderStats()}
                 </div>
               )}
             </div>
           </div>
         )}
 
-        {/* Navigation Items - ORIGINAL STRUCTURE PRESERVED */}
+        {/* Navigation Items - PRESERVED */}
         <div className="flex-1 p-4">
           <div className="space-y-2">
             {secondaryItems.map((item) => {
@@ -231,7 +287,7 @@ const DesktopSidebar = ({
           </div>
         </div>
 
-        {/* Footer */}
+        {/* Footer - PRESERVED */}
         {!isCollapsed && (
           <div className="p-4 border-t border-gray-200 dark:border-gray-700">
             <div className="text-center">

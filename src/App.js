@@ -1,4 +1,4 @@
-// src/App.js - ENHANCED WITH DYNAMIC PROFILE ROUTING + ALL EXISTING FUNCTIONALITY PRESERVED
+// src/App.js - ENHANCED WITH REDUX PROVIDER + ALL EXISTING FUNCTIONALITY PRESERVED
 import React, { useState, Suspense, useCallback, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -6,6 +6,10 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { ThemeProvider } from './components/providers/ThemeProvider';
 import { ToastProvider } from './components/ui/Toast';
 import ChatView from './components/pages/Messages/ChatView';
+
+// ✅ NEW - Redux Provider Import (SURGICAL ADDITION)
+import { Provider as ReduxProvider } from 'react-redux';
+import store from './store';
 
 // Animation Components - PRESERVED
 import PageTransition from './components/ui/PageTransition/PageTransition';
@@ -353,20 +357,22 @@ const AppRoutes = React.memo(() => {
 
 AppRoutes.displayName = 'AppRoutes';
 
-// ✅ PRESERVED - Main App Component with JWT Authentication Provider
+// ✅ ENHANCED - Main App Component with Redux + JWT Authentication Provider (SURGICAL CHANGE)
 const App = React.memo(() => {
   return (
-    <AuthProvider>
-      <ThemeProvider defaultTheme="light" storageKey="connectify-theme">
-        <ToastProvider>
-          <Router>
-            <div className="App">
-              <AppRoutes />
-            </div>
-          </Router>
-        </ToastProvider>
-      </ThemeProvider>
-    </AuthProvider>
+    <ReduxProvider store={store}>
+      <AuthProvider>
+        <ThemeProvider defaultTheme="light" storageKey="connectify-theme">
+          <ToastProvider>
+            <Router>
+              <div className="App">
+                <AppRoutes />
+              </div>
+            </Router>
+          </ToastProvider>
+        </ThemeProvider>
+      </AuthProvider>
+    </ReduxProvider>
   );
 });
 

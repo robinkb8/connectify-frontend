@@ -1,4 +1,4 @@
-// ===== src/components/pages/HomeFeed/components/PostCard/PostCard.jsx - ENHANCED WITH SHARE MODAL =====
+// ===== src/components/pages/HomeFeed/components/PostCard/PostCard.jsx - ENHANCED WITH COMMENT SYNC FIX =====
 import React, { useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -6,20 +6,20 @@ import {
   Share2, 
   MoreHorizontal, 
   Bookmark,
-  Edit2,        // 🆕 NEW: Edit icon
-  Trash2        // 🆕 NEW: Delete icon
+  Edit2,        
+  Trash2        
 } from "lucide-react";
 import AnimatedHeart from '../../../../ui/AnimatedHeart/AnimatedHeart';
 import AnimatedButton from '../../../../ui/AnimatedButton/AnimatedButton';
 import useLikes from '../../../../../hooks/useLikes';
-import { useAuth } from '../../../../../contexts/AuthContext';  // 🆕 NEW: Auth context
-import { postsAPI } from '../../../../../utils/api/posts';  // 🆕 NEW: Posts API - FIXED PATH
-import EditPostModal from '../../../../modals/EditPostModal';  // 🆕 NEW: Edit modal
-import ShareModal from '../../../../modals/ShareModal';  // 🆕 SURGICAL FIX: Share modal
+import { useAuth } from '../../../../../contexts/AuthContext';
+import { postsAPI } from '../../../../../utils/api/posts';
+import EditPostModal from '../../../../modals/EditPostModal';
+import ShareModal from '../../../../modals/ShareModal';
 
 const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate, onPostUpdated, onPostDeleted }) => {
   const navigate = useNavigate();
-  const { user: currentUser } = useAuth();  // 🆕 NEW: Get current user
+  const { user: currentUser } = useAuth();
 
   // PRESERVED: Memoize mapped data to prevent recreation on every render
   const user = useMemo(() => ({
@@ -34,15 +34,18 @@ const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate,
     images: post.image_url ? [post.image_url] : []
   }), [post.content, post.image_url]);
 
+  // ✅ SURGICAL FIX #3: Dynamic comment count state for real-time updates
+  const [localCommentCount, setLocalCommentCount] = useState(post.total_comments || 0);
+
   const stats = useMemo(() => ({
     likes: post.total_likes || 0,
-    comments: post.total_comments || 0,
+    comments: localCommentCount, // 🎯 SURGICAL CHANGE: Use dynamic count instead of static post.total_comments
     shares: post.total_shares || 0
-  }), [post.total_likes, post.total_comments, post.total_shares]);
+  }), [post.total_likes, localCommentCount, post.total_shares]);
 
   const timestamp = post.time_since_posted || 'Unknown time';
 
-  // 🆕 NEW: Check if current user owns this post
+  // Check if current user owns this post
   const isOwnPost = useMemo(() => {
     return currentUser && post.author && currentUser.id === post.author.id;
   }, [currentUser, post.author]);
@@ -61,13 +64,15 @@ const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate,
   const [sharesCount, setSharesCount] = useState(stats.shares);
   const [showOptions, setShowOptions] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
-  
-  // 🆕 NEW: Edit modal state
   const [showEditModal, setShowEditModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  // 🆕 SURGICAL FIX: Share modal state
   const [showShareModal, setShowShareModal] = useState(false);
+
+  // ✅ SURGICAL FIX #3: Comment count update handler
+  const handleCommentCountUpdate = useCallback((newCount) => {
+    console.log('📝 PostCard: Updating comment count from', localCommentCount, 'to', newCount);
+    setLocalCommentCount(newCount);
+  }, [localCommentCount]);
 
   // PRESERVED: Profile navigation handler
   const handleAuthorClick = useCallback((e) => {
@@ -97,12 +102,13 @@ const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate,
     }
   }, [toggleLike, isLikeLoading, onStatsUpdate]);
 
-  // PRESERVED: All other memoized handlers
+  // ✅ SURGICAL FIX #3: Enhanced comment handler with callback support
   const handleComment = useCallback(() => {
-    onCommentClick?.(post);
-  }, [onCommentClick, post]);
+    // 🎯 SURGICAL CHANGE: Pass the comment count update callback to the comment modal
+    onCommentClick?.(post, handleCommentCountUpdate);
+  }, [onCommentClick, post, handleCommentCountUpdate]);
 
-  // 🆕 SURGICAL FIX: Share handler now opens modal
+  // Share handler opens modal
   const handleShare = useCallback((e) => {
     e.stopPropagation(); // Prevent event bubbling
     setShowShareModal(true);
@@ -124,13 +130,13 @@ const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate,
     setTimeout(() => setShowOptions(false), 100);
   }, []);
 
-  // 🆕 NEW: Edit post handler
+  // Edit post handler
   const handleEditPost = useCallback(() => {
     setShowOptions(false);
     setShowEditModal(true);
   }, []);
 
-  // 🆕 NEW: Delete post handler
+  // Delete post handler
   const handleDeletePost = useCallback(async () => {
     if (!window.confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
       return;
@@ -156,13 +162,13 @@ const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate,
     }
   }, [post.id, onPostDeleted]);
 
-  // 🆕 NEW: Handle post update from edit modal
+  // Handle post update from edit modal
   const handlePostUpdated = useCallback((updatedPost) => {
     onPostUpdated?.(updatedPost);
     setShowEditModal(false);
   }, [onPostUpdated]);
 
-  // 🆕 SURGICAL FIX: Handle successful share
+  // Handle successful share
   const handleShareSuccess = useCallback(() => {
     setSharesCount(prev => prev + 1);
     setShowShareModal(false);
@@ -255,7 +261,7 @@ const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate,
           </div>
         </div>
 
-        {/* 🆕 ENHANCED: Conditional Options menu based on ownership */}
+        {/* Enhanced: Conditional Options menu based on ownership */}
         <div className="relative">
           <AnimatedButton
             variant="ghost"
@@ -272,7 +278,7 @@ const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate,
           {showOptions && (
             <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 min-w-32 animate-slideIn">
               {isOwnPost ? (
-                /* 🆕 NEW: Own post options - Edit & Delete */
+                /* Own post options - Edit & Delete */
                 <>
                   <button 
                     onClick={handleEditPost}
@@ -291,7 +297,7 @@ const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate,
                   </button>
                 </>
               ) : (
-                /* PRESERVED: Other user's post options - Share, Report, Hide */
+                /* Other user's post options - Share, Report, Hide */
                 <>
                   <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t-lg transition-colors duration-150">
                     Share
@@ -348,7 +354,7 @@ const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate,
             )}
           </div>
 
-          {/* PRESERVED: Comment Button */}
+          {/* ✅ SURGICAL FIX #3: Comment Button with dynamic count */}
           <AnimatedButton
             variant="ghost"
             size="sm"
@@ -361,7 +367,7 @@ const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate,
             <span className="text-sm font-medium">{stats.comments}</span>
           </AnimatedButton>
 
-          {/* 🆕 SURGICAL FIX: Share Button with consistent design */}
+          {/* Share Button with consistent design */}
           <AnimatedButton
             variant="ghost"
             size="sm"
@@ -389,7 +395,7 @@ const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate,
         </AnimatedButton>
       </div>
 
-      {/* 🆕 NEW: Edit Post Modal */}
+      {/* Edit Post Modal */}
       {showEditModal && (
         <EditPostModal
           isOpen={showEditModal}
@@ -399,7 +405,7 @@ const PostCard = React.memo(({ post, onCommentClick, onPostClick, onStatsUpdate,
         />
       )}
 
-      {/* 🆕 SURGICAL FIX: Share Modal */}
+      {/* Share Modal */}
       {showShareModal && (
         <ShareModal
           isOpen={showShareModal}

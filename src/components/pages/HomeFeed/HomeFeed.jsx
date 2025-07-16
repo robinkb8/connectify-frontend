@@ -1,4 +1,4 @@
-// src/components/pages/HomeFeed/HomeFeed.jsx - With Notification Button
+// src/components/pages/HomeFeed/HomeFeed.jsx - With Redux State Management
 import React, { useState, useCallback } from 'react';
 import { Search, Bell } from "lucide-react";
 import { Input } from '../../ui/Input/Input';
@@ -10,14 +10,14 @@ import { NoPostsEmpty, LoadingState, LoadingErrorEmpty } from '../../ui/EmptySta
 import EnhancedCommentsModal from '../../modals/EnhancedCommentsModal';
 import NotificationPanel from '../../ui/NotificationPanel/NotificationPanel';
 
-// ENHANCED: Import new hooks
-import usePosts from '../../../hooks/usePosts';
+// ENHANCED: Import Redux hooks instead of usePosts
+import usePostsRedux from '../../../hooks/usePostsRedux';
 import useRealTime from '../../../hooks/useRealTime';
 import useNotifications from '../../../hooks/useNotifications';
 
-// ENHANCED: Main HomeFeed Component with notifications
+// ENHANCED: Main HomeFeed Component with Redux state management
 function HomeFeed() {
-  // ENHANCED: Use posts hook instead of manual state management
+  // ENHANCED: Use Redux posts hook instead of local hook
   const {
     posts,
     loading,
@@ -33,7 +33,7 @@ function HomeFeed() {
     retryFetch,
     isEmpty,
     isInitialLoading
-  } = usePosts({ autoLoad: true });
+  } = usePostsRedux({ autoLoad: true });
 
   // NEW: Notifications hook
   const { unreadCount } = useNotifications({

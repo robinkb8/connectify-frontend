@@ -1,4 +1,5 @@
-// src/components/layout/ResponsiveLayout.jsx - Fixed logout functionality
+// src/components/layout/ResponsiveLayout.jsx - SURGICAL FIX: User Data Reactivity
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import MobileBottomNav from './MobileBottomNav';
 import MobileHeader from './MobileHeader';
@@ -63,6 +64,17 @@ const ResponsiveLayout = React.memo(({
   const [isTablet, setIsTablet] = useState(false);
   
   const { theme, toggleTheme } = useSimpleTheme();
+
+  // ✅ SURGICAL FIX: Add user profile stats to dependencies for re-rendering
+  const userStatsSignature = useMemo(() => {
+    if (!user?.profile) return 'no-profile';
+    return `${user.profile.posts_count || 0}-${user.profile.followers_count || 0}-${user.profile.following_count || 0}`;
+  }, [user?.profile?.posts_count, user?.profile?.followers_count, user?.profile?.following_count]);
+
+  // Log when user stats change for debugging
+  useEffect(() => {
+    console.log('📊 ResponsiveLayout: User stats signature changed:', userStatsSignature);
+  }, [userStatsSignature]);
 
   // Memoize sidebar actions - now with proper logout functionality
   const sidebarActions = useMemo(() => ({
@@ -148,6 +160,7 @@ const ResponsiveLayout = React.memo(({
       {/* Desktop Sidebar - Only show on desktop */}
       {viewportConfig.isDesktop && (
         <DesktopSidebar 
+          key={userStatsSignature} // ✅ SURGICAL FIX: Force re-render when user stats change
           activeTab={activeTab}
           onTabChange={onTabChange}
           onSidebarAction={handleSidebarNavigation}
@@ -260,6 +273,21 @@ const ResponsiveLayout = React.memo(({
     </div>
   );
 }, (prevProps, nextProps) => {
+  // ✅ SURGICAL FIX: Enhanced comparison to include user profile stats
+  const prevUserStats = prevProps.user?.profile ? 
+    `${prevProps.user.profile.posts_count || 0}-${prevProps.user.profile.followers_count || 0}-${prevProps.user.profile.following_count || 0}` : 
+    'no-profile';
+  
+  const nextUserStats = nextProps.user?.profile ? 
+    `${nextProps.user.profile.posts_count || 0}-${nextProps.user.profile.followers_count || 0}-${nextProps.user.profile.following_count || 0}` : 
+    'no-profile';
+
+  // Re-render if user stats have changed
+  if (prevUserStats !== nextUserStats) {
+    console.log('🔄 ResponsiveLayout: User stats changed, allowing re-render');
+    return false; // Allow re-render
+  }
+
   // Custom comparison to prevent unnecessary re-renders
   // Only re-render if essential props have changed
   return (
@@ -269,7 +297,7 @@ const ResponsiveLayout = React.memo(({
     prevProps.isNavigating === nextProps.isNavigating &&
     prevProps.user?.id === nextProps.user?.id &&
     prevProps.children === nextProps.children &&
-    prevProps.onLogout === nextProps.onLogout // Include onLogout in comparison
+    prevProps.onLogout === nextProps.onLogout
   );
 });
 

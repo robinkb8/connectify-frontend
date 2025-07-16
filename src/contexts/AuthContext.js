@@ -1,4 +1,4 @@
-// src/contexts/AuthContext.js - ENHANCED WITH PROFILE MANAGEMENT + PAYMENT INTEGRATION + ALL EXISTING PRESERVED
+// src/contexts/AuthContext.js - SURGICAL FIX: Fresh Profile Data Sync
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authAPI, profileAPI, paymentsAPI } from '../utils/api';
@@ -19,21 +19,71 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [subscriptionConfig, setSubscriptionConfig] = useState(null);
 
-  // ✅ PRESERVED - Initialize authentication state on app load
+  // ✅ SURGICAL FIX: Fresh profile data fetcher (CORRECTED)
+  const refreshUserProfile = async (userId) => {
+    try {
+      console.log('🔄 Fetching fresh profile data for sidebar...');
+      const profileResponse = await profileAPI.getCurrentUserProfile();
+      
+      console.log('📡 Profile API response:', profileResponse);
+      
+      if (profileResponse.success && profileResponse.user) {
+        console.log('✅ Fresh profile data received, updating AuthContext');
+        console.log('📊 Fresh stats:', {
+          posts: profileResponse.user.profile?.posts_count,
+          followers: profileResponse.user.profile?.followers_count,
+          following: profileResponse.user.profile?.following_count
+        });
+        
+        setUser(prevUser => {
+          console.log('🔄 BEFORE refresh:', prevUser?.profile?.posts_count);
+          
+          const updatedUser = {
+            ...prevUser,
+            profile: {
+              ...prevUser?.profile,
+              ...profileResponse.user.profile,
+              // Ensure we update the key statistics
+              posts_count: profileResponse.user.profile?.posts_count || 0,
+              followers_count: profileResponse.user.profile?.followers_count || 0,
+              following_count: profileResponse.user.profile?.following_count || 0
+            }
+          };
+          
+          console.log('✅ AFTER refresh:', updatedUser.profile.posts_count);
+          return updatedUser;
+        });
+      } else {
+        console.log('❌ Profile API failed:', profileResponse.message);
+      }
+    } catch (error) {
+      console.error('Background profile refresh failed:', error);
+      // Don't throw - this is background operation
+    }
+  };
+
+  // ✅ ENHANCED: Parallel initialization with background profile refresh
   useEffect(() => {
     const initializeAuth = async () => {
       try {
         if (authAPI.isAuthenticated()) {
-          // Try to get current user info with stored token
-          const response = await authAPI.getCurrentUser();
+          // 🎯 SURGICAL CHANGE: Execute user auth and background tasks in parallel
+          const [userResponse] = await Promise.allSettled([
+            authAPI.getCurrentUser(),
+          ]);
           
-          if (response.success) {
+          if (userResponse.status === 'fulfilled' && userResponse.value.success) {
             // Django returns response.user, not response.data.user
-            setUser(response.user);
+            setUser(userResponse.value.user);
             setIsAuthenticated(true);
             
-            // Load subscription config after authentication
-            loadSubscriptionConfig();
+            // 🎯 SURGICAL FIX: Start background operations (non-blocking)
+            Promise.allSettled([
+              loadSubscriptionConfig(),
+              refreshUserProfile(userResponse.value.user.id) // ← NEW: Fresh profile data
+            ]).catch(error => {
+              console.error('Background operations failed:', error);
+            });
           } else {
             // Token invalid, clear it
             authAPI.clearTokens();
@@ -57,7 +107,7 @@ export const AuthProvider = ({ children }) => {
     initializeAuth();
   }, []);
 
-  // ✅ NEW - Load subscription configuration
+  // ✅ PRESERVED - Load subscription configuration
   const loadSubscriptionConfig = async () => {
     try {
       const response = await paymentsAPI.getSubscriptionConfig();
@@ -69,7 +119,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ✅ PRESERVED - Login method
+  // ✅ SURGICAL FIX: Enhanced login method with background profile refresh
   const login = async (email, password) => {
     try {
       setIsLoading(true);
@@ -80,8 +130,13 @@ export const AuthProvider = ({ children }) => {
         setUser(response.user);
         setIsAuthenticated(true);
         
-        // Load subscription config after successful login
-        loadSubscriptionConfig();
+        // 🎯 SURGICAL FIX: Start background operations (non-blocking)
+        Promise.allSettled([
+          loadSubscriptionConfig(),
+          refreshUserProfile(response.user.id) // ← NEW: Fresh profile data after login
+        ]).catch(error => {
+          console.error('Background operations failed:', error);
+        });
         
         return { success: true, message: response.message };
       } else {
@@ -95,7 +150,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ✅ PRESERVED - Register method
+  // ✅ PRESERVED - Register method with background profile refresh
   const register = async (userData) => {
     try {
       setIsLoading(true);
@@ -106,8 +161,13 @@ export const AuthProvider = ({ children }) => {
         setUser(response.user);
         setIsAuthenticated(true);
         
-        // Load subscription config after successful registration
-        loadSubscriptionConfig();
+        // Background operations after successful registration
+        Promise.allSettled([
+          loadSubscriptionConfig(),
+          refreshUserProfile(response.user.id) // Fresh profile data after registration
+        ]).catch(error => {
+          console.error('Background operations failed:', error);
+        });
         
         return { success: true, message: response.message };
       } else {
@@ -135,18 +195,35 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ✅ PRESERVED - Update user method
+  // ✅ ENHANCED - Update user method with profile merge
   const updateUser = (userData) => {
-    setUser(prevUser => ({ ...prevUser, ...userData }));
+    setUser(prevUser => {
+      // Smart merge to preserve profile data structure
+      if (userData.profile && prevUser?.profile) {
+        return {
+          ...prevUser,
+          ...userData,
+          profile: {
+            ...prevUser.profile,
+            ...userData.profile
+          }
+        };
+      }
+      return { ...prevUser, ...userData };
+    });
   };
 
-  // ✅ ENHANCED - Refresh user data with profile support
+  // ✅ ENHANCED - Refresh user data with profile support and sidebar sync
   const refreshUserData = async () => {
     try {
       const response = await authAPI.getCurrentUser();
       if (response.success) {
         // Django returns response.user, not response.data.user
         setUser(response.user);
+        
+        // 🎯 SURGICAL FIX: Also fetch fresh profile data for sidebar
+        refreshUserProfile(response.user.id).catch(console.error);
+        
         return { success: true, user: response.user };
       }
       return { success: false, message: 'Failed to refresh user data' };
@@ -156,7 +233,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ✅ NEW - Profile management methods
+  // ✅ PRESERVED - Profile management methods
   const updateProfile = async (profileData) => {
     try {
       const response = await profileAPI.updateUserProfile(profileData);
@@ -189,7 +266,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ✅ NEW - Avatar upload method
+  // ✅ PRESERVED - Avatar upload method
   const uploadAvatar = async (avatarFile) => {
     try {
       const response = await profileAPI.uploadAvatar(avatarFile);
@@ -224,7 +301,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ✅ NEW - Get user profile by username
+  // ✅ PRESERVED - Get user profile by username
   const getUserProfile = async (username) => {
     try {
       const response = await profileAPI.getUserProfile(username);
@@ -238,7 +315,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ✅ NEW - Payment and subscription methods
+  // ✅ PRESERVED - Payment and subscription methods
   const createPaymentOrder = async (amount) => {
     try {
       const response = await paymentsAPI.createOrder(amount);
@@ -316,7 +393,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ✅ NEW - Helper methods for payment flow
+  // ✅ PRESERVED - Helper methods for payment flow
   const upgradeToPro = async () => {
     try {
       if (!subscriptionConfig) {
@@ -352,12 +429,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ✅ NEW - Check if user is eligible for upgrade
+  // ✅ PRESERVED - Check if user is eligible for upgrade
   const isEligibleForUpgrade = () => {
     return user && !user.is_pro;
   };
 
-  // ✅ NEW - Get pro status display
+  // ✅ PRESERVED - Get pro status display
   const getProStatusDisplay = () => {
     return user?.pro_status_display || 'Free User';
   };
@@ -410,7 +487,7 @@ export const AuthProvider = ({ children }) => {
     isLoading,
     isAuthenticated,
     
-    // ✅ NEW - Subscription state
+    // ✅ PRESERVED - Subscription state
     subscriptionConfig,
     
     // ✅ PRESERVED - Core authentication methods
@@ -420,12 +497,15 @@ export const AuthProvider = ({ children }) => {
     updateUser,
     refreshUserData,
     
-    // ✅ NEW - Profile management methods
+    // ✅ PRESERVED - Profile management methods
     updateProfile,
     uploadAvatar,
     getUserProfile,
     
-    // ✅ NEW - Payment and subscription methods
+    // ✅ NEW - Profile refresh helper (for manual calls)
+    refreshUserProfile,
+    
+    // ✅ PRESERVED - Payment and subscription methods
     createPaymentOrder,
     verifyPayment,
     getSubscriptionStatus,
@@ -433,7 +513,7 @@ export const AuthProvider = ({ children }) => {
     cancelSubscription,
     upgradeToPro,
     
-    // ✅ NEW - Helper methods for payments
+    // ✅ PRESERVED - Helper methods for payments
     isEligibleForUpgrade,
     getProStatusDisplay,
     loadSubscriptionConfig,
