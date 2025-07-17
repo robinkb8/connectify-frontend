@@ -7,6 +7,8 @@ import { ThemeProvider } from './components/providers/ThemeProvider';
 import { ToastProvider } from './components/ui/Toast';
 import ChatView from './components/pages/Messages/ChatView';
 
+
+
 // ✅ NEW - Redux Provider Import (SURGICAL ADDITION)
 import { Provider as ReduxProvider } from 'react-redux';
 import store from './store';
@@ -113,6 +115,7 @@ const LandingPageWrapper = React.memo(() => {
   // Show landing page for non-authenticated users
   return <LandingPage />;
 });
+
 
 LandingPageWrapper.displayName = 'LandingPageWrapper';
 
@@ -224,7 +227,9 @@ const AppLayout = React.memo(() => {
         onLogout={handleLogout}
         title="Connectify"
         isNavigating={isNavigating}
+        
       >
+         
         {/* ✅ ENHANCED - Suspense with profile routing support */}
         <Suspense fallback={<PageLoadingFallback type={currentRoute.skeleton} />}>
           <Routes>
