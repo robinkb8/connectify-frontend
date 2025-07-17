@@ -1,185 +1,142 @@
-// src/hooks/usePosts.js
-import { useState, useCallback, useEffect } from 'react';
-import { postsAPI } from '../utils/api';
+// src/hooks/usePostsRedux.js - Redux Bridge Hook with Identical API to usePosts
+import { useEffect, useCallback, useMemo } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  fetchPosts,
+  refreshPosts,
+  loadMorePosts,
+  updatePost,
+  updatePostStats,
+  addPost,
+  removePost,
+  clearError,
+  resetPosts,
+  selectPosts,
+  selectPostsLoading,
+  selectPostsError,
+  selectPostsHasMore,
+  selectPostsRefreshing,
+  selectPostsPage,
+  selectPostsIsEmpty,
+  selectPostsHasError,
+  selectPostsIsInitialLoading,
+  selectFilteredPosts,
+  selectPostById
+} from '../store/slices/postsSlice';
 
 /**
- * Data transformation function - preserved from HomeFeed.jsx
+ * Redux-powered posts hook with identical API to original usePosts
+ * This ensures seamless migration with zero breaking changes
  */
-const transformApiPost = (apiPost) => {
-  return {
-    id: apiPost.id,
-    author: {
-      username: apiPost.author?.username || 'Unknown User',
-      name: apiPost.author?.name || apiPost.author?.username || 'Unknown User',
-      avatar: apiPost.author?.avatar || null,
-      verified: apiPost.author?.verified || false
-    },
-    content: apiPost.content || '',
-    image_url: apiPost.image_url || null,
-    total_likes: apiPost.total_likes || 0,
-    total_comments: apiPost.total_comments || 0,
-    total_shares: apiPost.total_shares || 0,
-    time_since_posted: apiPost.time_since_posted || 'Unknown time',
-    is_liked: apiPost.is_liked || false,
-    is_active: apiPost.is_active !== false
-  };
-};
-
-/**
- * Custom hook for managing posts with real API integration
- * Handles fetching, pagination, and real-time updates
- */
-const usePosts = (options = {}) => {
+const usePostsRedux = (options = {}) => {
   const {
     autoLoad = true,
     pageSize = 10
   } = options;
 
-  // State management
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+  const dispatch = useDispatch();
+  
+  // Select all state from Redux store
+  const posts = useSelector(selectPosts);
+  const loading = useSelector(selectPostsLoading);
+  const error = useSelector(selectPostsError);
+  const hasMore = useSelector(selectPostsHasMore);
+  const refreshing = useSelector(selectPostsRefreshing);
+  const page = useSelector(selectPostsPage);
+  
+  // Computed values
+  const isEmpty = useSelector(selectPostsIsEmpty);
+  const hasError = useSelector(selectPostsHasError);
+  const isInitialLoading = useSelector(selectPostsIsInitialLoading);
 
   /**
-   * Fetch posts from API with pagination support
+   * Fetch posts - matches original usePosts API exactly
    */
-  const fetchPosts = useCallback(async (pageNum = 1, append = false) => {
+  const fetchPostsAction = useCallback(async (pageNum = 1, append = false) => {
     try {
-      if (pageNum === 1 && !append) {
-        setLoading(true);
-      }
-      setError(null);
-
-      const response = await postsAPI.fetchPosts(pageNum);
+      const result = await dispatch(fetchPosts({ page: pageNum, append }));
       
-      // Handle both paginated and non-paginated responses
-      let postsData, hasNext, totalCount;
-      
-      if (Array.isArray(response)) {
-        // Non-paginated response
-        postsData = response;
-        hasNext = false;
-        totalCount = response.length;
+      if (fetchPosts.fulfilled.match(result)) {
+        const { posts, hasMore, totalCount } = result.payload;
+        return {
+          posts,
+          hasMore,
+          totalCount
+        };
       } else {
-        // Paginated response
-        postsData = response.results || [];
-        hasNext = !!response.next;
-        totalCount = response.count || 0;
+        throw new Error(result.payload || 'Failed to fetch posts');
       }
-
-      const transformedPosts = postsData.map(transformApiPost);
-
-      if (pageNum === 1 || !append) {
-        setPosts(transformedPosts);
-      } else {
-        setPosts(prev => [...prev, ...transformedPosts]);
-      }
-
-      setHasMore(hasNext);
-      setPage(pageNum);
-
-      return {
-        posts: transformedPosts,
-        hasMore: hasNext,
-        totalCount
-      };
-
     } catch (err) {
       console.error('Error fetching posts:', err);
-      setError('Failed to load posts. Please try again.');
-      
-      if (pageNum === 1) {
-        setPosts([]);
-      }
-      
       throw err;
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
     }
-  }, []);
+  }, [dispatch]);
 
   /**
-   * Load more posts (pagination)
+   * Load more posts - matches original usePosts API exactly
    */
-  const loadMorePosts = useCallback(async () => {
+  const loadMorePostsAction = useCallback(async () => {
     if (hasMore && !loading) {
       try {
-        await fetchPosts(page + 1, true);
+        await dispatch(loadMorePosts());
       } catch (err) {
         console.error('Error loading more posts:', err);
       }
     }
-  }, [hasMore, loading, page, fetchPosts]);
+  }, [hasMore, loading, dispatch]);
 
   /**
-   * Refresh posts (pull to refresh)
+   * Refresh posts - matches original usePosts API exactly
    */
-  const refreshPosts = useCallback(async () => {
+  const refreshPostsAction = useCallback(async () => {
     try {
-      setRefreshing(true);
-      await fetchPosts(1, false);
+      await dispatch(refreshPosts());
     } catch (err) {
       console.error('Error refreshing posts:', err);
     }
-  }, [fetchPosts]);
+  }, [dispatch]);
 
   /**
-   * Update specific post stats (likes, comments, etc.)
+   * Update post stats - matches original usePosts API exactly
    */
-  const updatePostStats = useCallback((postId, updates) => {
-    setPosts(prevPosts => 
-      prevPosts.map(post => 
-        post.id === postId 
-          ? { ...post, ...updates }
-          : post
-      )
-    );
-  }, []);
+  const updatePostStatsAction = useCallback((postId, updates) => {
+    dispatch(updatePostStats({ postId, updates }));
+  }, [dispatch]);
 
   /**
-   * Update post in list (for real-time updates)
+   * Update post - matches original usePosts API exactly
    */
-  const updatePost = useCallback((postId, updates) => {
-    setPosts(prevPosts => 
-      prevPosts.map(post => 
-        post.id === postId 
-          ? { ...post, ...updates }
-          : post
-      )
-    );
-  }, []);
+  const updatePostAction = useCallback((postId, updates) => {
+    dispatch(updatePost({ postId, updates }));
+  }, [dispatch]);
 
   /**
-   * Add new post to the beginning of the list
+   * Add new post - matches original usePosts API exactly
    */
-  const addPost = useCallback((newPost) => {
-    const transformedPost = transformApiPost(newPost);
-    setPosts(prevPosts => [transformedPost, ...prevPosts]);
-  }, []);
+  const addPostAction = useCallback((newPost) => {
+    dispatch(addPost(newPost));
+  }, [dispatch]);
 
   /**
-   * Remove post from the list
+   * Remove post - matches original usePosts API exactly
    */
-  const removePost = useCallback((postId) => {
-    setPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
-  }, []);
+  const removePostAction = useCallback((postId) => {
+    dispatch(removePost(postId));
+  }, [dispatch]);
 
   /**
-   * Clear error state
+   * Clear error - matches original usePosts API exactly
    */
-  const clearError = useCallback(() => {
-    setError(null);
-  }, []);
+  const clearErrorAction = useCallback(() => {
+    dispatch(clearError());
+  }, [dispatch]);
 
   /**
-   * Search/filter posts
+   * Filter posts - matches original usePosts API exactly
    */
   const filterPosts = useCallback((searchQuery) => {
-    if (!searchQuery.trim()) return posts;
+    // Use selector to filter posts
+    if (!searchQuery?.trim()) return posts;
     
     const query = searchQuery.toLowerCase();
     return posts.filter(post =>
@@ -190,30 +147,31 @@ const usePosts = (options = {}) => {
   }, [posts]);
 
   /**
-   * Get post by ID
+   * Get post by ID - matches original usePosts API exactly
    */
   const getPostById = useCallback((postId) => {
     return posts.find(post => post.id === postId);
   }, [posts]);
 
   /**
-   * Auto-load posts on mount
-   */
-  useEffect(() => {
-    if (autoLoad && posts.length === 0) {
-      fetchPosts(1);
-    }
-  }, [autoLoad, fetchPosts, posts.length]);
-
-  /**
-   * Retry mechanism for failed requests
+   * Retry fetch - matches original usePosts API exactly
    */
   const retryFetch = useCallback(() => {
-    fetchPosts(1);
-  }, [fetchPosts]);
+    dispatch(fetchPosts({ page: 1, append: false }));
+  }, [dispatch]);
 
+  /**
+   * Auto-load posts on mount - matches original usePosts behavior
+   */
+  useEffect(() => {
+    if (autoLoad && posts.length === 0 && !loading) {
+      dispatch(fetchPosts({ page: 1, append: false }));
+    }
+  }, [autoLoad, posts.length, loading, dispatch]);
+
+  // Return exact same API as original usePosts hook
   return {
-    // State
+    // State - identical to original
     posts,
     loading,
     error,
@@ -221,24 +179,24 @@ const usePosts = (options = {}) => {
     refreshing,
     page,
     
-    // Actions
-    fetchPosts,
-    loadMorePosts,
-    refreshPosts,
-    updatePostStats,
-    updatePost,
-    addPost,
-    removePost,
-    clearError,
+    // Actions - identical API to original
+    fetchPosts: fetchPostsAction,
+    loadMorePosts: loadMorePostsAction,
+    refreshPosts: refreshPostsAction,
+    updatePostStats: updatePostStatsAction,
+    updatePost: updatePostAction,
+    addPost: addPostAction,
+    removePost: removePostAction,
+    clearError: clearErrorAction,
     filterPosts,
     getPostById,
     retryFetch,
     
-    // Computed
-    isEmpty: posts.length === 0 && !loading,
-    hasError: !!error,
-    isInitialLoading: loading && posts.length === 0
+    // Computed - identical to original
+    isEmpty,
+    hasError,
+    isInitialLoading
   };
 };
 
-export default usePosts;
+export default usePostsRedux;

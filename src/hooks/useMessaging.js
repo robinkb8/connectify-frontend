@@ -1,18 +1,41 @@
-// src/hooks/useMessaging.js - OPTIMIZED: Smart WebSocket Pooling + 70% Performance Boost
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import messagingAPI, { MessagingWebSocket } from '../utils/api/messaging';
+// src/hooks/useMessagingRedux.js - Redux Bridge Hook with Smart Caching Performance Fix
+import { useCallback, useRef, useEffect, useMemo } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { MessagingWebSocket } from '../utils/api/messaging';
+import messagingAPI from '../utils/api/messaging';
+import {
+  loadChats,
+  loadChatById,
+  createNewChat,
+  sendMessage,
+  addRealtimeMessage,
+  updateTypingUsers,
+  updateMessageStatus,
+  setConnectionStatus,
+  clearError,
+  updateChatIdCache,
+  updateMessageCache,
+  updateLastFetchTime,
+  clearCache,
+  setCurrentChat,
+  selectChats,
+  selectMessages,
+  selectCurrentChat,
+  selectTypingUsers,
+  selectChatsLoading,
+  selectChatsConnected,
+  selectChatsError,
+  selectChatIdCache,
+  selectMessageCache,
+  selectLastFetchTime,
+  selectChatMessages,
+  selectChatTypingUsers
+} from '../store/slices/chatsSlice';
 
 /**
- * OPTIMIZED: Custom hook for managing messaging functionality
- * PERFORMANCE IMPROVEMENTS:
- * - Smart WebSocket connection pooling (no more disconnect/reconnect cycles)
- * - Memoized state calculations
- * - Optimized cache management
- * - Reduced API calls through intelligent caching
- * - Batch state updates for better performance
+ * PRESERVED: Smart WebSocket Connection Manager from original hook
+ * This maintains all the sophisticated connection pooling and management
  */
-
-// OPTIMIZATION 1: Smart WebSocket Connection Manager
 class WebSocketConnectionManager {
   constructor() {
     this.connections = new Map();
@@ -104,26 +127,37 @@ class WebSocketConnectionManager {
       }
     }
   }
+
+  isConnected() {
+    const activeConn = this.getActiveConnection();
+    return activeConn ? activeConn.isConnected() : false;
+  }
 }
 
-const useMessaging = () => {
-  // State management
-  const [chats, setChats] = useState([]);
-  const [messages, setMessages] = useState({});
-  const [currentChat, setCurrentChat] = useState(null);
-  const [typingUsers, setTypingUsers] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
-  const [error, setError] = useState(null);
+/**
+ * Redux-powered messaging hook with Smart Caching Performance Fix
+ * Preserves all WebSocket functionality and performance optimizations
+ */
+const useMessagingRedux = () => {
+  const dispatch = useDispatch();
+  
+  // Select all state from Redux store
+  const chats = useSelector(selectChats);
+  const messages = useSelector(selectMessages);
+  const currentChat = useSelector(selectCurrentChat);
+  const typingUsers = useSelector(selectTypingUsers);
+  const isLoading = useSelector(selectChatsLoading);
+  const isConnected = useSelector(selectChatsConnected);
+  const error = useSelector(selectChatsError);
+  const chatIdCache = useSelector(selectChatIdCache);
+  const messageCache = useSelector(selectMessageCache);
+  const lastFetchTime = useSelector(selectLastFetchTime);
 
-  // OPTIMIZATION 2: Enhanced refs for better performance
+  // PRESERVED: Enhanced refs for better performance (from original hook)
   const wsManagerRef = useRef(new WebSocketConnectionManager());
   const typingTimeoutRef = useRef({});
-  const chatIdCacheRef = useRef(new Map());
-  const lastFetchTime = useRef(new Map());
-  const messageCache = useRef(new Map());
 
-  // OPTIMIZATION 3: Memoized helper functions
+  // PRESERVED: Memoized helper functions (from original hook)
   const getCurrentUser = useMemo(() => {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     return {
@@ -134,13 +168,13 @@ const useMessaging = () => {
     };
   }, []); // Only calculate once per session
 
-  // OPTIMIZATION 4: Enhanced findOrCreateChat with better caching
+  // PRESERVED: Enhanced findOrCreateChat with Redux integration
   const findOrCreateChat = useCallback(async (userIdOrChatId) => {
     try {
-      // Check cache first
-      if (chatIdCacheRef.current.has(userIdOrChatId)) {
-        const cachedId = chatIdCacheRef.current.get(userIdOrChatId);
-        console.log('✅ Cache hit for chat resolution:', userIdOrChatId, '->', cachedId);
+      // Check Redux cache first
+      if (chatIdCache[userIdOrChatId]) {
+        const cachedId = chatIdCache[userIdOrChatId];
+        console.log('✅ Redux cache hit for chat resolution:', userIdOrChatId, '->', cachedId);
         return cachedId;
       }
 
@@ -149,7 +183,7 @@ const useMessaging = () => {
       if (uuidRegex.test(userIdOrChatId)) {
         try {
           const chatDetails = await messagingAPI.getChat(userIdOrChatId);
-          chatIdCacheRef.current.set(userIdOrChatId, userIdOrChatId);
+          dispatch(updateChatIdCache({ userId: userIdOrChatId, chatId: userIdOrChatId }));
           return userIdOrChatId;
         } catch (error) {
           console.log('Chat ID not found:', userIdOrChatId);
@@ -160,15 +194,15 @@ const useMessaging = () => {
       console.log('🔍 Resolving userId to chatId:', userIdOrChatId);
       
       // Check if we need to refresh chat list
-      const lastFetch = lastFetchTime.current.get('chats') || 0;
+      const lastFetch = lastFetchTime.chats || 0;
       let userChats = chats;
       
       if (Date.now() - lastFetch > 30000 || chats.length === 0) {
         // Refresh chat list if it's stale or empty
-        const response = await messagingAPI.getChats();
-        userChats = response.results || response;
-        setChats(userChats);
-        lastFetchTime.current.set('chats', Date.now());
+        const resultAction = await dispatch(loadChats());
+        if (loadChats.fulfilled.match(resultAction)) {
+          userChats = resultAction.payload;
+        }
       }
       
       // Look for existing chat with this user
@@ -187,55 +221,52 @@ const useMessaging = () => {
 
       if (existingChat) {
         console.log('✅ Found existing chat:', existingChat.id);
-        chatIdCacheRef.current.set(userIdOrChatId, existingChat.id);
+        dispatch(updateChatIdCache({ userId: userIdOrChatId, chatId: existingChat.id }));
         return existingChat.id;
       }
 
       // No existing chat found - create new one
       console.log('🆕 Creating new chat with user:', userIdOrChatId);
-      const newChat = await messagingAPI.createChat([userIdOrChatId], false);
+      const resultAction = await dispatch(createNewChat({ participantIds: [userIdOrChatId], isGroupChat: false }));
       
-      console.log('✅ Created new chat:', newChat.id);
-      chatIdCacheRef.current.set(userIdOrChatId, newChat.id);
-      
-      // Add to chats list
-      setChats(prevChats => [newChat, ...prevChats]);
-      
-      return newChat.id;
+      if (createNewChat.fulfilled.match(resultAction)) {
+        const newChat = resultAction.payload;
+        console.log('✅ Created new chat:', newChat.id);
+        dispatch(updateChatIdCache({ userId: userIdOrChatId, chatId: newChat.id }));
+        return newChat.id;
+      } else {
+        throw new Error('Failed to create chat');
+      }
       
     } catch (error) {
       console.error('❌ Error resolving userId to chatId:', error);
       throw error;
     }
-  }, [chats, getCurrentUser.id]);
+  }, [dispatch, chats, chatIdCache, lastFetchTime.chats, getCurrentUser.id]);
 
-  // OPTIMIZATION 5: Memoized load chats function
-  const loadChats = useCallback(async () => {
+  // PRESERVED: Load chats function with Redux
+  const loadChatsAction = useCallback(async () => {
     try {
-      setIsLoading(true);
-      setError(null);
-      
-      const response = await messagingAPI.getChats();
-      const chatsData = response.results || response;
-      
-      setChats(chatsData);
-      lastFetchTime.current.set('chats', Date.now());
-      
+      await dispatch(loadChats());
     } catch (error) {
       console.error('Error loading chats:', error);
-      setError('Failed to load conversations');
-    } finally {
-      setIsLoading(false);
     }
-  }, []);
+  }, [dispatch]);
 
-  // OPTIMIZATION 6: Enhanced selectChat with smart connection management
+  // ✅ SURGICAL FIX #2: Enhanced selectChat with smart caching and parallel execution
   const selectChat = useCallback(async (userIdOrChatId) => {
     try {
-      setIsLoading(true);
-      setError(null);
-      
       console.log('🎯 Selecting chat for:', userIdOrChatId);
+      
+      // 🎯 SURGICAL CHANGE: Check cache first for instant response on repeated selections
+      const cachedChatId = chatIdCache[userIdOrChatId];
+      
+      if (cachedChatId && currentChat?.id === cachedChatId) {
+        console.log('⚡ INSTANT: Chat already loaded from cache, just ensuring WebSocket');
+        // Non-blocking WebSocket connection - don't wait for it
+        connectWebSocket(cachedChatId).catch(console.error);
+        return;
+      }
       
       // Resolve userId to actual chatId
       const actualChatId = await findOrCreateChat(userIdOrChatId);
@@ -244,96 +275,52 @@ const useMessaging = () => {
       // Check if we already have this chat loaded
       if (currentChat?.id === actualChatId) {
         console.log('✅ Chat already loaded, just ensuring WebSocket connection');
-        setIsLoading(false);
-        await connectWebSocket(actualChatId);
+        // 🎯 SURGICAL CHANGE: Non-blocking WebSocket connection
+        connectWebSocket(actualChatId).catch(console.error);
         return;
       }
       
-      // Get chat details
-      const chatDetails = await messagingAPI.getChat(actualChatId);
-      setCurrentChat(chatDetails);
-      
-      // Load messages with caching
+      // Check message cache first for faster loading
       const cacheKey = `messages_${actualChatId}`;
-      const lastMessageFetch = lastFetchTime.current.get(cacheKey) || 0;
+      const lastMessageFetch = lastFetchTime[cacheKey] || 0;
       
-      let messagesData;
-      if (Date.now() - lastMessageFetch < 15000 && messageCache.current.has(actualChatId)) {
+      let shouldFetchFromAPI = true;
+      if (Date.now() - lastMessageFetch < 15000 && messageCache[actualChatId]) {
         // Use cached messages if less than 15 seconds old
-        messagesData = messageCache.current.get(actualChatId);
-        console.log('✅ Using cached messages for chat:', actualChatId);
-      } else {
-        // Fetch fresh messages
-        const messagesResponse = await messagingAPI.getMessages(actualChatId);
-        messagesData = messagesResponse.results || messagesResponse;
-        messageCache.current.set(actualChatId, messagesData);
-        lastFetchTime.current.set(cacheKey, Date.now());
+        const chatDetails = await messagingAPI.getChat(actualChatId);
+        dispatch(setCurrentChat(chatDetails));
+        console.log('⚡ FAST: Using cached messages for chat:', actualChatId);
+        shouldFetchFromAPI = false;
       }
       
-      setMessages(prev => ({
-        ...prev,
-        [actualChatId]: messagesData
-      }));
+      // 🎯 SURGICAL CHANGE: Execute chat loading and WebSocket in parallel, not sequential
+      const chatLoadPromise = shouldFetchFromAPI 
+        ? dispatch(loadChatById({ chatId: actualChatId }))
+        : Promise.resolve();
       
-      // Connect WebSocket using smart connection manager
-      await connectWebSocket(actualChatId);
+      const wsConnectPromise = connectWebSocket(actualChatId);
+      
+      // Execute both in parallel - don't wait for WebSocket to complete
+      await Promise.allSettled([chatLoadPromise, wsConnectPromise]);
       
     } catch (error) {
       console.error('❌ Error selecting chat:', error);
-      setError('Failed to load conversation');
-    } finally {
-      setIsLoading(false);
     }
-  }, [findOrCreateChat, currentChat?.id]);
+  }, [dispatch, findOrCreateChat, currentChat?.id, lastFetchTime, messageCache, chatIdCache]);
 
-  // OPTIMIZATION 7: Smart WebSocket connection with pooling
+  // PRESERVED: Smart WebSocket connection with Redux integration
   const connectWebSocket = useCallback(async (chatId) => {
     console.log('🔌 Connecting to WebSocket for chat:', chatId);
 
     const callbacks = {
       onMessage: (message) => {
         console.log('📨 Received message:', message);
-        setMessages(prev => ({
-          ...prev,
-          [chatId]: [...(prev[chatId] || []), message]
-        }));
-        
-        // Update chat's last message in the chats list
-        setChats(prevChats =>
-          prevChats.map(chat =>
-            chat.id === chatId
-              ? {
-                  ...chat,
-                  last_message: message,
-                  last_activity: message.created_at
-                }
-              : chat
-          ).sort((a, b) => new Date(b.last_activity) - new Date(a.last_activity))
-        );
+        dispatch(addRealtimeMessage({ message, chatId }));
       },
 
       onTyping: (data) => {
         const { user_id, username, is_typing } = data;
-        
-        setTypingUsers(prev => {
-          const chatTyping = prev[chatId] || {};
-          
-          if (is_typing) {
-            return {
-              ...prev,
-              [chatId]: {
-                ...chatTyping,
-                [user_id]: { username, timestamp: Date.now() }
-              }
-            };
-          } else {
-            const { [user_id]: removed, ...remaining } = chatTyping;
-            return {
-              ...prev,
-              [chatId]: remaining
-            };
-          }
-        });
+        dispatch(updateTypingUsers({ chatId, userId: user_id, username, isTyping: is_typing }));
 
         // Clear typing indicator after timeout
         if (is_typing) {
@@ -343,51 +330,29 @@ const useMessaging = () => {
           }
           
           typingTimeoutRef.current[timeoutKey] = setTimeout(() => {
-            setTypingUsers(prev => {
-              const chatTyping = prev[chatId] || {};
-              const { [user_id]: removed, ...remaining } = chatTyping;
-              return {
-                ...prev,
-                [chatId]: remaining
-              };
-            });
+            dispatch(updateTypingUsers({ chatId, userId: user_id, username, isTyping: false }));
           }, 3000);
         }
       },
 
       onStatus: (data) => {
         const { message_id, status } = data;
-        
-        setMessages(prev => {
-          const newMessages = { ...prev };
-          if (newMessages[chatId]) {
-            newMessages[chatId] = newMessages[chatId].map(msg =>
-              msg.id === message_id ? { ...msg, status } : msg
-            );
-          }
-          return newMessages;
-        });
+        dispatch(updateMessageStatus({ chatId, messageId: message_id, status }));
       },
 
       onError: (error) => {
         console.error('❌ WebSocket error:', error);
-        setError('Connection error');
-        setIsConnected(false);
+        dispatch(setConnectionStatus(false));
       },
 
       onClose: (event) => {
         console.log('🔌 WebSocket closed:', event.code, event.reason);
-        setIsConnected(false);
-        
-        if (event.code !== 1000) {
-          setError('Connection lost');
-        }
+        dispatch(setConnectionStatus(false));
       },
 
       onOpen: () => {
         console.log('✅ WebSocket connected successfully for chat:', chatId);
-        setIsConnected(true);
-        setError(null);
+        dispatch(setConnectionStatus(true));
       }
     };
 
@@ -396,25 +361,22 @@ const useMessaging = () => {
       return connection;
     } catch (error) {
       console.error('❌ Failed to connect WebSocket:', error);
-      setError('Failed to connect');
-      setIsConnected(false);
+      dispatch(setConnectionStatus(false));
     }
-  }, []);
+  }, [dispatch]);
 
-  // OPTIMIZATION 8: Enhanced disconnect function
+  // PRESERVED: Enhanced disconnect function
   const disconnectWebSocket = useCallback(() => {
     console.log('🔌 Disconnecting WebSocket');
     wsManagerRef.current.disconnectAll();
-    setIsConnected(false);
-  }, []);
+    dispatch(setConnectionStatus(false));
+  }, [dispatch]);
 
-  // OPTIMIZATION 9: Optimized message sending
+  // PRESERVED: Optimized message sending with Redux
   const sendNewMessage = useCallback(async (chatIdOrUserId, content, messageType = 'text', attachment = null, replyTo = null) => {
     if (!content.trim() && !attachment) return;
 
     try {
-      setError(null);
-      
       let actualChatId = chatIdOrUserId;
       if (currentChat) {
         actualChatId = currentChat.id;
@@ -422,60 +384,28 @@ const useMessaging = () => {
         actualChatId = await findOrCreateChat(chatIdOrUserId);
       }
       
-      // Optimistically add message to UI
-      const tempMessage = {
-        id: `temp_${Date.now()}`,
-        content: content.trim(),
-        message_type: messageType,
-        sender: getCurrentUser,
-        created_at: new Date().toISOString(),
-        status: 'sending',
-        chat: actualChatId,
-        is_own_message: true
-      };
-
-      setMessages(prev => ({
-        ...prev,
-        [actualChatId]: [...(prev[actualChatId] || []), tempMessage]
+      // Use Redux thunk for sending message (includes optimistic updates)
+      const resultAction = await dispatch(sendMessage({
+        chatId: actualChatId,
+        content,
+        messageType,
+        attachment,
+        replyTo
       }));
 
-      // Send message to backend
-      const sentMessage = await messagingAPI.sendMessage(actualChatId, content.trim(), messageType, attachment, replyTo);
-      
-      // Replace temp message with actual message
-      setMessages(prev => ({
-        ...prev,
-        [actualChatId]: prev[actualChatId].map(msg =>
-          msg.id === tempMessage.id ? sentMessage : msg
-        )
-      }));
-
-      // Update message cache
-      const updatedMessages = [...(messageCache.current.get(actualChatId) || []), sentMessage];
-      messageCache.current.set(actualChatId, updatedMessages);
-
-      return sentMessage;
+      if (sendMessage.fulfilled.match(resultAction)) {
+        return resultAction.payload.sentMessage;
+      } else {
+        throw new Error(resultAction.payload || 'Failed to send message');
+      }
       
     } catch (error) {
       console.error('Error sending message:', error);
-      setError('Failed to send message');
-      
-      // Mark temp message as failed
-      const actualChatId = currentChat?.id || chatIdOrUserId;
-      setMessages(prev => ({
-        ...prev,
-        [actualChatId]: prev[actualChatId]?.map(msg =>
-          msg.id.toString().startsWith('temp_') 
-            ? { ...msg, status: 'failed' }
-            : msg
-        ) || []
-      }));
-      
       throw error;
     }
-  }, [currentChat, findOrCreateChat, getCurrentUser]);
+  }, [dispatch, currentChat, findOrCreateChat]);
 
-  // OPTIMIZATION 10: Enhanced typing indicators
+  // PRESERVED: Enhanced typing indicators
   const sendTypingStart = useCallback(() => {
     const connection = wsManagerRef.current.getActiveConnection();
     if (connection && connection.isConnected()) {
@@ -490,21 +420,21 @@ const useMessaging = () => {
     }
   }, []);
 
-  // OPTIMIZATION 11: Memoized data retrieval functions
+  // PRESERVED: Memoized data retrieval functions with Redux selectors
   const getChatMessages = useCallback((userIdOrChatId) => {
     // Try to get messages by direct chat ID first
     if (messages[userIdOrChatId]) {
       return messages[userIdOrChatId];
     }
     
-    // Try to find chat ID from cache
-    const cachedChatId = chatIdCacheRef.current.get(userIdOrChatId);
+    // Try to find chat ID from Redux cache
+    const cachedChatId = chatIdCache[userIdOrChatId];
     if (cachedChatId && messages[cachedChatId]) {
       return messages[cachedChatId];
     }
     
     return [];
-  }, [messages]);
+  }, [messages, chatIdCache]);
 
   const getChatTypingUsers = useCallback((userIdOrChatId) => {
     // Try to get typing users by direct chat ID first
@@ -513,62 +443,55 @@ const useMessaging = () => {
       return Object.values(chatTyping).map(user => user.username);
     }
     
-    // Try to find chat ID from cache
-    const cachedChatId = chatIdCacheRef.current.get(userIdOrChatId);
+    // Try to find chat ID from Redux cache
+    const cachedChatId = chatIdCache[userIdOrChatId];
     if (cachedChatId && typingUsers[cachedChatId]) {
       const chatTyping = typingUsers[cachedChatId] || {};
       return Object.values(chatTyping).map(user => user.username);
     }
     
     return [];
-  }, [typingUsers]);
+  }, [typingUsers, chatIdCache]);
 
-  // OPTIMIZATION 12: Other utility functions with memoization
-  const createNewChat = useCallback(async (participantIds, isGroupChat = false, chatName = null) => {
+  // PRESERVED: Other utility functions with Redux
+  const createChat = useCallback(async (participantIds, isGroupChat = false, chatName = null) => {
     try {
-      setIsLoading(true);
-      setError(null);
+      const resultAction = await dispatch(createNewChat({ participantIds, isGroupChat, chatName }));
       
-      const newChat = await messagingAPI.createChat(participantIds, isGroupChat, chatName);
-      
-      setChats(prevChats => [newChat, ...prevChats]);
-      
-      return newChat;
+      if (createNewChat.fulfilled.match(resultAction)) {
+        return resultAction.payload;
+      } else {
+        throw new Error(resultAction.payload || 'Failed to create conversation');
+      }
     } catch (error) {
       console.error('Error creating chat:', error);
-      setError('Failed to create conversation');
       throw error;
-    } finally {
-      setIsLoading(false);
     }
-  }, []);
+  }, [dispatch]);
 
-  const clearError = useCallback(() => {
-    setError(null);
-  }, []);
+  const clearErrorAction = useCallback(() => {
+    dispatch(clearError());
+  }, [dispatch]);
 
-  const clearCache = useCallback(() => {
-    chatIdCacheRef.current.clear();
-    messageCache.current.clear();
-    lastFetchTime.current.clear();
-  }, []);
+  const clearCacheAction = useCallback(() => {
+    dispatch(clearCache());
+  }, [dispatch]);
 
-  // OPTIMIZATION 13: Enhanced cleanup and initialization
+  // PRESERVED: Enhanced cleanup and initialization
   useEffect(() => {
-    loadChats();
+    loadChatsAction();
     
     return () => {
       wsManagerRef.current.disconnectAll();
       Object.values(typingTimeoutRef.current).forEach(timeout => {
         clearTimeout(timeout);
       });
-      clearCache();
     };
-  }, [loadChats, clearCache]);
+  }, [loadChatsAction]);
 
-  // Return optimized hook API
+  // Return identical API to original useMessaging hook
   return {
-    // State
+    // State - identical to original
     chats,
     messages,
     currentChat,
@@ -576,29 +499,29 @@ const useMessaging = () => {
     isConnected,
     error,
     
-    // Chat management
-    loadChats,
-    createChat: createNewChat,
+    // Chat management - identical API
+    loadChats: loadChatsAction,
+    createChat,
     selectChat,
     
-    // Message management
+    // Message management - identical API
     sendMessage: sendNewMessage,
     getChatMessages,
     
-    // WebSocket management
+    // WebSocket management - identical API
     connectWebSocket,
     disconnectWebSocket,
     
-    // Typing indicators
+    // Typing indicators - identical API
     sendTypingStart,
     sendTypingStop,
     getChatTypingUsers,
     
-    // Utility
-    clearError,
-    clearCache,
+    // Utility - identical API
+    clearError: clearErrorAction,
+    clearCache: clearCacheAction,
     findOrCreateChat
   };
 };
 
-export default useMessaging;
+export default useMessagingRedux;
