@@ -10,7 +10,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { Button } from '../../ui/Button/Button';
-import useMessagingRedux from '../../../hooks/useMessagingRedux';
+import useMessaging from '../../../hooks/useMessaging';
 
 // OPTIMIZATION 1: Memoized Chat Item Component (Prevents unnecessary re-renders)
 const ChatItem = React.memo(({ chat, onClick, isMobile = false }) => {
@@ -204,7 +204,7 @@ function MessagesPage() {
     loadChats,
     selectChat,
     clearError
-  } = useMessagingRedux();
+  } = useMessaging();
 
   // OPTIMIZATION 6: Memoized responsive detection
   useEffect(() => {

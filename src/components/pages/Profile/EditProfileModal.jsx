@@ -6,7 +6,8 @@ import { Button } from '../../ui/Button/Button';
 import { Input } from '../../ui/Input/Input';
 import { Textarea } from '../../ui/Textarea/Textarea';
 import { Switch } from '../../ui/Switch/Switch';
-import { useProfile } from '../../../hooks/useProfile';
+import useProfile from '../../../hooks/useProfile';
+
 
 const EditProfileModal = ({ isOpen, onClose, user, onProfileUpdated }) => {
   // Form state

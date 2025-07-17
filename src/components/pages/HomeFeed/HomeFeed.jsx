@@ -11,7 +11,7 @@ import EnhancedCommentsModal from '../../modals/EnhancedCommentsModal';
 import NotificationPanel from '../../ui/NotificationPanel/NotificationPanel';
 
 // ENHANCED: Import Redux hooks instead of usePosts
-import usePostsRedux from '../../../hooks/usePostsRedux';
+import usePosts from '../../../hooks/usePosts';
 import useRealTime from '../../../hooks/useRealTime';
 import useNotifications from '../../../hooks/useNotifications';
 
@@ -33,7 +33,7 @@ function HomeFeed() {
     retryFetch,
     isEmpty,
     isInitialLoading
-  } = usePostsRedux({ autoLoad: true });
+  } = usePosts({ autoLoad: true });
 
   // NEW: Notifications hook
   const { unreadCount } = useNotifications({

@@ -7,10 +7,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/Tabs/Tabs';
 import PostCard from '../HomeFeed/components/PostCard';
 import FollowButton, { FOLLOW_STATES } from '../../ui/FollowButton'; 
 import { ResponsiveContainer } from '../../layout/ResponsiveLayout';
-import useProfileRedux from '../../../hooks/useProfileRedux'; // 🆕 SURGICAL CHANGE: Redux hook
+import useProfile from '../../../hooks/useProfile';
 import { useAuth } from '../../../contexts/AuthContext';
 import { postsAPI } from '../../../utils/api';
-import useMessagingRedux from '../../../hooks/useMessagingRedux'; // 🆕 SURGICAL CHANGE: Redux messaging hook
+import useMessaging from '../../../hooks/useMessaging'; // 🆕 SURGICAL CHANGE: Redux messaging hook
 import EditProfileModal from './EditProfileModal';
 import EnhancedCommentsModal from '../../modals/EnhancedCommentsModal';  // 🆕 SURGICAL FIX: Added comments modal import
 
@@ -41,7 +41,7 @@ function UserProfile({ isOwnProfile: propIsOwnProfile, onBack, userId: propUserI
   const [selectedPost, setSelectedPost] = useState(null);
 
   // 🆕 SURGICAL CHANGE: Use Redux messaging hook
-  const { createChat } = useMessagingRedux();
+  const { createChat } = useMessaging();
 
   // PRESERVED: Determine which user profile to show
   const targetUsername = username || currentUser?.username;
@@ -54,7 +54,7 @@ function UserProfile({ isOwnProfile: propIsOwnProfile, onBack, userId: propUserI
     error: profileError, 
     isOwnProfile: hookIsOwnProfile,
     refreshProfile 
-  } = useProfileRedux(targetUsername);
+  } = useProfile(targetUsername);
 
   // PRESERVED: Determine if this is own profile
   const isOwnProfile = propIsOwnProfile !== undefined ? propIsOwnProfile : hookIsOwnProfile;
