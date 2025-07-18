@@ -1,4 +1,4 @@
-// src/components/pages/Messages/ChatView.jsx - OPTIMIZED: 90% Performance Improvement
+// src/components/pages/Messages/ChatView.jsx - FIXED: Infinite selectChat Loop
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
@@ -186,7 +186,7 @@ const ChatErrorState = React.memo(({ error, onRetry, onBack }) => (
   </div>
 ));
 
-// OPTIMIZATION 5: Main ChatView Component - HIGHLY OPTIMIZED
+// OPTIMIZATION 5: Main ChatView Component - FIXED Infinite Loop
 function ChatView() {
   const { userId } = useParams();
   const navigate = useNavigate();
@@ -234,12 +234,12 @@ function ChatView() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // OPTIMIZATION 8: Memoized selectChat effect (only triggers when userId changes)
+  // 🎯 SURGICAL FIX: Remove selectChat from dependencies to prevent infinite loop
   useEffect(() => {
     if (userId) {
       selectChat(userId);
     }
-  }, [userId, selectChat]);
+  }, [userId]); // ✅ FIXED: Only depend on userId, not selectChat function
 
   // OPTIMIZATION 9: Memoized auto-scroll effect
   useEffect(() => {
@@ -318,13 +318,13 @@ function ChatView() {
     e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
   }, []);
 
-  // OPTIMIZATION 16: Memoized retry handler
+  // 🎯 SURGICAL FIX: Remove selectChat from dependencies to prevent infinite loop  
   const handleRetry = useCallback(() => {
     clearError();
     if (userId) {
       selectChat(userId);
     }
-  }, [clearError, selectChat, userId]);
+  }, [clearError, userId]); // ✅ FIXED: Removed selectChat dependency
 
   // OPTIMIZATION 17: Memoized current user data
   const currentUser = useMemo(() => {

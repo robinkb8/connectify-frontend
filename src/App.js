@@ -6,7 +6,6 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { ThemeProvider } from './components/providers/ThemeProvider';
 import { ToastProvider } from './components/ui/Toast';
 import ChatView from './components/pages/Messages/ChatView';
-import TestLikesRedux from './components/TestLikesRedux';
 
 
 
@@ -230,7 +229,7 @@ const AppLayout = React.memo(() => {
         isNavigating={isNavigating}
         
       >
-         <TestLikesRedux />
+         
         {/* ✅ ENHANCED - Suspense with profile routing support */}
         <Suspense fallback={<PageLoadingFallback type={currentRoute.skeleton} />}>
           <Routes>

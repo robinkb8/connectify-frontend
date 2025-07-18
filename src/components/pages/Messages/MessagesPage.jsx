@@ -1,4 +1,4 @@
-// src/components/pages/Messages/MessagesPage.jsx - OPTIMIZED with Redux State Management
+// src/components/pages/Messages/MessagesPage.jsx - FIXED: Infinite Re-render Loop
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -190,7 +190,7 @@ const NoMessagesEmpty = React.memo(({ onFindPeople }) => (
   </div>
 ));
 
-// OPTIMIZATION 5: Main Messages Component - HIGHLY OPTIMIZED with Redux
+// OPTIMIZATION 5: Main Messages Component - FIXED Infinite Re-render Loop
 function MessagesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isMobile, setIsMobile] = useState(false);
@@ -255,9 +255,9 @@ function MessagesPage() {
     setSearchQuery(e.target.value);
   }, []);
 
-  // OPTIMIZATION 10: Memoized and highly optimized chat filtering and sorting
+  // 🎯 FIXED: Stable chat processing to prevent infinite re-renders
   const processedChats = useMemo(() => {
-    console.log('🚀 OPTIMIZATION: Processing chats (only when chats or searchQuery changes)');
+    console.log('🚀 OPTIMIZATION: Processing chats (only when chats or searchQuery changes)', chats.length);
     
     // Filter chats based on search query
     let filtered = chats;
@@ -278,7 +278,6 @@ function MessagesPage() {
     }
 
     // Sort chats: unread first, then by last activity
-    // FIXED: Create copy before sorting to avoid mutating immutable Redux state
     return [...filtered].sort((a, b) => {
       // First, sort by unread count (unread messages first)
       if (a.unread_count !== b.unread_count) {
@@ -290,15 +289,25 @@ function MessagesPage() {
       const bTime = b.last_activity || b.created_at || 0;
       return new Date(bTime) - new Date(aTime);
     });
-  }, [chats, searchQuery]);
+  }, [
+    chats.length, 
+    searchQuery,
+    // 🎯 SURGICAL FIX: Only recompute when meaningful chat data changes
+    JSON.stringify(chats.map(chat => ({
+      id: chat.id,
+      last_activity: chat.last_activity,
+      unread_count: chat.unread_count,
+      last_message_id: chat.last_message?.id
+    })))
+  ]);
 
-  // OPTIMIZATION 11: Memoized chat items with animation delays
+  // 🎯 FIXED: Stable chat rendering to prevent infinite re-renders
   const chatItems = useMemo(() => {
-    console.log('🚀 OPTIMIZATION: Rendering chat items (only when processedChats or handlers change)');
+    console.log('🚀 OPTIMIZATION: Rendering chat items (only when processedChats change)', processedChats.length);
     
     return processedChats.map((chat, index) => (
       <div
-        key={chat.id}
+        key={`${chat.id}-${chat.last_activity || index}`}
         className="animate-slideUp"
         style={{ animationDelay: `${index * 50}ms` }}
       >
